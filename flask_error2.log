@@ -1,0 +1,12 @@
+C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py:382: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  return cert.not_valid_after > expires_soon
+Traceback (most recent call last):
+  File "C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\app_with_setup_wizard.py", line 2725, in <module>
+    cert_generated = cert_manager.ensure_certificates()
+  File "C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py", line 410, in ensure_certificates
+    print("\u2705 SSL certificates are valid")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>

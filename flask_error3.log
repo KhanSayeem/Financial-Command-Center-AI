@@ -1,0 +1,20 @@
+C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py:382: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  return cert.not_valid_after > expires_soon
+C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py:484: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  return cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S UTC")
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on https://127.0.0.1:8000
+Press CTRL+C to quit
+ * Restarting with stat
+C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py:382: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  return cert.not_valid_after > expires_soon
+C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_manager.py:484: CryptographyDeprecationWarning: Properties that return a naïve datetime object have been deprecated. Please switch to not_valid_after_utc.
+  return cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S UTC")
+ * Debugger is active!
+ * Debugger PIN: 120-238-269
+127.0.0.1 - - [14/Sep/2025 04:34:04] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:34:10] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:34:16] "GET /api/cash-flow HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:34:22] "GET /api/invoices?status=unpaid HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:34:28] "GET /api/invoices HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:35:10] "GET /health HTTP/1.1" 200 -

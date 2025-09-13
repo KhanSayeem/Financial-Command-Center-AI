@@ -2694,7 +2694,7 @@ def get_dashboard():
     
     return jsonify(dashboard_data)
 if __name__ == '__main__':
-    print("🚀 Starting Financial Command Center with Setup Wizard...")
+    print("Starting Financial Command Center with Setup Wizard...")
     print("=" * 60)
     print(f"Security: {'Enabled' if SECURITY_ENABLED else 'Disabled'}")
     print(f"Setup Wizard: Enabled")

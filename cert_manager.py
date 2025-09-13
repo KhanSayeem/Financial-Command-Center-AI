@@ -363,8 +363,8 @@ class CertificateManager:
         self.config["last_generated"] = datetime.now().isoformat()
         self._save_config()
         
-        print(f"✅ Server certificate saved to: {self.config['cert_file']}")
-        print(f"✅ Server key saved to: {self.config['key_file']}")
+        print(f"Server certificate saved to: {self.config['cert_file']}")
+        print(f"Server key saved to: {self.config['key_file']}")
         
         return server_cert, server_key
     
@@ -381,33 +381,33 @@ class CertificateManager:
             expires_soon = datetime.utcnow() + timedelta(days=7)
             return cert.not_valid_after > expires_soon
         except Exception as e:
-            print(f"⚠️  Certificate validation error: {e}")
+            print(f"WARNING: Certificate validation error: {e}")
             return False
     
     def ensure_certificates(self):
         """Ensure valid certificates exist, generate if needed"""
         if not self.is_certificate_valid():
-            print("🔄 Generating new SSL certificates...")
+            print("Generating new SSL certificates...")
             
             # Try mkcert first for better browser compatibility
             if self.use_mkcert and self._is_mkcert_available():
                 if self.generate_mkcert_certificates():
-                    print("🎉 Trusted certificates generated with mkcert!")
+                    print("Trusted certificates generated with mkcert!")
                     print("   Browsers should now show secure connections without warnings.")
                     return True
                 else:
-                    print("⚠️  mkcert failed, falling back to self-signed certificates...")
+                    print("WARNING: mkcert failed, falling back to self-signed certificates...")
             
             # Fallback to self-signed certificates
             success = self.generate_server_certificate()
             if success and platform.system() == "Windows":
                 # Try to install self-signed CA to system store
-                print("🔧 Attempting to install CA certificate to system trust store...")
+                print("Attempting to install CA certificate to system trust store...")
                 self.install_certificate_to_system_store()
             
             return success
         else:
-            print("✅ SSL certificates are valid")
+            print("SSL certificates are valid")
             return False
     
     def get_ssl_context(self):

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class FinancialCommandCenterMCP:
     def __init__(self):
-        self.server_url = os.getenv('FCC_SERVER_URL', 'https://localhost:8000')
+        self.server_url = os.getenv('FCC_SERVER_URL', 'https://127.0.0.1:8000')
         self.api_key = os.getenv('FCC_API_KEY', 'claude-desktop-integration')
         self.client = None
         
@@ -273,8 +273,25 @@ class FinancialCommandCenterMCP:
                     
                     # Only send response if it's not None (notifications don't need responses)
                     if response is not None:
-                        print(json.dumps(response), flush=True)
-                        logger.info(f"Sent response for request ID: {request.get('id')}")
+                        # Safe stdout writing for Windows compatibility
+                        try:
+                            output = json.dumps(response)
+                            sys.stdout.write(output + "\n")
+                            sys.stdout.flush()
+                            logger.info(f"Sent response for request ID: {request.get('id')}")
+                        except OSError as stdout_err:
+                            # Handle Windows stdout issues
+                            logger.error(f"Failed to write to stdout: {stdout_err}")
+                            # Try alternative output method
+                            try:
+                                import io
+                                sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='\n')
+                                sys.stdout.write(output + "\n")
+                                sys.stdout.flush()
+                                logger.info(f"Sent response for request ID: {request.get('id')} (fallback)")
+                            except Exception as fallback_err:
+                                logger.error(f"Fallback stdout method also failed: {fallback_err}")
+                                break
                     else:
                         logger.info(f"No response needed for notification: {request.get('method')}")
                     
@@ -291,7 +308,13 @@ class FinancialCommandCenterMCP:
                             "message": str(e)
                         }
                     }
-                    print(json.dumps(error_response), flush=True)
+                    try:
+                        output = json.dumps(error_response)
+                        sys.stdout.write(output + "\n")
+                        sys.stdout.flush()
+                    except OSError:
+                        logger.error("Cannot write error response to stdout")
+                        break
         
         finally:
             if self.client:
