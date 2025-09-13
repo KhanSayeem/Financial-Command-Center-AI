@@ -226,7 +226,16 @@ def setup_claude_routes(app, logger=None):
             <div class="alert alert-info">
                 <strong>🔐 Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
                 <strong>🎯 Tailored:</strong> Only includes servers for services you've configured.<br>
-                <strong>📁 Dynamic:</strong> Automatically detects your project paths.
+                <strong>📁 Dynamic:</strong> Automatically detects your project paths and Python setup.<br>
+                <strong>📱 Portable:</strong> Customized for YOUR specific directory and Python installation.
+            </div>
+            
+            <div class="alert alert-warning">
+                <strong>⚠️ Important for Teams:</strong><br>
+                This configuration contains paths specific to your computer. Each team member should:<br>
+                1. Run their own Financial Command Center setup<br>
+                2. Generate their own Claude Desktop config from <code>/claude/setup</code><br>
+                3. This ensures correct paths for their system (Windows/Mac/Linux)
             </div>
             <br>
             <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Complete Config</button>
@@ -273,6 +282,21 @@ def setup_claude_routes(app, logger=None):
         <div class="setup-card">
             <div class="step-title">
                 <span class="step-number">4</span>
+                Verify Configuration Paths
+            </div>
+            <div class="alert alert-info">
+                <strong>🔍 Quick Check:</strong> Open the downloaded <code>claude_desktop_config.json</code> and verify:<br>
+                • Python executable path exists on your computer<br>
+                • MCP server script paths point to your project directory<br>
+                • All paths use your actual username and directory structure<br><br>
+                <strong>💻 Example:</strong> Paths should look like <code>C:\\Users\\[YourName]\\...\\python.exe</code><br>
+                <strong>ℹ️ If paths look wrong:</strong> Re-generate config after ensuring your project is in the right location
+            </div>
+        </div>
+        
+        <div class="setup-card">
+            <div class="step-title">
+                <span class="step-number">5</span>
                 Restart Claude Desktop
             </div>
             <div style="text-align: center; margin: 20px 0;">
@@ -291,7 +315,7 @@ def setup_claude_routes(app, logger=None):
         
         <div class="setup-card">
             <div class="step-title">
-                <span class="step-number">5</span>
+                <span class="step-number">6</span>
                 Try Sample Commands
             </div>
             <div class="alert alert-success">
@@ -350,6 +374,16 @@ def setup_claude_routes(app, logger=None):
                     if (summary.credentials_used.xero) credentialsUsed.push('Xero');
                     if (summary.credentials_used.plaid) credentialsUsed.push('Plaid');
                     
+                    let setupInfo = '';
+                    if (summary.portable_instructions) {
+                        setupInfo = `
+                            <br><strong>📁 Your Setup Details:</strong><br>
+                            • <strong>Python:</strong> ${summary.portable_instructions.python_location}<br>
+                            • <strong>Directory:</strong> ${summary.project_directory}<br>
+                            • <strong>Note:</strong> ${summary.portable_instructions.note}<br>
+                        `;
+                    }
+                    
                     summaryDiv.innerHTML = `
                         <div class="alert alert-success">
                             <strong>✅ Configuration Generated Successfully!</strong><br><br>
@@ -357,7 +391,7 @@ def setup_claude_routes(app, logger=None):
                             • <strong>${summary.total_servers} MCP servers</strong> included<br>
                             • <strong>Servers:</strong> ${summary.servers.join(', ')}<br>
                             • <strong>Credentials used:</strong> ${credentialsUsed.join(', ') || 'None (demo mode)'}<br>
-                            • <strong>Python:</strong> ${summary.python_executable}<br>
+                            ${setupInfo}
                             <br><strong>Click Download to save your configuration file!</strong>
                         </div>
                     `;
@@ -418,13 +452,45 @@ def setup_claude_routes(app, logger=None):
             port = int(os.getenv('FCC_PORT', '8000'))
             server_url = f"https://localhost:{port}"
             
-            # Get absolute paths
+            # Get dynamic paths relative to user's project directory
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            python_exe = os.path.join(current_dir, ".venv", "Scripts", "python.exe")
             
-            # Check if virtual environment Python exists, otherwise use system Python
-            if not os.path.exists(python_exe):
-                python_exe = "python"
+            # Try multiple Python executable locations for cross-platform compatibility
+            python_candidates = [
+                # Virtual environment locations
+                os.path.join(current_dir, ".venv", "Scripts", "python.exe"),  # Windows venv
+                os.path.join(current_dir, ".venv", "bin", "python"),          # Unix/Mac venv
+                os.path.join(current_dir, "venv", "Scripts", "python.exe"),   # Alternative Windows venv
+                os.path.join(current_dir, "venv", "bin", "python"),           # Alternative Unix/Mac venv
+                # System Python as fallback
+                "python",
+                "python3"
+            ]
+            
+            # Find the first existing Python executable
+            python_exe = "python"  # Default fallback
+            for candidate in python_candidates:
+                if candidate in ["python", "python3"]:
+                    # For system Python, we'll use the command directly
+                    python_exe = candidate
+                    break
+                elif os.path.exists(candidate):
+                    python_exe = candidate
+                    break
+            
+            # Create portable configuration by detecting user's actual setup
+            # We'll use the absolute paths but add instructions for users to update them
+            def get_user_instructions():
+                """Generate user-specific instructions for their setup"""
+                instructions = {
+                    "user_project_directory": current_dir,
+                    "detected_python": python_exe,
+                    "setup_type": "virtual_environment" if ".venv" in python_exe or "venv" in python_exe else "system_python"
+                }
+                return instructions
+            
+            # Get user setup information
+            user_instructions = get_user_instructions()
             
             # Initialize MCP servers configuration
             mcp_servers = {}
@@ -519,7 +585,14 @@ def setup_claude_routes(app, logger=None):
                     'plaid': bool(plaid_config and not plaid_config.get('skipped'))
                 },
                 'python_executable': python_exe,
-                'project_directory': current_dir
+                'project_directory': current_dir,
+                'setup_type': user_instructions['setup_type'],
+                'portable_instructions': {
+                    'note': 'This configuration is customized for your specific setup',
+                    'python_location': 'Virtual environment detected' if '.venv' in python_exe else 'System Python detected',
+                    'paths_are_absolute': 'Paths are specific to your project directory',
+                    'sharing_note': 'Other users should generate their own config from their setup'
+                }
             }
             
             return jsonify({
