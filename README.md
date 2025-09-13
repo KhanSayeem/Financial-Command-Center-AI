@@ -41,7 +41,7 @@
 
 ## 🏢 **Who Should Use This?**
 
-### 🚪 **Small to Medium Businesses**
+### 🚪 **All Businesses**
 - **E-commerce Stores** - Automatically sync Stripe payments to Xero accounting
 - **Service Providers** - Track invoices, payments, and client data in one place
 - **Consultants & Freelancers** - Streamline billing and expense tracking
