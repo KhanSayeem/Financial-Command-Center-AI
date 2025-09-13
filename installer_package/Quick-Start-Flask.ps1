@@ -43,7 +43,9 @@ Start-Sleep -Seconds 6
 # Check if server is running
 Write-Host "Testing server connection..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "https://127.0.0.1:8000/health" -TimeoutSec 10 -SkipCertificateCheck -UseBasicParsing -ErrorAction Stop
+    # Ignore SSL certificate errors for self-signed certificates
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    $response = Invoke-WebRequest -Uri "https://127.0.0.1:8000/health" -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Host "[SUCCESS] Server is running successfully!" -ForegroundColor Green
         Write-Host ""

@@ -1,23 +1,21 @@
 @echo off
-REM Quick Start Flask App - Financial Command Center AI
-REM This script directly launches the Flask app on https://127.0.0.1:8000
+title Financial Command Center AI - Quick Test Launch
 
-title Financial Command Center AI - Quick Start
 echo ===============================================
-echo     Financial Command Center AI - Quick Start
+echo     Financial Command Center AI - Quick Test  
 echo ===============================================
 echo.
 
 REM Check if virtual environment exists
 if not exist ".venv\Scripts\python.exe" (
     echo ERROR: Virtual environment not found!
-    echo Please run the full installer first: Financial-Command-Center-Launcher.exe
+    echo Please run the full installer first
     echo.
     pause
     exit /b 1
 )
 
-REM Set environment variables for clean startup
+REM Set environment variables for HTTPS on 127.0.0.1:8000
 set FLASK_ENV=production
 set FORCE_HTTPS=true
 set ALLOW_HTTP=false
@@ -27,9 +25,6 @@ set APP_MODE=demo
 set FCC_PORT=8000
 
 echo Starting Flask server on https://127.0.0.1:8000...
-echo.
-echo The server will start automatically.
-echo Once running, your web browser will open the application.
 echo.
 
 REM Start Flask app in background
@@ -57,5 +52,4 @@ if %errorlevel% equ 0 (
     pause
 )
 
-REM Keep window open briefly
 timeout /t 3 /nobreak >nul

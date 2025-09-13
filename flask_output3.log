@@ -111,3 +111,40 @@ SSL Certificate Status:
    Hostnames: localhost, 127.0.0.1, ::1
 
 Professional Financial Command Center ready!
+Claude Desktop integration loaded
+Xero and enhanced session management initialized
+Starting Financial Command Center with Setup Wizard...
+============================================================
+Security: Enabled
+Setup Wizard: Enabled
+Xero: Available
+Stripe: Configured
+HTTPS Mode - Ensuring SSL certificates...
+SSL certificates are valid
+SSL certificates are valid
+
+Available endpoints:
+  GET  / - Smart home page (redirects to setup if needed)
+  GET  /setup - Professional setup wizard
+  GET  /health - Enhanced health check
+  Security Endpoints: /api/ping, /api/create-key, /api/key-stats
+  Admin: /admin/dashboard
+  Stripe: /api/stripe/payment
+  SSL Help: /admin/ssl-help
+  Certificate Bundle: /admin/certificate-bundle
+Claude Desktop: /claude/setup, /api/claude/*, /api/mcp
+  Xero: /login, /callback, /profile, /api/xero/contacts, /api/xero/invoices
+
+URLs:
+  Home: https://127.0.0.1:8000/
+  Setup: https://127.0.0.1:8000/setup
+  Admin: https://127.0.0.1:8000/admin/dashboard
+  SSL Help: https://127.0.0.1:8000/admin/ssl-help
+
+Server Mode: HTTPS
+SSL Certificate Status:
+   Certificate Valid: True
+   Expires: 2027-12-13 20:01:36 UTC
+   Hostnames: localhost, 127.0.0.1, ::1
+
+Professional Financial Command Center ready!

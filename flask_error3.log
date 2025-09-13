@@ -36,3 +36,17 @@ C:\Users\Hi\Documents\GitHub\Stripe Playground\Financial-Command-Center-AI\cert_
  * Debugger PIN: 120-238-269
 127.0.0.1 - - [14/Sep/2025 04:42:12] "HEAD /health HTTP/1.1" 200 -
 127.0.0.1 - - [14/Sep/2025 04:42:12] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:45:56] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:46:19] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:47:44] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:47:47] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:47:55] "GET /admin/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:48:03] "GET /login HTTP/1.1" 302 -
+State mismatch detected, attempting without state validation: mismatching_state: CSRF Warning! State not equal in request and response.
+127.0.0.1 - - [14/Sep/2025 04:48:16] "GET /callback?code=TCFUP_SIGTqFAgCyGotf-FcqyU738oaBM_4iK_mPux8&scope=openid%20profile%20email%20accounting.settings%20accounting.transactions%20accounting.contacts%20offline_access&state=STvcNcuqKTrEhBqiiZdARoMY9MCa5q&session_state=1H0QcPibqOHo8swFkb6DUU0c6dzKemTIP1fFLcCYIxM.YO2bdnd-3pNaZOZdPuV79A HTTP/1.1" 302 -
+127.0.0.1 - - [14/Sep/2025 04:48:17] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:48:21] "GET /xero/invoices HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:48:23] "GET /xero/contacts HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:48:25] "GET /xero/invoices HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:48:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [14/Sep/2025 04:54:58] "GET / HTTP/1.1" 200 -
