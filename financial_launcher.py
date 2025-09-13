@@ -1253,8 +1253,10 @@ class FinancialLauncher:
             os.makedirs(start_menu_dir, exist_ok=True)
 
             launch_cmd = os.path.join(repo_root, 'Launch-Financial-Command-Center.cmd')
+            quick_start_cmd = os.path.join(repo_root, 'Quick-Start-Flask.cmd')
+            quick_start_ps1 = os.path.join(repo_root, 'Quick-Start-Flask.ps1')
 
-            # Determine target/args (prefer GUI pythonw over .cmd to avoid console popups)
+            # Determine target/args for full launcher (prefer GUI pythonw over .cmd to avoid console popups)
             if getattr(sys, 'frozen', False):
                 target = sys.executable
                 args = ''
@@ -1273,15 +1275,37 @@ class FinancialLauncher:
 
             icon_path = str(Path(repo_root, 'assets', 'launcher_icon.ico'))
             icon = icon_path if Path(icon_path).exists() else ''
+            
+            # Quick Start targets (prefer PowerShell for better error handling)
+            if os.path.exists(quick_start_ps1):
+                quick_target = 'powershell.exe'
+                quick_args = f'-NoProfile -ExecutionPolicy Bypass -File "{quick_start_ps1}"'
+            elif os.path.exists(quick_start_cmd):
+                quick_target = quick_start_cmd
+                quick_args = ''
+            else:
+                # Fallback to direct Python call
+                quick_target = self.dependency_manager.get_venv_python()
+                quick_args = os.path.join(repo_root, 'app_with_setup_wizard.py')
 
-            # Desktop shortcut (recreate to ensure target correctness)
+            # Desktop shortcuts
             if desktop and os.path.isdir(desktop):
+                # Full launcher shortcut
                 lnk1 = os.path.join(desktop, f'{app_name}.lnk')
                 self._create_windows_shortcut(lnk1, target, args, icon, repo_root)
+                
+                # Quick start shortcut (main one users will use)
+                quick_lnk = os.path.join(desktop, f'{app_name} - Quick Start.lnk')
+                self._create_windows_shortcut(quick_lnk, quick_target, quick_args, icon, repo_root)
 
-            # Start Menu shortcut (recreate)
+            # Start Menu shortcuts
+            # Full launcher shortcut
             lnk2 = os.path.join(start_menu_dir, f'{app_name}.lnk')
             self._create_windows_shortcut(lnk2, target, args, icon, repo_root)
+            
+            # Quick start shortcut in Start Menu
+            quick_lnk2 = os.path.join(start_menu_dir, f'{app_name} - Quick Start.lnk')
+            self._create_windows_shortcut(quick_lnk2, quick_target, quick_args, icon, repo_root)
         except Exception as e:
             self.logger.warning(f'Failed to set up shortcuts: {e}')
 
