@@ -2441,6 +2441,125 @@ curl -H "X-API-Key: {demo_key}" https://localhost:8000/health
 
 # Duplicate Claude routes removed - now handled by claude_integration.py
 
+# =============================================================================
+# MCP Integration API Endpoints  
+# =============================================================================
+
+@app.route('/api/cash-flow', methods=['GET'])
+def get_cash_flow():
+    """Get cash flow information"""
+    accept_header = request.headers.get('Accept', '')
+    wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
+    
+    if not wants_json:
+        return "Cash flow endpoint - use Accept: application/json header", 400
+    
+    # Mock cash flow data
+    cash_flow_data = {
+        'status': 'healthy',
+        'cash_flow': {
+            'current_balance': 45750.32,
+            'currency': 'USD',
+            'monthly_inflow': 89500.00,
+            'monthly_outflow': 67200.00,
+            'net_monthly': 22300.00,
+            'trend': 'positive',
+            'accounts': [
+                {'name': 'Main Operating', 'balance': 35750.32, 'type': 'checking'},
+                {'name': 'Reserve Fund', 'balance': 10000.00, 'type': 'savings'}
+            ],
+            'recent_transactions': [
+                {'date': '2025-09-13', 'description': 'Client Payment', 'amount': 5500.00, 'type': 'inflow'},
+                {'date': '2025-09-12', 'description': 'Office Rent', 'amount': -2800.00, 'type': 'outflow'},
+                {'date': '2025-09-11', 'description': 'Software License', 'amount': -299.00, 'type': 'outflow'},
+            ]
+        },
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    return jsonify(cash_flow_data)
+
+@app.route('/api/invoices', methods=['GET'])
+def get_invoices():
+    """Get invoices with optional filtering"""
+    accept_header = request.headers.get('Accept', '')
+    wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
+    
+    if not wants_json:
+        return "Invoices endpoint - use Accept: application/json header", 400
+    
+    # Get filter parameters
+    status = request.args.get('status', 'all').lower()
+    amount_min = request.args.get('amount_min', type=float)
+    customer = request.args.get('customer', '').lower()
+    
+    # Mock invoice data with realistic business data
+    all_invoices = [
+        {'invoice_id': 'INV-2025-001', 'customer': 'Acme Corporation', 'amount': 8750.00, 'status': 'paid'},
+        {'invoice_id': 'INV-2025-002', 'customer': 'TechStart Inc', 'amount': 2450.00, 'status': 'pending'},
+        {'invoice_id': 'INV-2025-003', 'customer': 'Global Systems Ltd', 'amount': 15750.00, 'status': 'overdue'},
+        {'invoice_id': 'INV-2025-004', 'customer': 'StartupXYZ', 'amount': 650.00, 'status': 'draft'}
+    ]
+    
+    # Apply filters
+    filtered_invoices = all_invoices
+    if status != 'all':
+        filtered_invoices = [inv for inv in filtered_invoices if inv['status'] == status]
+    if amount_min:
+        filtered_invoices = [inv for inv in filtered_invoices if inv['amount'] >= amount_min]
+    if customer:
+        filtered_invoices = [inv for inv in filtered_invoices if customer in inv['customer'].lower()]
+    
+    return jsonify({'status': 'success', 'invoices': filtered_invoices, 'total_count': len(filtered_invoices)})
+
+@app.route('/api/contacts', methods=['GET'])
+def get_contacts():
+    """Get customer/supplier contacts"""
+    accept_header = request.headers.get('Accept', '')
+    wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
+    
+    if not wants_json:
+        return "Contacts endpoint - use Accept: application/json header", 400
+    
+    search_term = request.args.get('search', '').lower()
+    
+    all_contacts = [
+        {'contact_id': 'CNT-001', 'name': 'Acme Corporation', 'email': 'billing@acme-corp.com', 'type': 'customer'},
+        {'contact_id': 'CNT-002', 'name': 'TechStart Inc', 'email': 'accounts@techstart.io', 'type': 'customer'},
+        {'contact_id': 'CNT-003', 'name': 'Global Systems Ltd', 'email': 'finance@globalsys.com', 'type': 'customer'},
+        {'contact_id': 'CNT-004', 'name': 'StartupXYZ', 'email': 'hello@startupxyz.com', 'type': 'customer'}
+    ]
+    
+    if search_term:
+        filtered_contacts = [c for c in all_contacts if search_term in c['name'].lower() or search_term in c['email'].lower()]
+    else:
+        filtered_contacts = all_contacts
+    
+    return jsonify({'status': 'success', 'contacts': filtered_contacts, 'total_count': len(filtered_contacts)})
+
+@app.route('/api/dashboard', methods=['GET']) 
+def get_dashboard():
+    """Get comprehensive financial dashboard data"""
+    accept_header = request.headers.get('Accept', '')
+    wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
+    
+    if not wants_json:
+        return "Dashboard endpoint - use Accept: application/json header", 400
+    
+    dashboard_data = {
+        'status': 'healthy',
+        'overview': {'total_revenue_ytd': 245780.50, 'net_profit_ytd': 56360.20, 'profit_margin': 22.9},
+        'cash_flow': {'current_balance': 45750.32, 'monthly_burn_rate': 67200.00},
+        'invoices': {'total_outstanding': 18850.00, 'overdue_amount': 15750.00, 'pending_count': 3},
+        'integrations': {
+            'stripe': {'status': 'connected'}, 
+            'xero': {'status': 'connected'}, 
+            'plaid': {'status': 'connected'}
+        },
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    return jsonify(dashboard_data)
 if __name__ == '__main__':
     print("🚀 Starting Financial Command Center with Setup Wizard...")
     print("=" * 60)

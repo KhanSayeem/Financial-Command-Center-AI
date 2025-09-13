@@ -368,16 +368,20 @@ def setup_claude_routes(app, logger=None):
             server_url = f"https://localhost:{port}"
             
             # Generate configuration
+            # Get the absolute path to the MCP server
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            mcp_server_path = os.path.join(current_dir, "mcp_server.py")
+            python_exe = os.path.join(current_dir, ".venv", "Scripts", "python.exe")
+            
+            # Check if virtual environment Python exists, otherwise use system Python
+            if not os.path.exists(python_exe):
+                python_exe = "python"
+            
             config = {
                 "mcpServers": {
                     "financial-command-center": {
-                        "command": "python",
-                        "args": [
-                            "-m",
-                            "http",
-                            "--url",
-                            f"{server_url}/api/mcp"
-                        ],
+                        "command": python_exe,
+                        "args": [mcp_server_path],
                         "env": {
                             "FCC_SERVER_URL": server_url,
                             "FCC_API_KEY": "claude-desktop-integration"
