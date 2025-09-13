@@ -447,15 +447,15 @@ sudo update-ca-certificates
 ## Manual Browser Trust
 
 ### Chrome/Edge:
-1. Visit: https://localhost:8000
-2. Click "Advanced" → "Proceed to localhost (unsafe)"
+1. Visit: https://127.0.0.1:8000
+2. Click "Advanced"  "Proceed to 127.0.0.1 (unsafe)"
 3. Click the lock icon → "Certificate" → "Details" tab
 4. Click "Copy to File" → Save as .cer file
 5. Settings → Privacy and Security → Manage Certificates
 6. Import to "Trusted Root Certification Authorities"
 
 ### Firefox:
-1. Visit: https://localhost:8000
+1. Visit: https://127.0.0.1:8000
 2. Click "Advanced" → "Accept the Risk and Continue"
 3. Click lock icon → "Connection not secure" → "More Information"
 4. "Security" tab → "View Certificate" → "Download"
@@ -464,7 +464,7 @@ sudo update-ca-certificates
 
 ## Verify Installation:
 ```bash
-curl -I https://localhost:8000/health
+curl -I https://127.0.0.1:8000/health
 # Should return HTTP/2 200 without certificate errors
 ```
 
@@ -542,7 +542,7 @@ if %errorlevel% neq 0 (
     echo  Certificate Installation Complete!
     echo ================================================
     echo.
-    echo You can now access https://localhost:8000 without warnings.
+    echo You can now access https://127.0.0.1:8000 without warnings.
     echo Please restart your browser to see the changes.
 )
 
@@ -588,7 +588,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         echo " Certificate Installation Complete!"
         echo "================================================"
         echo
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate to system keychain."
@@ -614,7 +614,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "================================================"
         echo
         echo "System-wide certificate trust has been updated."
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate."
@@ -645,7 +645,7 @@ echo
 echo "Note: If you still see warnings, please:"
 echo "1. Restart your browser completely"
 echo "2. Clear browser cache and cookies for localhost"
-echo "3. Try accessing https://localhost:8000 again"
+echo "3. Try accessing https://127.0.0.1:8000 again"
 """)
         
         # Make Unix script executable

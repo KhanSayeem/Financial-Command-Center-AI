@@ -98,7 +98,7 @@ def _new_client() -> plaid_api.PlaidApi:
     )
     return plaid_api.PlaidApi(plaid.ApiClient(cfg))
 
-# Lazy singleton so import never crashes if env isn’t set yet
+# Lazy singleton so import never crashes if env isnt set yet
 _PLAID_CLIENT: Optional[plaid_api.PlaidApi] = None
 def _client() -> plaid_api.PlaidApi:
     global _PLAID_CLIENT
@@ -159,7 +159,7 @@ def sandbox_public_token_create(
     override_username: str | None = None,
     override_password: str | None = None,
 ) -> dict:
-    # Plaid’s model requires a string, not None
+    # Plaids model requires a string, not None
     if webhook is None:
         webhook = "https://example.com/webhook"
 

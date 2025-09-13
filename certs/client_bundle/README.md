@@ -1,5 +1,5 @@
 
-# 🔐 SSL Certificate Installation Instructions
+# SSL Certificate Installation Instructions
 
 ## Automatic Trust (Recommended)
 
@@ -24,15 +24,15 @@ sudo update-ca-certificates
 ## Manual Browser Trust
 
 ### Chrome/Edge:
-1. Visit: https://localhost:8000
-2. Click "Advanced" → "Proceed to localhost (unsafe)"
+1. Visit: https://127.0.0.1:8000
+2. Click "Advanced" → "Proceed to 127.0.0.1 (unsafe)"
 3. Click the lock icon → "Certificate" → "Details" tab
 4. Click "Copy to File" → Save as .cer file
 5. Settings → Privacy and Security → Manage Certificates
 6. Import to "Trusted Root Certification Authorities"
 
 ### Firefox:
-1. Visit: https://localhost:8000
+1. Visit: https://127.0.0.1:8000
 2. Click "Advanced" → "Accept the Risk and Continue"
 3. Click lock icon → "Connection not secure" → "More Information"
 4. "Security" tab → "View Certificate" → "Download"
@@ -41,7 +41,7 @@ sudo update-ca-certificates
 
 ## Verify Installation:
 ```bash
-curl -I https://localhost:8000/health
+curl -I https://127.0.0.1:8000/health
 # Should return HTTP/2 200 without certificate errors
 ```
 

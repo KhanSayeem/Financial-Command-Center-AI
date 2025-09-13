@@ -66,27 +66,28 @@ def main():
         # Find and run the main application
         app_file = find_main_app()
         
-        print(f"🚀 Starting {APP_NAME}...")
-        print(f"📍 Using: {app_file.name}")
+        print(f"Starting {APP_NAME}...")
+        print(f"Using: {app_file.name}")
         
         # Run the application
         sys.exit(subprocess.call([sys.executable, str(app_file)]))
         
     except FileNotFoundError as e:
-        print(f"❌ Error: {e}")
-        print("📂 Please ensure the application files are present in the installation directory.")
+        print(f"Error: {e}")
+        print("Please ensure the application files are present in the installation directory.")
         input("Press Enter to exit...")
         sys.exit(1)
         
     except KeyboardInterrupt:
-        print(f"\n⏹️  {APP_NAME} stopped by user")
+        print(f"\\n{APP_NAME} stopped by user")
         sys.exit(0)
         
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         print("Please check the installation and try again.")
         input("Press Enter to exit...")
         sys.exit(1)
 
 if __name__ == "__main__":
     main()
+

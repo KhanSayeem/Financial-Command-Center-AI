@@ -1,4 +1,4 @@
-# 🏦 Financial Command Center AI
+# Financial Command Center AI
 
 **Automate Your Financial Operations & Save 20+ Hours Per Week**
 
@@ -11,23 +11,23 @@
 
 ---
 
-## 💰 **Business Impact & ROI**
+## **Business Impact & ROI**
 
 ### **Before Financial Command Center AI:**
-- ❌ **20+ hours/week** manually copying data between systems
-- ❌ **$50,000+/year** in accounting staff costs for data entry
-- ❌ **3-5 days** to reconcile monthly financial reports
-- ❌ **High error rates** from manual data entry
-- ❌ **Delayed insights** - financial reports always 1-2 weeks behind
-- ❌ **Security risks** from sharing login credentials
+- **20+ hours/week** manually copying data between systems
+- **$50,000+/year** in accounting staff costs for data entry
+- **3-5 days** to reconcile monthly financial reports
+- **High error rates** from manual data entry
+- **Delayed insights** - financial reports always 1-2 weeks behind
+- **Security risks** from sharing login credentials
 
 ### **After Implementation:**
-- ✅ **Instant synchronization** across all financial systems
-- ✅ **90% reduction** in manual data entry work
-- ✅ **Real-time financial reporting** - always up-to-date
-- ✅ **Zero data entry errors** from automated sync
-- ✅ **Same-day month-end close** instead of 3-5 days
-- ✅ **Enterprise-grade security** with encrypted API connections
+- **Instant synchronization** across all financial systems
+- **90% reduction** in manual data entry work
+- **Real-time financial reporting** - always up-to-date
+- **Zero data entry errors** from automated sync
+- **Same-day month-end close** instead of 3-5 days
+- **Enterprise-grade security** with encrypted API connections
 
 ### **Real Business Savings:**
 | Metric | Before | After | Annual Savings |
@@ -39,47 +39,47 @@
 
 ---
 
-## 🏢 **Who Should Use This?**
+## **Who Should Use This?**
 
-### 🚪 **All Businesses**
+### **All Businesses**
 - **E-commerce Stores** - Automatically sync Stripe payments to Xero accounting
 - **Service Providers** - Track invoices, payments, and client data in one place
 - **Consultants & Freelancers** - Streamline billing and expense tracking
 - **Growing Startups** - Scale financial operations without hiring accounting staff
 
-### 🏦 **Accounting & Finance Teams**
+### **Accounting & Finance Teams**
 - **Accounting Firms** - Manage multiple client financial systems efficiently
 - **Bookkeepers** - Reduce manual data entry by 90%
 - **CFOs & Finance Directors** - Get real-time financial insights
 - **Tax Preparers** - Access clean, synchronized financial data
 
-### 🚫 **What Problems Does This Solve?**
+### **What Problems Does This Solve?**
 
-#### **🔄 Data Sync Nightmares**
+#### **Data Sync Nightmares**
 - **Problem**: Manually copying transactions from Stripe to Xero every week
 - **Solution**: Automatic real-time synchronization - payments appear in Xero instantly
 - **Time Saved**: 15-20 hours per week
 
-#### **📈 Delayed Financial Reporting**
+#### **Delayed Financial Reporting**
 - **Problem**: Financial reports are always 1-2 weeks behind actual data
 - **Solution**: Live dashboard with up-to-the-minute financial health
 - **Business Impact**: Make decisions based on real-time data
 
-#### **⚠️ Human Error in Data Entry**
+#### **Human Error in Data Entry**
 - **Problem**: Typos and mistakes in manual data entry cost thousands
 - **Solution**: Automated data transfer eliminates human error
 - **Cost Savings**: Avoid costly reconciliation errors
 
-#### **🔐 Security & Compliance**
+#### **Security & Compliance**
 - **Problem**: Sharing login credentials between team members
 - **Solution**: Secure API-based access with individual permissions
 - **Compliance**: Meet SOC 2, GDPR, and financial regulations
 
-## 🚀 **Get Started in 5 Minutes**
+## **Get Started in 5 Minutes**
 
-> **🚨 Important**: You need active Stripe and/or Xero accounts to see real business value. Demo mode available for testing.
+> **Important**: You need active Stripe and/or Xero accounts to see real business value. Demo mode available for testing.
 
-### 💾 **Option 1: One-Click Windows Installer** (≈ 1 minute) - **RECOMMENDED**
+### **Option 1: One-Click Windows Installer** (≈ 1 minute) - **RECOMMENDED**
 
 **Best for**: Business users who want instant setup without technical complexity
 
@@ -89,16 +89,16 @@
    - Creates Python virtual environment
    - Installs all dependencies automatically
    - Generates SSL certificates
-   - Launches web browser to `https://localhost:8000`
+   - Launches web browser to `https://127.0.0.1:8000`
    - **Creates desktop shortcut** for easy access
    - **Adds system tray icon** for quick control
 
 **What you get:**
-- ✅ **Desktop shortcut** - Click to launch anytime
-- ✅ **System tray integration** - Always accessible from taskbar
-- ✅ **Automatic updates** - Built-in update checking
-- ✅ **Error recovery** - Intelligent troubleshooting
-- ✅ **Clean uninstall** - Right-click tray icon to exit
+- **Desktop shortcut** - Click to launch anytime
+- **System tray integration** - Always accessible from taskbar
+- **Automatic updates** - Built-in update checking
+- **Error recovery** - Intelligent troubleshooting
+- **Clean uninstall** - Right-click tray icon to exit
 
 **Business Benefits:**
 - **Zero technical setup** - Perfect for accounting teams
@@ -108,7 +108,7 @@
 
 ---
 
-### 💻 **Option 2: Manual Install** (≈ 2 minutes)
+### **Option 2: Manual Install** (≈ 2 minutes)
 
 **Best for**: Developers, IT teams, custom deployments
 
@@ -127,7 +127,7 @@ python app_with_setup_wizard.py
 
 ### **Step 2: Connect Your Business Systems** (≈ 3 minutes)
 
-1. **Open** `https://localhost:8000` in your browser
+1. **Open** `https://127.0.0.1:8000` in your browser
 2. **Setup Wizard** will guide you through:
    - **Stripe Connection** (for payment processing)
    - **Xero Connection** (for accounting)
@@ -141,14 +141,14 @@ python app_with_setup_wizard.py
 - **Monitor `/xero/contacts`** - Customer data synchronized
 - **Create payments via API** - Automatic sync to accounting
 
-### **🎯 Quick Business Test**
+### **Quick Business Test**
 1. Process a test payment in Stripe
 2. Watch it automatically appear in your Xero dashboard
 3. Calculate time saved: **No more manual data entry!**
 
-## 📋 **How to Use Each View for Your Business**
+## **How to Use Each View for Your Business**
 
-### 🏠 **Home Dashboard** (`/`) - **Your Command Center**
+### **Home Dashboard** (`/`) - **Your Command Center**
 **Best for**: Quick daily check-ins, system overview
 **Who uses it**: Business owners, finance managers, team leads
 
@@ -161,7 +161,7 @@ python app_with_setup_wizard.py
 
 ---
 
-### 💓 **Health Dashboard** (`/health`) - **System Monitoring**
+### **Health Dashboard** (`/health`) - **System Monitoring**
 **Best for**: IT admins, troubleshooting, system status
 **Who uses it**: Technical team, system administrators
 
@@ -175,7 +175,7 @@ python app_with_setup_wizard.py
 
 ---
 
-### 📋 **Customer Contacts** (`/xero/contacts`) - **CRM View**
+### **Customer Contacts** (`/xero/contacts`) - **CRM View**
 **Best for**: Customer relationship management, sales follow-up
 **Who uses it**: Sales teams, account managers, customer service
 
@@ -189,7 +189,7 @@ python app_with_setup_wizard.py
 
 ---
 
-### 🧧 **Invoice Management** (`/xero/invoices`) - **Financial Control**
+### **Invoice Management** (`/xero/invoices`) - **Financial Control**
 **Best for**: Accounts receivable, cash flow management
 **Who uses it**: Accountants, bookkeepers, finance teams
 

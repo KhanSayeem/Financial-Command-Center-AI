@@ -33,7 +33,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         echo " Certificate Installation Complete!"
         echo "================================================"
         echo
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate to system keychain."
@@ -59,7 +59,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "================================================"
         echo
         echo "System-wide certificate trust has been updated."
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate."
@@ -89,5 +89,5 @@ fi
 echo
 echo "Note: If you still see warnings, please:"
 echo "1. Restart your browser completely"
-echo "2. Clear browser cache and cookies for localhost"
-echo "3. Try accessing https://localhost:8000 again"
+echo "2. Clear browser cache and cookies for 127.0.0.1"
+echo "3. Try accessing https://127.0.0.1:8000 again"

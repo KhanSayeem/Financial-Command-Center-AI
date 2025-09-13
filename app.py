@@ -33,7 +33,7 @@ try:
     from auth.security import SecurityManager, require_api_key, log_transaction
     SECURITY_ENABLED = True
 except ImportError:
-    print("⚠️  Security module not found. Running without API key authentication.")
+    print("WARNING: Security module not found. Running without API key authentication.")
     print("   Create auth/security.py to enable security features.")
     SECURITY_ENABLED = False
     
@@ -47,7 +47,7 @@ except ImportError:
         return wrapper
     
     def log_transaction(operation, amount, currency, status):
-        print(f"📊 Transaction: {operation} - {amount} {currency} - {status}")
+        print(f"Transaction: {operation} - {amount} {currency} - {status}")
 
 app = Flask(__name__)
 
@@ -67,7 +67,7 @@ api_client = None
 oauth = None
 xero = None
 session_config = None  # Enhanced session configuration
-REDIRECT_URI = "https://localhost:8000/callback"
+REDIRECT_URI = "https://127.0.0.1:8000/callback"
 
 if not demo.is_demo:
     cid = app.config['XERO_CLIENT_ID'] = os.getenv('XERO_CLIENT_ID', '')
@@ -89,7 +89,6 @@ if not demo.is_demo:
     ))
 
     # Configure enhanced session management with OAuth token handlers
-    global session_config
     session_config = configure_flask_sessions(app, api_client)
     oauth, xero = init_oauth(app)
 
@@ -182,27 +181,27 @@ def index():
             
             <div class="features">
                 <div class="feature">
-                    <h3>🔐 Secure API Access</h3>
+                    <h3>Secure API Access</h3>
                     <p>Enterprise-grade authentication and rate limiting</p>
                 </div>
                 <div class="feature">
-                    <h3>💳 Payment Processing</h3>
+                    <h3>Payment Processing</h3>
                     <p>Stripe integration for secure payment handling</p>
                 </div>
                 <div class="feature">
-                    <h3>🏦 Banking Data</h3>
+                    <h3>Banking Data</h3>
                     <p>Plaid integration for real-time account access</p>
                 </div>
                 <div class="feature">
-                    <h3>📊 Accounting</h3>
+                    <h3>Accounting</h3>
                     <p>Xero integration for invoices and contacts</p>
                 </div>
             </div>
             
             <div style="text-align: center; margin-top: 40px;">
-                <a href="/login" class="btn">🔗 Connect to Xero</a>
-                <a href="/admin/dashboard" class="btn">📊 Admin Dashboard</a>
-                <a href="/health" class="btn">💓 Health Check</a>
+                <a href="/login" class="btn">Connect to Xero</a>
+                <a href="/admin/dashboard" class="btn">Admin Dashboard</a>
+                <a href="/health" class="btn">Health Check</a>
             </div>
         </div>
     </body>
@@ -311,7 +310,7 @@ def profile():
         </head>
         <body>
             <div class="container">
-                <h1>✅ Connected to Xero!</h1>
+                <h1>Connected to Xero!</h1>
                 <p><strong>Tenant ID:</strong> {session['tenant_id']}</p>
                 <p><strong>Total Accounts:</strong> {len(accounts.accounts)}</p>
                 
@@ -319,10 +318,10 @@ def profile():
                 {''.join([f'<div class="account">{account.name}</div>' for account in accounts.accounts[:5]])}
                 
                 <div style="margin-top: 30px;">
-                    <a href="/api/xero/contacts" class="btn">📋 View API Contacts</a>
-                    <a href="/api/xero/invoices" class="btn">🧾 View API Invoices</a>
-                    <a href="/admin/dashboard" class="btn">📊 Admin Dashboard</a>
-                    <a href="/logout" class="btn">🚪 Logout</a>
+                    <a href="/api/xero/contacts" class="btn">View API Contacts</a>
+                    <a href="/api/xero/invoices" class="btn">View API Invoices</a>
+                    <a href="/admin/dashboard" class="btn">Admin Dashboard</a>
+                    <a href="/logout" class="btn">Logout</a>
                 </div>
             </div>
         </body>
@@ -506,7 +505,7 @@ def admin_dashboard():
         return """
         <html>
         <body style="font-family: Arial; margin: 40px;">
-            <h1>⚠️ Security Module Not Available</h1>
+            <h1>WARNING: Security Module Not Available</h1>
             <p>To enable the admin dashboard and API key management:</p>
             <ol>
                 <li>Create the <code>auth/security.py</code> file</li>
@@ -572,7 +571,7 @@ def admin_dashboard():
             </div>
             
             <div class="section">
-                <h2>🔑 API Keys Management</h2>
+                <h2>API Keys Management</h2>
                 {% if api_keys %}
                     {% for key, info in api_keys.items() %}
                     <div class="api-key">
@@ -598,7 +597,7 @@ def admin_dashboard():
             </div>
             
             <div class="section">
-                <h2>📊 Recent Activity</h2>
+                <h2>Recent Activity</h2>
                 {% if recent_events %}
                     {% for event in recent_events %}
                     <div class="event">
@@ -615,11 +614,11 @@ def admin_dashboard():
             </div>
             
             <div class="section">
-                <h2>🚀 Quick Actions</h2>
-                <a href="/health" class="btn">💓 Health Check</a>
-                <a href="/login" class="btn">🔗 Connect Xero</a>
-                <a href="/admin/create-demo-key" class="btn">🔑 Create Demo Key</a>
-                <a href="/" class="btn">🏠 Home</a>
+                <h2>Quick Actions</h2>
+                <a href="/health" class="btn">Health Check</a>
+                <a href="/login" class="btn">Connect Xero</a>
+                <a href="/admin/create-demo-key" class="btn">Create Demo Key</a>
+                <a href="/" class="btn">Home</a>
             </div>
         </div>
     </body>
@@ -659,41 +658,41 @@ def create_demo_key():
     </head>
     <body>
         <div class="container">
-            <h1>🔑 Demo API Key Created!</h1>
+            <h1>Demo API Key Created!</h1>
             
             <div class="key-box">
                 <h3>Your New API Key:</h3>
                 <div class="code">{demo_key}</div>
-                <p><strong>⚠️ Important:</strong> Save this key securely - it won't be shown again!</p>
+                <p><strong>Important:</strong> Save this key securely - it won't be shown again!</p>
             </div>
             
-            <h3>🧪 Test Your API Key:</h3>
+            <h3>Test Your API Key:</h3>
             
             <h4>1. Test Authentication:</h4>
             <div class="code">
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/api/ping
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/api/ping
             </div>
             
             <h4>2. Get Xero Contacts (after connecting Xero):</h4>
             <div class="code">
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/api/xero/contacts
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/api/xero/contacts
             </div>
             
             <h4>3. Create Stripe Payment:</h4>
             <div class="code">
 curl -X POST -H "X-API-Key: {demo_key}" -H "Content-Type: application/json" \\
   -d '{{"amount": 25.50, "description": "Test payment"}}' \\
-  https://localhost:8000/api/stripe/payment
+  https://127.0.0.1:8000/api/stripe/payment
             </div>
             
             <h4>4. Check Usage Stats:</h4>
             <div class="code">
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/api/key-stats
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/api/key-stats
             </div>
             
             <div style="margin-top: 30px;">
                 <a href="/admin/dashboard" class="btn">← Back to Dashboard</a>
-                <a href="/login" class="btn">🔗 Connect Xero First</a>
+                <a href="/login" class="btn">Connect Xero First</a>
             </div>
         </div>
     </body>
@@ -726,9 +725,9 @@ def internal_error(error):
     }), 500
 
 if __name__ == '__main__':
-    print("🚀 Starting Enhanced Financial Command Center...")
+    print("Starting Enhanced Financial Command Center...")
     print("=" * 60)
-    print(f"🔐 Security: {'Enabled' if SECURITY_ENABLED else 'Disabled (install auth/security.py)'}")
+    print(f"Security: {'Enabled' if SECURITY_ENABLED else 'Disabled (install auth/security.py)'}")
     
     # Initialize SSL certificate management
     try:
@@ -748,26 +747,26 @@ if __name__ == '__main__':
         
         if force_https or not allow_http:
             # HTTPS mode - generate certificates if needed
-            print("🔐 HTTPS Mode - Ensuring SSL certificates...")
+            print("HTTPS Mode - Ensuring SSL certificates...")
             cert_generated = cert_manager.ensure_certificates()
             ssl_context = cert_manager.get_ssl_context()
             
             if cert_generated:
-                print("✨ New SSL certificates generated!")
-                print("📦 To eliminate browser warnings, install the CA certificate:")
+                print("New SSL certificates generated!")
+                print("To eliminate browser warnings, install the CA certificate:")
                 print(f"   python cert_manager.py --bundle")
         else:
             # HTTP mode with warnings
             server_mode = "HTTP (with HTTPS upgrade prompts)"
-            print("⚠️  HTTP Mode - Running without SSL encryption")
+            print("WARNING: HTTP Mode - Running without SSL encryption")
             print("   Set FORCE_HTTPS=true for production use")
     
     except ImportError as e:
-        print("⚠️  SSL Certificate Manager not available - using Flask's adhoc SSL")
+        print("WARNING: SSL Certificate Manager not available - using Flask's adhoc SSL")
         print(f"   Install missing dependencies: {e}")
         ssl_context = 'adhoc'
     
-    print("📋 Available endpoints:")
+    print("Available endpoints:")
     print("  GET  / - Enhanced home page")
     print("  GET  /health - System health check")
     print("  GET  /api/mode - Get current mode")
@@ -779,22 +778,22 @@ if __name__ == '__main__':
     print("  GET  /logout - Xero logout (your existing)")
     
     if SECURITY_ENABLED:
-        print("  🔑 Security Endpoints:")
+        print("  Security Endpoints:")
         print("    POST /api/create-key - Create API key")
         print("    GET  /api/ping - Test authentication")
         print("    GET  /api/key-stats - Usage statistics")
     
-    print("  📊 Enhanced Xero API:")
+    print("  Enhanced Xero API:")
     print("    GET  /api/xero/contacts - Get contacts (with auth)")
     print("    GET  /api/xero/invoices - Get invoices (with auth)")
     
-    print("  💳 Stripe Integration:")
+    print("  Stripe Integration:")
     print("    POST /api/stripe/payment - Create payment")
     
-    print("  🏦 Plaid Integration:")
+    print("  Plaid Integration:")
     print("    GET  /api/plaid/accounts - Get accounts (demo)")
     
-    print("  🎛️  Admin Interface:")
+    print("  Admin Interface:")
     print("    GET  /admin/dashboard - Admin dashboard")
     print("    GET  /admin/create-demo-key - Create demo key")
     print("    GET  /admin/ssl-help - SSL setup guide")
@@ -803,42 +802,42 @@ if __name__ == '__main__':
     print()
     protocol = "https" if ssl_context else "http"
     port = int(os.getenv('FCC_PORT') or os.getenv('PORT') or '8000')
-    print("🌐 URLs:")
-    print(f"  🏠 Home: {protocol}://localhost:{port}/")
-    print(f"  🎛️  Admin: {protocol}://localhost:{port}/admin/dashboard")
-    print(f"  💓 Health: {protocol}://localhost:{port}/health")
-    print(f"  🔧 SSL Help: {protocol}://localhost:{port}/admin/ssl-help")
+    print("URLs:")
+    print(f"  Home: {protocol}://127.0.0.1:{port}/")
+    print(f"  Admin: {protocol}://127.0.0.1:{port}/admin/dashboard")
+    print(f"  Health: {protocol}://127.0.0.1:{port}/health")
+    print(f"  SSL Help: {protocol}://127.0.0.1:{port}/admin/ssl-help")
     print()
     
     if not SECURITY_ENABLED:
-        print("⚠️  To enable security features:")
+        print("WARNING: To enable security features:")
         print("   1. Create auth/security.py (copy from setup)")
         print("   2. pip install cryptography")
         print("   3. Restart application")
         print()
     
-    print(f"🔒 Server Mode: {server_mode}")
+    print(f"Server Mode: {server_mode}")
     if ssl_context:
-        print("📜 SSL Certificate Status:")
+        print("SSL Certificate Status:")
         try:
             health = cert_manager.health_check()
-            print(f"   ✅ Certificate Valid: {health['certificate_valid']}")
-            print(f"   📅 Expires: {health['expires']}")
-            print(f"   🏷️  Hostnames: {', '.join(health['hostnames'])}")
+            print(f"   Certificate Valid: {health['certificate_valid']}")
+            print(f"   Expires: {health['expires']}")
+            print(f"   Hostnames: {', '.join(health['hostnames'])}")
             if not health['certificate_valid']:
-                print("   🔄 Certificates will be regenerated automatically")
+                print("   Certificates will be regenerated automatically")
         except Exception as e:
-            print(f"   ⚠️  Certificate check failed: {e}")
+            print(f"   WARNING: Certificate check failed: {e}")
     
     print()
-    print("🔥 Ready for client demonstrations!")
+    print("Ready for client demonstrations!")
     
     # Start the Flask application
     if ssl_context:
-        app.run(host='localhost', port=port, debug=True, ssl_context=ssl_context)
+        app.run(host='127.0.0.1', port=port, debug=True, ssl_context=ssl_context)
     else:
         # HTTP mode
-        app.run(host='localhost', port=port, debug=True)
+        app.run(host='127.0.0.1', port=port, debug=True)
 # Ensure stdout can print Unicode on Windows consoles
 try:
     import io as _io

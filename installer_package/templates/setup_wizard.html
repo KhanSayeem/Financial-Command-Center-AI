@@ -403,7 +403,7 @@
 <body>
     <div class="wizard-container">
         <div class="wizard-header">
-            <h1>🏦 Financial Command Center</h1>
+            <h1>Financial Command Center</h1>
             <p>Professional Setup Wizard</p>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
@@ -414,7 +414,7 @@
             <!-- Step 1: Welcome -->
             <div class="step active" id="step1">
                 <div class="step-title">
-                    <span>👋</span>
+                    <span>Step 1:</span>
                     Welcome to Financial Command Center
                 </div>
                 <div class="step-description">
@@ -425,7 +425,7 @@
                 <div class="service-card">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">💳</span>
+                            <span class="service-icon">$</span>
                             Stripe Payment Processing
                         </div>
                     </div>
@@ -435,7 +435,7 @@
                 <div class="service-card">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">📊</span>
+                            <span class="service-icon">X</span>
                             Xero Accounting Integration
                         </div>
                     </div>
@@ -445,7 +445,7 @@
                 <div class="service-card">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">🏦</span>
+                            <span class="service-icon">B</span>
                             Banking & Financial Data
                         </div>
                     </div>
@@ -461,7 +461,7 @@
             <!-- Step 2: Stripe Configuration -->
             <div class="step" id="step2">
                 <div class="step-title">
-                    <span>💳</span>
+                    <span>Step 2:</span>
                     Configure Stripe
                 </div>
                 <div class="step-description">
@@ -473,7 +473,7 @@
                 <div class="service-card" id="stripeCard">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">💳</span>
+                            <span class="service-icon">$</span>
                             Stripe API Configuration
                         </div>
                         <div class="service-status status-pending" id="stripeStatus">Pending</div>
@@ -514,7 +514,7 @@
             <!-- Step 3: Xero Configuration -->
             <div class="step" id="step3">
                 <div class="step-title">
-                    <span>📊</span>
+                    <span>Step 3:</span>
                     Configure Xero
                 </div>
                 <div class="step-description">
@@ -526,7 +526,7 @@
                 <div class="service-card" id="xeroCard">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">📊</span>
+                            <span class="service-icon">X</span>
                             Xero OAuth Configuration
                         </div>
                         <div class="service-status status-pending" id="xeroStatus">Pending</div>
@@ -680,11 +680,11 @@
             try {
                 const origin = window.location.origin || '';
                 if (!origin || origin.startsWith('file:')) {
-                    return 'https://localhost:8000' + path;
+                    return 'https://127.0.0.1:8000' + path;
                 }
                 return origin + path;
             } catch (e) {
-                return 'https://localhost:8000' + path;
+                return 'https://127.0.0.1:8000' + path;
             }
         }
 
@@ -797,14 +797,14 @@
         function skipStripe() {
             stripeSkipped = true;
             document.getElementById('stripeNext').disabled = false;
-            showMessage('stripe-messages', 'success', '⏭️ Stripe configuration skipped. You can configure it later in the dashboard.');
+            showMessage('stripe-messages', 'success', 'Stripe configuration skipped. You can configure it later in the dashboard.');
             nextStep();
         }
 
         function skipXero() {
             xeroSkipped = true;
             document.getElementById('xeroNext').disabled = false;
-            showMessage('xero-messages', 'success', '⏭️ Xero configuration skipped. You can configure it later in the dashboard.');
+            showMessage('xero-messages', 'success', 'Xero configuration skipped. You can configure it later in the dashboard.');
             nextStep();
         }
 
@@ -813,24 +813,24 @@
             const xeroSummary = document.getElementById('xeroSummary');
 
             if (stripeConfigured) {
-                stripeSummary.textContent = '✅ Configured & Tested';
+                stripeSummary.textContent = 'Configured & Tested';
                 stripeSummary.style.color = '#27ae60';
             } else if (stripeSkipped) {
-                stripeSummary.textContent = '⏭️ Skipped (Demo Mode)';
+                stripeSummary.textContent = 'Skipped (Demo Mode)';
                 stripeSummary.style.color = '#f39c12';
             } else {
-                stripeSummary.textContent = '❌ Not Configured';
+                stripeSummary.textContent = 'Not Configured';
                 stripeSummary.style.color = '#e74c3c';
             }
 
             if (xeroConfigured) {
-                xeroSummary.textContent = '✅ Configured & Tested';
+                xeroSummary.textContent = 'Configured & Tested';
                 xeroSummary.style.color = '#27ae60';
             } else if (xeroSkipped) {
-                xeroSummary.textContent = '⏭️ Skipped (Demo Mode)';
+                xeroSummary.textContent = 'Skipped (Demo Mode)';
                 xeroSummary.style.color = '#f39c12';
             } else {
-                xeroSummary.textContent = '❌ Not Configured';
+                xeroSummary.textContent = 'Not Configured';
                 xeroSummary.style.color = '#e74c3c';
             }
         }
@@ -870,7 +870,7 @@
                     throw new Error(result.error || 'Configuration save failed');
                 }
             } catch (error) {
-                showMessage('completion-messages', 'error', `❌ Save failed: ${error.message}`);
+                showMessage('completion-messages', 'error', `Save failed: ${error.message}`);
             } finally {
                 saveSpinner.style.display = 'none';
                 saveText.style.display = 'inline';
@@ -896,25 +896,6 @@
                 }, 5000);
             }
         }
-
-        // Browser ping to keep launcher alive
-        function pingLauncher() {
-            fetch('/ping', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({})
-            }).catch(error => {
-                console.log('Ping failed:', error);
-            });
-        }
-
-        // Start pinging every 20 seconds
-        setInterval(pingLauncher, 20000);
-        
-        // Ping immediately on load
-        pingLauncher();
 
         // Initialize
         updateProgress();

@@ -217,8 +217,8 @@ def setup_claude_routes(app, logger=None):
             </div>
             <p>Click below to automatically generate your Claude Desktop configuration:</p>
             <br>
-            <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Config</button>
-            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">💾 Download Config</button>
+            <button class="btn btn-primary" onclick="generateConfig()"> Generate Config</button>
+            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;"> Download Config</button>
         </div>
         
         <div class="setup-card">
@@ -228,7 +228,7 @@ def setup_claude_routes(app, logger=None):
             </div>
             <p>If you don't have Claude Desktop installed yet:</p>
             <div class="alert alert-info">
-                <strong>📥 Download Claude Desktop:</strong><br>
+                <strong> Download Claude Desktop:</strong><br>
                 <a href="https://claude.ai/download" target="_blank" style="color: #1e40af; text-decoration: none;">https://claude.ai/download</a><br>
                 <small>Available for Windows, macOS, and Linux</small>
             </div>
@@ -240,7 +240,7 @@ def setup_claude_routes(app, logger=None):
                 Install Configuration File
             </div>
             <div class="alert alert-warning">
-                <strong>📁 Place the downloaded config file here:</strong><br><br>
+                <strong> Place the downloaded config file here:</strong><br><br>
                 <strong>Windows:</strong><br>
                 <code>%APPDATA%\\Claude\\claude_desktop_config.json</code><br><br>
                 <strong>macOS:</strong><br>
@@ -249,7 +249,7 @@ def setup_claude_routes(app, logger=None):
                 <code>~/.config/Claude/claude_desktop_config.json</code>
             </div>
             <div class="alert alert-success">
-                <strong>💡 Easy Installation:</strong><br>
+                <strong> Easy Installation:</strong><br>
                 1. Open File Explorer / Finder<br>
                 2. Navigate to the folder above<br>
                 3. Create the "Claude" folder if it doesn't exist<br>
@@ -264,7 +264,7 @@ def setup_claude_routes(app, logger=None):
             </div>
             <div style="text-align: center; margin: 20px 0;">
                 <div class="important-step">
-                    <h3>⚠️ Important Step</h3>
+                    <h3> Important Step</h3>
                     <p>Close Claude Desktop completely and reopen it</p>
                 </div>
             </div>
@@ -282,36 +282,36 @@ def setup_claude_routes(app, logger=None):
                 Try Sample Commands
             </div>
             <div class="alert alert-success">
-                <strong>🎉 Once connected, try these AI commands in Claude Desktop:</strong>
+                <strong> Once connected, try these AI commands in Claude Desktop:</strong>
             </div>
             
             <div class="command-example">
-                <strong>💰 "Show me our cash flow this month"</strong><br>
+                <strong> "Show me our cash flow this month"</strong><br>
                 <em>Get real-time financial overview with current balances and trends</em>
             </div>
             
             <div class="command-example">
-                <strong>🧾 "List all unpaid invoices over $1000"</strong><br>
+                <strong> "List all unpaid invoices over $1000"</strong><br>
                 <em>Instantly filter and display high-value outstanding payments</em>
             </div>
             
             <div class="command-example">
-                <strong>👥 "Find contact details for [Customer Name]"</strong><br>
+                <strong> "Find contact details for [Customer Name]"</strong><br>
                 <em>Quick customer lookup with complete contact information</em>
             </div>
             
             <div class="command-example">
-                <strong>📊 "Check system health and integrations"</strong><br>
+                <strong> "Check system health and integrations"</strong><br>
                 <em>Monitor all connected services and identify any issues</em>
             </div>
         </div>
         
         <div class="setup-card" style="text-align: center;">
-            <h3>🚀 Ready to Continue?</h3>
+            <h3> Ready to Continue?</h3>
             <p>Once you've completed the setup above, your Claude Desktop integration will be ready!</p>
             <div style="margin-top: 20px;">
-                <a href="/admin/dashboard" class="btn btn-primary">📊 Admin Dashboard</a>
-                <a href="/" class="btn">🏠 Home</a>
+                <a href="/admin/dashboard" class="btn btn-primary"> Admin Dashboard</a>
+                <a href="/" class="btn"> Home</a>
             </div>
         </div>
     </div>
@@ -330,7 +330,7 @@ def setup_claude_routes(app, logger=None):
                     
                     const alert = document.createElement('div');
                     alert.className = 'alert alert-success';
-                    alert.innerHTML = '✅ Configuration generated! Click Download to save it.';
+                    alert.innerHTML = ' Configuration generated! Click Download to save it.';
                     document.querySelector('.setup-card').appendChild(alert);
                 }
             } catch (error) {

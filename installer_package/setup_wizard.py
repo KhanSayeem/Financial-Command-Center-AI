@@ -438,7 +438,7 @@ def get_integration_status() -> Dict[str, Dict[str, Any]]:
 
 if __name__ == "__main__":
     # Test the configuration manager
-    print("🔧 Testing Configuration Manager...")
+    print(" Testing Configuration Manager...")
     
     config_manager = ConfigurationManager()
     
@@ -456,14 +456,14 @@ if __name__ == "__main__":
     
     # Save config
     success = config_manager.save_config(test_config)
-    print(f"Save config: {'✅ Success' if success else '❌ Failed'}")
+    print(f"Save config: {' Success' if success else ' Failed'}")
     
     # Load config
     loaded_config = config_manager.load_config()
-    print(f"Load config: {'✅ Success' if loaded_config else '❌ Failed'}")
+    print(f"Load config: {' Success' if loaded_config else ' Failed'}")
     
     # Get status
     status = config_manager.get_configuration_status()
     print(f"Configuration status: {json.dumps(status, indent=2)}")
     
-    print("🔧 Configuration Manager test complete!")
+    print(" Configuration Manager test complete!")

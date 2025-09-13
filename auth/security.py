@@ -239,8 +239,8 @@ def require_api_key(f):
                     'Send header X-API-Key with that value',
                 ],
                 'examples': {
-                    'curl': 'curl -H "X-API-Key: YOUR_KEY" https://localhost:8000/health',
-                    'browser': 'https://localhost:8000/health?api_key=YOUR_KEY'
+                    'curl': 'curl -H "X-API-Key: YOUR_KEY" https://127.0.0.1:8000/health',
+                    'browser': 'https://127.0.0.1:8000/health?api_key=YOUR_KEY'
                 }
             }
             try:
@@ -301,7 +301,7 @@ Client: Demo Client
 API Key: {demo_key}
 
 Test it with:
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/api/ping
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/api/ping
 
 Save this key - you'll need it for testing!
 """)

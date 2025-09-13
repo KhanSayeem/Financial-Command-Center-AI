@@ -1,35 +1,35 @@
-# 🏦 Financial Command Center - Professional Setup Wizard
+# Financial Command Center - Professional Setup Wizard
 
 A complete professional setup wizard that replaces manual environment variable configuration with a secure, user-friendly web interface.
 
-## ✨ Features
+## Features
 
-### 🎯 Professional Setup Wizard
+### Professional Setup Wizard
 - **Clean, modern UI** with step-by-step configuration
 - **Real-time API validation** - test connections before saving
 - **Skip for Demo** options for each service
 - **Progress tracking** with visual indicators
 - **Responsive design** for desktop and mobile
 
-### 🔐 Enterprise Security
+### Enterprise Security
 - **AES-256 encryption** for all stored credentials
 - **Local encrypted storage** - no cloud dependencies
 - **Secure key generation** with proper cryptographic standards
 - **Protected file permissions** on credential storage
 
-### 🔌 Seamless Integration
+### Seamless Integration
 - **Stripe Payment Processing** - full API validation
 - **Xero Accounting Integration** - OAuth credential validation
 - **Backward compatibility** with existing environment variables
 - **Hot-swappable configuration** - no restart required
 
-### 📊 Enhanced Dashboard
+### Enhanced Dashboard
 - **Integration status monitoring**
 - **Configuration management**
 - **API key management** with usage tracking
 - **Health checks** with detailed service status
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install Dependencies
 ```bash
@@ -42,13 +42,13 @@ python app_with_setup_wizard.py
 ```
 
 ### 3. Complete Setup
-1. Visit `https://localhost:8000/`
+1. Visit `https://127.0.0.1:8000/`
 2. You'll be automatically redirected to the setup wizard
 3. Configure Stripe and Xero (or skip for demo)
 4. Test connections and save configuration
 5. Start using your Financial Command Center!
 
-## 📁 File Structure
+## File Structure
 
 ```
 Financial-Command-Center-AI/
@@ -63,7 +63,7 @@ Financial-Command-Center-AI/
 └── requirements_setup_wizard.txt # All required dependencies
 ```
 
-## 🔧 Configuration Options
+## Configuration Options
 
 ### Stripe Integration
 - **API Key**: Your Stripe secret key (`sk_test_...` or `sk_live_...`)
@@ -77,7 +77,7 @@ Financial-Command-Center-AI/
 - **Format validation**: Ensures proper credential format
 - **Skip option**: Use demo mode without real Xero integration
 
-## 🛡️ Security Features
+## Security Features
 
 ### Encryption
 - **AES-256-GCM encryption** for credential storage
@@ -97,7 +97,7 @@ Financial-Command-Center-AI/
 - **Memory protection** - credentials cleared after use
 - **Secure defaults** - fail-safe configuration
 
-## 📊 API Endpoints
+## API Endpoints
 
 ### Setup Wizard Endpoints
 - `GET /setup` - Setup wizard interface
@@ -114,7 +114,7 @@ Financial-Command-Center-AI/
 - `GET /api/xero/contacts` - Get contacts (if Xero configured)
 - `GET /login` - Xero OAuth (if configured)
 
-## 🎛️ Admin Dashboard
+## Admin Dashboard
 
 The enhanced admin dashboard provides:
 
@@ -136,7 +136,7 @@ The enhanced admin dashboard provides:
 - **Create demo API keys** for testing
 - **System health checks**
 
-## 🔄 Migration from Environment Variables
+## Migration from Environment Variables
 
 The setup wizard is fully backward compatible:
 
@@ -167,16 +167,16 @@ python setup_wizard.py
 ### API Testing
 ```bash
 # Get health status
-curl https://localhost:8000/health
+curl https://127.0.0.1:8000/health
 
 # Test setup status
-curl https://localhost:8000/api/setup/status
+curl https://127.0.0.1:8000/api/setup/status
 
 # Create demo API key (via web interface)
-# Visit: https://localhost:8000/admin/create-demo-key
+# Visit: https://127.0.0.1:8000/admin/create-demo-key
 ```
 
-## 🚨 Security Best Practices
+## Security Best Practices
 
 ### Credential Management
 - **Never commit** the `secure_config/` directory to version control
@@ -196,7 +196,7 @@ curl https://localhost:8000/api/setup/status
 - **Revoke unused keys** regularly
 - **Use role-based permissions** for API access
 
-## 🎯 Use Cases
+## Use Cases
 
 ### Financial Service Providers
 - **Client onboarding**: Easy setup wizard for new integrations
@@ -213,10 +213,10 @@ curl https://localhost:8000/api/setup/status
 - **Team collaboration**: Shared encrypted configurations
 - **Testing workflows**: Demo mode for development
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
 ### Setup Wizard Issues
-- **Can't access setup wizard**: Check if `https://localhost:8000/setup` is accessible
+- **Can't access setup wizard**: Check if `https://127.0.0.1:8000/setup` is accessible
 - **API validation fails**: Verify credentials in your Stripe/Xero dashboards
 - **Encryption errors**: Ensure `cryptography` package is installed correctly
 
@@ -234,10 +234,10 @@ pip install --force-reinstall cryptography
 rm -rf secure_config/
 
 # Check health status
-curl -k https://localhost:8000/health
+curl -k https://127.0.0.1:8000/health
 ```
 
-## 📞 Support
+## Support
 
 ### Getting Help
 - **Health Check**: Visit `/health` for system status
@@ -251,7 +251,7 @@ curl -k https://localhost:8000/health
 
 ---
 
-## 🎉 Congratulations!
+## Congratulations!
 
 Your Financial Command Center now has a professional setup wizard that eliminates manual configuration and provides enterprise-grade security for credential management. The setup wizard makes onboarding new users effortless while maintaining the highest security standards.
 
@@ -259,4 +259,4 @@ Your Financial Command Center now has a professional setup wizard that eliminate
 1. Configure your integrations through the setup wizard
 2. Explore the enhanced admin dashboard  
 3. Test API endpoints with automatically generated keys
-4. Enjoy seamless financial operations! 🚀
+4. Enjoy seamless financial operations!

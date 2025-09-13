@@ -41,7 +41,7 @@ if %errorlevel% neq 0 (
     echo  Certificate Installation Complete!
     echo ================================================
     echo.
-    echo You can now access https://localhost:8000 without warnings.
+    echo You can now access https://127.0.0.1:8000 without warnings.
     echo Please restart your browser to see the changes.
 )
 

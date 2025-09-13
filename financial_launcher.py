@@ -261,7 +261,7 @@ class ServerManager:
         self.logger = logger
         self.dep_manager = dependency_manager
         self.server_process = None
-        self.server_url = "https://localhost:8000"
+        self.server_url = "https://127.0.0.1:8000"
         self.is_running = False
         # Cache the resolved app working directory
         self._app_workdir = None
@@ -353,18 +353,18 @@ class ServerManager:
             else:
                 self.cert_manager = CertificateManager(use_mkcert=True)
             
-            self.logger.info("🔐 Setting up SSL certificates...")
+            self.logger.info("Setting up SSL certificates...")
             
             # Use enhanced certificate generation that prefers mkcert
             cert_generated = self.cert_manager.ensure_certificates()
             
             if cert_generated:
                 if self.cert_manager.config.get("use_mkcert", False) and self.cert_manager.config.get("trust_installed", False):
-                    self.logger.info("🎉 Browser-trusted certificates ready with mkcert!")
+                    self.logger.info("Browser-trusted certificates ready with mkcert!")
                 else:
-                    self.logger.info("✅ SSL certificates generated successfully")
+                    self.logger.info("SSL certificates generated successfully")
             else:
-                self.logger.info("✅ SSL certificates are already valid")
+                self.logger.info("SSL certificates are already valid")
             
             return True
             
@@ -410,7 +410,7 @@ class ServerManager:
                 return int(preferred)
 
             port = _pick_port()
-            self.server_url = f"https://localhost:{port}"
+            self.server_url = f"https://127.0.0.1:{port}"
             self.logger.info(f"Starting Financial Command Center server on port {port}...")
             
             # Set environment variables for proper SSL operation
@@ -1092,22 +1092,22 @@ class FinancialLauncher:
             # Create cert manager with mkcert enabled in current directory 
             cert_manager = CertificateManager(use_mkcert=True)
             
-            self.logger.info("🔐 Setting up SSL certificates...")
+            self.logger.info("Setting up SSL certificates...")
             
             # Use the enhanced certificate generation that prefers mkcert
             cert_generated = cert_manager.ensure_certificates()
             
             if cert_generated:
-                self.logger.info("✅ SSL certificates generated successfully")
+                self.logger.info("SSL certificates generated successfully")
                 if cert_manager.config.get("use_mkcert", False) and cert_manager.config.get("trust_installed", False):
-                    self.logger.info("🎉 Browser-trusted certificates created with mkcert!")
-                    self.logger.info("🔒 Browsers should show secure connections without warnings")
+                    self.logger.info("Browser-trusted certificates created with mkcert!")
+                    self.logger.info("Browsers should show secure connections without warnings")
                 else:
-                    self.logger.info("📝 Self-signed certificates created - may show browser warnings")
+                    self.logger.info("Self-signed certificates created - may show browser warnings")
                     # Try to install CA certificate to Windows trust store for self-signed certs
                     self._install_ca_certificate(cert_manager)
             else:
-                self.logger.info("ℹ️ SSL certificates were already valid")
+                self.logger.info("SSL certificates were already valid")
             
             return True
             
@@ -1127,7 +1127,7 @@ class FinancialLauncher:
                 self.logger.warning("CA certificate not found, skipping trust store installation")
                 return
             
-            self.logger.info("📜 Installing CA certificate to Windows trust store...")
+            self.logger.info("Installing CA certificate to Windows trust store...")
             
             # Use PowerShell to install certificate to trusted root store
             ps_command = f"""
@@ -1151,8 +1151,8 @@ class FinancialLauncher:
             ], capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:
-                self.logger.info("✅ CA certificate installed to Windows trust store")
-                self.logger.info("🔒 Browser should now show the site as secure")
+                self.logger.info("CA certificate installed to Windows trust store")
+                self.logger.info("Browser should now show the site as secure")
             else:
                 self.logger.warning(f"Certificate installation failed: {result.stderr}")
                 self.logger.info("You may see 'Not secure' warnings in the browser")

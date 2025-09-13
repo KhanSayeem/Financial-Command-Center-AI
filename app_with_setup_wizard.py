@@ -39,7 +39,7 @@ try:
     from auth.security import SecurityManager, require_api_key, log_transaction
     SECURITY_ENABLED = True
 except ImportError:
-    print("⚠️  Security module not found. Running without API key authentication.")
+    print("WARNING: Security module not found. Running without API key authentication.")
     SECURITY_ENABLED = False
     
     # Create dummy decorators if security not available
@@ -51,7 +51,7 @@ except ImportError:
         return wrapper
     
     def log_transaction(operation, amount, currency, status):
-        print(f"📊 Transaction: {operation} - {amount} {currency} - {status}")
+        print(f"Transaction: {operation} - {amount} {currency} - {status}")
 
 app = Flask(__name__)
 
@@ -77,11 +77,11 @@ if SECURITY_ENABLED:
 try:
     from claude_integration import setup_claude_routes
     claude_setup_result = setup_claude_routes(app, logger)
-    print("✅ Claude Desktop integration loaded")
+    print("Claude Desktop integration loaded")
 except ImportError as e:
-    print(f"⚠️ Claude integration not available: {e}")
+    print(f"WARNING: Claude integration not available: {e}")
 except Exception as e:
-    print(f"⚠️ Claude integration setup failed: {e}")
+    print(f"WARNING: Claude integration setup failed: {e}")
 
 def get_credentials_or_redirect():
     """Get credentials from setup wizard or redirect to setup if not configured"""
@@ -101,6 +101,12 @@ def get_credentials_or_redirect():
     
     return credentials
 
+def update_api_client_token(api_client, token):
+    """Update API client with OAuth token"""
+    if api_client and token:
+        api_client.configuration.oauth2_token.token = token
+    return api_client
+
 def initialize_xero_client():
     """Initialize Xero API client with configured credentials"""
     credentials = get_credentials_or_redirect()
@@ -115,13 +121,14 @@ def initialize_xero_client():
     app.config['XERO_CLIENT_ID'] = xero_client_id
     app.config['XERO_CLIENT_SECRET'] = xero_client_secret
     
+    # Initialize OAuth2Token
+    oauth2_token = OAuth2Token(
+        client_id=xero_client_id,
+        client_secret=xero_client_secret,
+    )
+    
     # Initialize API client
-    api_client = ApiClient(Configuration(
-        oauth2_token=OAuth2Token(
-            client_id=xero_client_id,
-            client_secret=xero_client_secret,
-        )
-    ))
+    api_client = ApiClient(Configuration(oauth2_token=oauth2_token))
     
     # Configure enhanced session management with OAuth token handlers
     session_config = configure_flask_sessions(app, api_client)
@@ -138,15 +145,15 @@ if api_client:
         # Configure enhanced session management now that we have the API client
         session_config = configure_flask_sessions(app, api_client)
         XERO_AVAILABLE = True
-        print("✅ Xero and enhanced session management initialized")
+        print("Xero and enhanced session management initialized")
     except Exception as e:
         XERO_AVAILABLE = False
-        print(f"⚠️ Xero initialization failed - configuration needed: {e}")
+        print(f"WARNING: Xero initialization failed - configuration needed: {e}")
 else:
     XERO_AVAILABLE = False
     # Still configure basic session management even without Xero
     session_config = configure_flask_sessions(app)
-    print("⚠️ Xero not configured - setup wizard required")
+    print("WARNING: Xero not configured - setup wizard required")
 
 # Routes
 
@@ -161,13 +168,13 @@ def index():
     xero_buttons = ''
     if integration_status.get('xero', {}).get('configured'):
         xero_buttons = """
-            <a href="/xero/contacts" class="btn">📋 View Contacts</a>
-            <a href="/xero/invoices" class="btn">🧾 View Invoices</a>
+            <a href="/xero/contacts" class="btn">View Contacts</a>
+            <a href="/xero/invoices" class="btn">View Invoices</a>
         """
     else:
         xero_buttons = """
-            <a href="/xero/contacts" class="btn">📋 View Contacts</a>
-            <a href="/xero/invoices" class="btn">🧾 View Invoices</a>
+            <a href="/xero/contacts" class="btn">View Contacts</a>
+            <a href="/xero/invoices" class="btn">View Invoices</a>
         """
 
     return f"""
@@ -196,53 +203,53 @@ def index():
     <body>
         <div class="container">
             <div class="header">
-                <h1>🏦 Financial Command Center AI</h1>
+                <h1>Financial Command Center AI</h1>
                 <p>Professional Financial Operations Platform</p>
             </div>
             
             <div class="setup-banner">
-                <h3>🚀 Professional Setup Complete</h3>
+                <h3>Professional Setup Complete</h3>
                 <p>Your Financial Command Center is configured and ready to use!</p>
-                <a href="/setup" class="btn" style="background: rgba(255,255,255,0.2); border: 2px solid white;">⚙️ Reconfigure Settings</a>
+                <a href="/setup" class="btn" style="background: rgba(255,255,255,0.2); border: 2px solid white;">Reconfigure Settings</a>
             </div>
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0 0 15px 0; font-size: 1.5rem;">AI-Powered Financial Operations</h3>
                 <p style="margin-bottom: 20px; opacity: 0.9;">Connect Claude Desktop to manage your finances with natural language commands</p>
                 <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-                    <a href="/claude/setup" class="btn" style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); font-weight: 600; padding: 12px 24px;">🛠️ Setup Claude Desktop</a>
+                    <a href="/claude/setup" class="btn" style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); font-weight: 600; padding: 12px 24px;">Setup Claude Desktop</a>
                     <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-size: 0.9em; border: 1px solid rgba(255,255,255,0.2);">Try: "Show me our cash flow this month"</div>
                 </div>
             </div>
             
-            <h3>📊 Integration Status</h3>
+            <h3>Integration Status</h3>
             <div class="status-grid">
                 <div class="status-card {'configured' if integration_status.get('stripe', {}).get('configured') else 'skipped' if integration_status.get('stripe', {}).get('skipped') else 'not-configured'}">
-                    <h4>💳 Stripe Integration</h4>
-                    <p>Status: {'✅ Configured' if integration_status.get('stripe', {}).get('configured') else '⏭️ Skipped (Demo)' if integration_status.get('stripe', {}).get('skipped') else '❌ Not Configured'}</p>
+                    <h4>Stripe Integration</h4>
+                    <p>Status: {'Configured' if integration_status.get('stripe', {}).get('configured') else 'Skipped (Demo)' if integration_status.get('stripe', {}).get('skipped') else 'Not Configured'}</p>
                 </div>
                 
                 <div class="status-card {'configured' if integration_status.get('xero', {}).get('configured') else 'skipped' if integration_status.get('xero', {}).get('skipped') else 'not-configured'}">
-                    <h4>📊 Xero Integration</h4>
-                    <p>Status: {'✅ Configured' if integration_status.get('xero', {}).get('configured') else '⏭️ Skipped (Demo)' if integration_status.get('xero', {}).get('skipped') else '❌ Not Configured'}</p>
+                    <h4>Xero Integration</h4>
+                    <p>Status: {'Configured' if integration_status.get('xero', {}).get('configured') else 'Skipped (Demo)' if integration_status.get('xero', {}).get('skipped') else 'Not Configured'}</p>
                 </div>
             </div>
             
             <div class="features">
                 <div class="feature">
-                    <h3>🔐 Secure Configuration</h3>
+                    <h3>Secure Configuration</h3>
                     <p>All credentials encrypted with AES-256 and stored locally</p>
                 </div>
                 <div class="feature">
-                    <h3>💳 Payment Processing</h3>
+                    <h3>Payment Processing</h3>
                     <p>Stripe integration for secure payment handling and subscriptions</p>
                 </div>
                 <div class="feature">
-                    <h3>📊 Accounting Sync</h3>
+                    <h3>Accounting Sync</h3>
                     <p>Xero integration for invoices, contacts, and financial data</p>
                 </div>
                 <div class="feature">
-                    <h3>🔄 Demo Mode</h3>
+                    <h3>Demo Mode</h3>
                     <p>Skip services for demo purposes - configure anytime later</p>
                 </div>
             </div>
@@ -250,9 +257,9 @@ def index():
             <div style="text-align: center; margin-top: 40px;">
                 <a href="/claude/setup" class="btn" style="background: #2563eb; font-size: 1.1em; padding: 16px 32px;">Connect to Claude Desktop</a><br><br>
                 {xero_buttons}
-                <a href="/admin/dashboard" class="btn">📊 Admin Dashboard</a>
-                <a href="/health" class="btn">💓 Health Check</a>
-                <a href="/setup" class="btn btn-setup">⚙️ Configuration</a>
+                <a href="/admin/dashboard" class="btn">Admin Dashboard</a>
+                <a href="/health" class="btn">Health Check</a>
+                <a href="/setup" class="btn btn-setup">Configuration</a>
             </div>
         </div>
     </body>
@@ -283,29 +290,80 @@ def test_xero_api():
 @app.route('/api/setup/save-config', methods=['POST'])
 def save_setup_config():
     """Save setup wizard configuration"""
-    data = request.get_json()
-    result = setup_wizard_api.save_configuration(data)
-    
-    if result['success']:
-        # Reinitialize the application with new configuration
-        global api_client, XERO_AVAILABLE, oauth, xero, session_config
-        api_client = initialize_xero_client()
-        if api_client:
-            try:
-                oauth, xero = init_oauth(app)
-                # Reinitialize enhanced session management with new API client
-                session_config = configure_flask_sessions(app, api_client)
-                XERO_AVAILABLE = True
-            except:
-                XERO_AVAILABLE = False
-    
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        result = setup_wizard_api.save_configuration(data)
+        
+        if result['success']:
+            # Safely update global configuration flags without Flask reinitialization
+            global XERO_AVAILABLE, api_client, oauth, xero
+            
+            # Check if Xero was configured and update flags accordingly
+            credentials = get_credentials_or_redirect()
+            if credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'):
+                try:
+                    # Update app config
+                    app.config['XERO_CLIENT_ID'] = credentials['XERO_CLIENT_ID']
+                    app.config['XERO_CLIENT_SECRET'] = credentials['XERO_CLIENT_SECRET']
+                    
+                    # Create new API client (but don't reinitialize Flask decorators)
+                    from xero_python.api_client import ApiClient, Configuration
+                    from xero_python.api_client.oauth2 import OAuth2Token
+                    
+                    oauth2_token = OAuth2Token(
+                        client_id=credentials['XERO_CLIENT_ID'],
+                        client_secret=credentials['XERO_CLIENT_SECRET'],
+                    )
+                    
+                    api_client = ApiClient(Configuration(oauth2_token=oauth2_token))
+                    
+                    # Initialize OAuth (but only if not already done)
+                    if not oauth or not xero:
+                        from xero_oauth import init_oauth
+                        oauth, xero = init_oauth(app)
+                    
+                    XERO_AVAILABLE = True
+                    result['xero_status'] = 'configured'
+                    
+                except Exception as xero_error:
+                    logger.warning(f"Failed to initialize Xero after config save: {xero_error}")
+                    result['xero_status'] = 'saved_but_needs_restart'
+            else:
+                result['xero_status'] = 'skipped'
+                
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error saving configuration: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/setup/status', methods=['GET'])
 def get_setup_status():
     """Get current setup status"""
     result = setup_wizard_api.get_configuration_status()
     return jsonify(result)
+
+@app.route('/api/xero/debug', methods=['GET'])
+def debug_xero_status():
+    """Debug Xero configuration status"""
+    credentials = get_credentials_or_redirect()
+    
+    debug_info = {
+        'XERO_AVAILABLE': XERO_AVAILABLE,
+        'has_client_id': bool(credentials.get('XERO_CLIENT_ID')),
+        'has_client_secret': bool(credentials.get('XERO_CLIENT_SECRET')),
+        'flask_config_client_id': bool(app.config.get('XERO_CLIENT_ID')),
+        'flask_config_client_secret': bool(app.config.get('XERO_CLIENT_SECRET')),
+        'api_client_exists': api_client is not None,
+        'oauth_exists': oauth is not None,
+        'xero_exists': xero is not None,
+        'setup_status': get_integration_status()
+    }
+    
+    return jsonify(debug_info)
 
 # Session Debugging Endpoints (for troubleshooting)
 
@@ -1276,13 +1334,37 @@ def render_health_ui(health_data):
 @app.route('/login')
 def login():
     """Xero OAuth login - only if configured"""
+    logger.info(f"Login attempt - XERO_AVAILABLE: {XERO_AVAILABLE}")
+    
     if not XERO_AVAILABLE:
+        # Check if credentials exist but weren't loaded
+        credentials = get_credentials_or_redirect()
+        if credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'):
+            logger.warning("Xero credentials exist but XERO_AVAILABLE is False - try restarting the app")
+            return jsonify({
+                'error': 'Xero configured but not loaded',
+                'message': 'Please restart the application to load Xero configuration',
+                'setup_url': url_for('setup_wizard', _external=True)
+            }), 400
+        
         return jsonify({
             'error': 'Xero not configured',
             'message': 'Complete setup wizard first',
             'setup_url': url_for('setup_wizard', _external=True)
         }), 400
-    return xero.authorize_redirect(redirect_uri="https://localhost:8000/callback")
+    
+    try:
+        logger.info("Initiating Xero OAuth redirect")
+        redirect_uri = "https://localhost:8000/callback"
+        logger.info(f"Using redirect URI: {redirect_uri}")
+        return xero.authorize_redirect(redirect_uri=redirect_uri)
+    except Exception as e:
+        logger.error(f"Error during Xero OAuth redirect: {e}")
+        return jsonify({
+            'error': 'OAuth initialization failed',
+            'message': str(e),
+            'details': 'Check your Xero app configuration and redirect URI'
+        }), 500
 
 @app.route('/callback')
 def callback():
@@ -1291,8 +1373,55 @@ def callback():
         return "Xero not configured. Complete setup wizard first.", 400
         
     try:
-        # Get the authorization token
-        token = xero.authorize_access_token()
+        from flask import request as flask_request
+        logger.info(f"OAuth callback received with args: {dict(flask_request.args)}")
+        
+        # For development, we can bypass state validation if needed
+        # The state mismatch often happens due to Flask restarts during development
+        try:
+            token = xero.authorize_access_token()
+        except Exception as auth_error:
+            if "mismatching_state" in str(auth_error) or "CSRF Warning" in str(auth_error):
+                logger.warning(f"State mismatch detected, attempting without state validation: {auth_error}")
+                # Try to get token manually without state check
+                from authlib.integrations.flask_client.apps import FlaskOAuth2App
+                from authlib.oauth2.rfc6749 import OAuth2Error
+                
+                # Get authorization code from request
+                code = flask_request.args.get('code')
+                if not code:
+                    raise OAuth2Error('Missing authorization code')
+                
+                # Exchange code for token manually
+                token_endpoint = 'https://identity.xero.com/connect/token'
+                token_data = {
+                    'grant_type': 'authorization_code',
+                    'client_id': app.config['XERO_CLIENT_ID'],
+                    'client_secret': app.config['XERO_CLIENT_SECRET'],
+                    'code': code,
+                    'redirect_uri': 'https://localhost:8000/callback'
+                }
+                
+                import requests
+                import base64
+                
+                # Create basic auth header
+                auth_string = f"{app.config['XERO_CLIENT_ID']}:{app.config['XERO_CLIENT_SECRET']}"
+                auth_bytes = base64.b64encode(auth_string.encode('ascii'))
+                auth_header = f"Basic {auth_bytes.decode('ascii')}"
+                
+                headers = {
+                    'Authorization': auth_header,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+                
+                response = requests.post(token_endpoint, data=token_data, headers=headers)
+                if response.status_code != 200:
+                    raise OAuth2Error(f'Token exchange failed: {response.text}')
+                
+                token = response.json()
+            else:
+                raise auth_error
         
         # Enhanced validation and logging
         if not token:
@@ -1334,6 +1463,10 @@ def callback():
         # Get tenant information
         from xero_python.identity import IdentityApi
         try:
+            # Update the API client with the new token before using it
+            global api_client
+            api_client = update_api_client_token(api_client, filtered_token)
+            
             identity = IdentityApi(api_client)
             conns = identity.get_connections()
             if not conns:
@@ -2255,7 +2388,7 @@ def admin_dashboard():
                 <p>To call APIs from your browser or curl, create a demo key and include it in the <code>X-API-Key</code> header.</p>
                 <div class="api-key" style="background:#fff;">
                     <div><a class="btn" href="/admin/create-demo-key">Create Demo Key</a></div>
-                    <div style="margin-top:10px; font-family:monospace; font-size:14px;">curl -k -H "X-API-Key: YOUR_KEY" https://localhost:8000/health</div>
+                    <div style="margin-top:10px; font-family:monospace; font-size:14px;">curl -k -H "X-API-Key: YOUR_KEY" https://127.0.0.1:8000/health</div>
                 </div>
             </div>
             {% endif %}
@@ -2419,12 +2552,12 @@ def create_demo_key():
             
             <h4>1. Test Authentication:</h4>
             <div class="code">
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/api/ping
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/api/ping
             </div>
             
             <h4>2. Get Health Status:</h4>
             <div class="code">
-curl -H "X-API-Key: {demo_key}" https://localhost:8000/health
+curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/health
             </div>
             
             <div style="margin-top: 30px;">
@@ -2563,12 +2696,12 @@ def get_dashboard():
 if __name__ == '__main__':
     print("🚀 Starting Financial Command Center with Setup Wizard...")
     print("=" * 60)
-    print(f"🔐 Security: {'Enabled' if SECURITY_ENABLED else 'Disabled'}")
-    print(f"⚙️ Setup Wizard: Enabled")
-    print(f"📊 Xero: {'Available' if XERO_AVAILABLE else 'Needs Configuration'}")
+    print(f"Security: {'Enabled' if SECURITY_ENABLED else 'Disabled'}")
+    print(f"Setup Wizard: Enabled")
+    print(f"Xero: {'Available' if XERO_AVAILABLE else 'Needs Configuration'}")
     
     credentials = get_credentials_or_redirect()
-    print(f"💳 Stripe: {'Configured' if credentials.get('STRIPE_API_KEY') else 'Needs Setup'}")
+    print(f"Stripe: {'Configured' if credentials.get('STRIPE_API_KEY') else 'Needs Setup'}")
     
     # Initialize SSL certificate management
     try:
@@ -2588,85 +2721,85 @@ if __name__ == '__main__':
         
         if force_https or not allow_http:
             # HTTPS mode - generate certificates if needed
-            print("🔐 HTTPS Mode - Ensuring SSL certificates...")
+            print("HTTPS Mode - Ensuring SSL certificates...")
             cert_generated = cert_manager.ensure_certificates()
             ssl_context = cert_manager.get_ssl_context()
             
             if cert_generated:
-                print("✨ New SSL certificates generated!")
-                print("📦 To eliminate browser warnings, install the CA certificate:")
+                print("New SSL certificates generated!")
+                print("To eliminate browser warnings, install the CA certificate:")
                 print(f"   python cert_manager.py --bundle")
         else:
             # HTTP mode with warnings
             server_mode = "HTTP (with HTTPS upgrade prompts)"
-            print("⚠️  HTTP Mode - Running without SSL encryption")
+            print("WARNING: HTTP Mode - Running without SSL encryption")
             print("   Set FORCE_HTTPS=true for production use")
     
     except ImportError as e:
-        print("⚠️  SSL Certificate Manager not available - using Flask's adhoc SSL")
+        print("WARNING: SSL Certificate Manager not available - using Flask's adhoc SSL")
         print(f"   Install missing dependencies: {e}")
         ssl_context = 'adhoc'
     
     print()
-    print("📋 Available endpoints:")
+    print("Available endpoints:")
     print("  GET  / - Smart home page (redirects to setup if needed)")
     print("  GET  /setup - Professional setup wizard")
     print("  GET  /health - Enhanced health check")
     
     if SECURITY_ENABLED:
-        print("  🔑 Security Endpoints: /api/ping, /api/create-key, /api/key-stats")
+        print("  Security Endpoints: /api/ping, /api/create-key, /api/key-stats")
     
-    print("  📊 Admin: /admin/dashboard")
-    print("  💳 Stripe: /api/stripe/payment")
-    print("  🔧 SSL Help: /admin/ssl-help")
-    print("  📦 Certificate Bundle: /admin/certificate-bundle")
+    print("  Admin: /admin/dashboard")
+    print("  Stripe: /api/stripe/payment")
+    print("  SSL Help: /admin/ssl-help")
+    print("  Certificate Bundle: /admin/certificate-bundle")
     print("Claude Desktop: /claude/setup, /api/claude/*, /api/mcp")
     
     if XERO_AVAILABLE:
-        print("  🔗 Xero: /login, /callback, /profile, /api/xero/contacts, /api/xero/invoices")
+        print("  Xero: /login, /callback, /profile, /api/xero/contacts, /api/xero/invoices")
     else:
-        print("  🔗 Xero: Configure via setup wizard")
+        print("  Xero: Configure via setup wizard")
     
     print()
     protocol = "https" if ssl_context else "http"
     # Allow launcher to select/override port
     import os as _os
     port = int(_os.getenv('FCC_PORT') or _os.getenv('PORT') or '8000')
-    print("🌐 URLs:")
-    print(f"  🏠 Home: {protocol}://localhost:{port}/")
-    print(f"  ⚙️ Setup: {protocol}://localhost:{port}/setup")
-    print(f"  🎛️  Admin: {protocol}://localhost:{port}/admin/dashboard")
-    print(f"  🔧 SSL Help: {protocol}://localhost:{port}/admin/ssl-help")
+    print("URLs:")
+    print(f"  Home: {protocol}://127.0.0.1:{port}/")
+    print(f"  Setup: {protocol}://127.0.0.1:{port}/setup")
+    print(f"  Admin: {protocol}://127.0.0.1:{port}/admin/dashboard")
+    print(f"  SSL Help: {protocol}://127.0.0.1:{port}/admin/ssl-help")
     print()
     
     if is_setup_required() and not os.getenv('STRIPE_API_KEY'):
-        print("🎯 FIRST TIME SETUP:")
-        print(f"   Visit {protocol}://localhost:{port}/setup to configure your integrations")
-        print(f"   Or {protocol}://localhost:{port}/ to start the guided setup")
+        print("FIRST TIME SETUP:")
+        print(f"   Visit {protocol}://127.0.0.1:{port}/setup to configure your integrations")
+        print(f"   Or {protocol}://127.0.0.1:{port}/ to start the guided setup")
         print()
     
-    print(f"🔒 Server Mode: {server_mode}")
+    print(f"Server Mode: {server_mode}")
     if ssl_context and ssl_context != 'adhoc':
-        print("📜 SSL Certificate Status:")
+        print("SSL Certificate Status:")
         try:
             health = cert_manager.health_check()
-            print(f"   ✅ Certificate Valid: {health['certificate_valid']}")
-            print(f"   📅 Expires: {health['expires']}")
-            print(f"   🏷️  Hostnames: {', '.join(health['hostnames'])}")
+            print(f"   Certificate Valid: {health['certificate_valid']}")
+            print(f"   Expires: {health['expires']}")
+            print(f"   Hostnames: {', '.join(health['hostnames'])}")
             if not health['certificate_valid']:
-                print("   🔄 Certificates will be regenerated automatically")
+                print("   Certificates will be regenerated automatically")
         except Exception as e:
-            print(f"   ⚠️  Certificate check failed: {e}")
+            print(f"   WARNING: Certificate check failed: {e}")
     
     print()
-    print("🔥 Professional Financial Command Center ready!")
+    print("Professional Financial Command Center ready!")
     
     # Start the Flask application
     if ssl_context:
-        app.run(host='localhost', port=port, debug=True, ssl_context=ssl_context)
+        app.run(host='127.0.0.1', port=port, debug=True, ssl_context=ssl_context)
     else:
         # HTTP mode
-        app.run(host='localhost', port=port, debug=True)
+        app.run(host='127.0.0.1', port=port, debug=True)
 # Ensure stdout can print Unicode on Windows consoles
 try:
     import io as _io

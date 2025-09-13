@@ -7,7 +7,7 @@ def init_oauth(app):
         client_id=app.config['XERO_CLIENT_ID'],
         client_secret=app.config['XERO_CLIENT_SECRET'],
 
-        # 👇 This is the key line that resolves "Missing jwks_uri"
+        #  This is the key line that resolves "Missing jwks_uri"
         server_metadata_url='https://identity.xero.com/.well-known/openid-configuration',
 
         # Optional: still fine to keep explicit endpoints, but not necessary when using server_metadata_url

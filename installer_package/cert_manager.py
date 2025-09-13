@@ -12,6 +12,8 @@ import socket
 import ssl
 from datetime import datetime, timedelta
 from pathlib import Path
+import platform
+import urllib.request
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import serialization, hashes
@@ -21,10 +23,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 class CertificateManager:
     """Manages SSL certificates for local development and production"""
     
-    def __init__(self, base_dir=None):
+    def __init__(self, base_dir=None, use_mkcert=True):
         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
         self.certs_dir = self.base_dir / "certs"
         self.config_file = self.certs_dir / "cert_config.json"
+        self.use_mkcert = use_mkcert
+        self.mkcert_path = self.base_dir / "mkcert.exe" if platform.system() == "Windows" else "mkcert"
         
         # Ensure certs directory exists
         self.certs_dir.mkdir(exist_ok=True, parents=True)
@@ -39,7 +43,9 @@ class CertificateManager:
             "last_generated": None,
             "hostnames": ["localhost", "127.0.0.1", "::1"],
             "organization": "Financial Command Center AI",
-            "country": "US"
+            "country": "US",
+            "use_mkcert": use_mkcert,
+            "trust_installed": False
         }
         
         self._load_config()
@@ -52,7 +58,7 @@ class CertificateManager:
                     saved_config = json.load(f)
                     self.config.update(saved_config)
             except Exception as e:
-                print(f"⚠️  Warning: Could not load certificate config: {e}")
+                print(f"  Warning: Could not load certificate config: {e}")
     
     def _save_config(self):
         """Save configuration to file"""
@@ -60,11 +66,49 @@ class CertificateManager:
             with open(self.config_file, 'w') as f:
                 json.dump(self.config, f, indent=2)
         except Exception as e:
-            print(f"⚠️  Warning: Could not save certificate config: {e}")
+            print(f"  Warning: Could not save certificate config: {e}")
     
+    def _is_mkcert_available(self):
+        """Check if mkcert is available and, on Windows, attempt auto-download."""
+        try:
+            if platform.system() == "Windows":
+                if isinstance(self.mkcert_path, Path) and not self.mkcert_path.exists():
+                    try:
+                        url = "https://github.com/FiloSottile/mkcert/releases/latest/download/mkcert-v1.4.4-windows-amd64.exe"
+                        print("Downloading mkcert (Windows amd64)...")
+                        urllib.request.urlretrieve(url, self.mkcert_path)
+                        print(f"mkcert downloaded to: {self.mkcert_path}")
+                    except Exception as e:
+                        print(f"Failed to download mkcert: {e}")
+            path = str(self.mkcert_path) if isinstance(self.mkcert_path, Path) else self.mkcert_path
+            result = subprocess.run([path, "-version"], capture_output=True, text=True, timeout=10)
+            return result.returncode == 0
+        except Exception as e:
+            print(f"mkcert check failed: {e}")
+        return False
+
+    def install_mkcert_ca(self):
+        """Install mkcert CA to system trust store"""
+        if not self.use_mkcert or not self._is_mkcert_available():
+            return False
+        try:
+            path = str(self.mkcert_path) if isinstance(self.mkcert_path, Path) else self.mkcert_path
+            print("Installing mkcert CA to system trust store...")
+            result = subprocess.run([path, "-install"], capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print("mkcert CA installed")
+                self.config["trust_installed"] = True
+                self._save_config()
+                return True
+            print(f"mkcert -install failed: {result.stderr}")
+            return False
+        except Exception as e:
+            print(f"Error installing mkcert CA: {e}")
+            return False
+
     def generate_ca_certificate(self):
         """Generate a Certificate Authority (CA) certificate"""
-        print("🔐 Generating Certificate Authority (CA)...")
+        print(" Generating Certificate Authority (CA)...")
         
         # Generate private key
         ca_key = rsa.generate_private_key(
@@ -122,13 +166,13 @@ class CertificateManager:
         
         # Set restrictive permissions
         os.chmod(self.config["ca_key"], 0o600)
-        print(f"✅ CA certificate saved to: {self.config['ca_cert']}")
+        print(f" CA certificate saved to: {self.config['ca_cert']}")
         
         return ca_cert, ca_key
     
     def generate_server_certificate(self):
         """Generate server certificate signed by CA"""
-        print("🔐 Generating server certificate...")
+        print(" Generating server certificate...")
         
         # Load or generate CA
         if not (Path(self.config["ca_cert"]).exists() and Path(self.config["ca_key"]).exists()):
@@ -225,10 +269,33 @@ class CertificateManager:
         self.config["last_generated"] = datetime.now().isoformat()
         self._save_config()
         
-        print(f"✅ Server certificate saved to: {self.config['cert_file']}")
-        print(f"✅ Server key saved to: {self.config['key_file']}")
+        print(f" Server certificate saved to: {self.config['cert_file']}")
+        print(f" Server key saved to: {self.config['key_file']}")
         
         return server_cert, server_key
+
+    def generate_mkcert_certificates(self):
+        """Generate certificates using mkcert for automatic browser trust"""
+        if not self.use_mkcert or not self._is_mkcert_available():
+            return False
+        try:
+            if not self.config.get("trust_installed", False):
+                self.install_mkcert_ca()
+            path = str(self.mkcert_path) if isinstance(self.mkcert_path, Path) else self.mkcert_path
+            print("Generating certificates with mkcert...")
+            cert_args = [path, "-cert-file", self.config["cert_file"], "-key-file", self.config["key_file"], *self.config["hostnames"]]
+            result = subprocess.run(cert_args, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print("mkcert certificates generated")
+                self.config["last_generated"] = datetime.now().isoformat()
+                self.config["use_mkcert"] = True
+                self._save_config()
+                return True
+            print(f"mkcert generation failed: {result.stderr}")
+            return False
+        except Exception as e:
+            print(f"Error generating mkcert certificates: {e}")
+            return False
     
     def is_certificate_valid(self):
         """Check if existing certificate is valid"""
@@ -243,17 +310,17 @@ class CertificateManager:
             expires_soon = datetime.utcnow() + timedelta(days=7)
             return cert.not_valid_after > expires_soon
         except Exception as e:
-            print(f"⚠️  Certificate validation error: {e}")
+            print(f"  Certificate validation error: {e}")
             return False
     
     def ensure_certificates(self):
         """Ensure valid certificates exist, generate if needed"""
         if not self.is_certificate_valid():
-            print("🔄 Generating new SSL certificates...")
+            print(" Generating new SSL certificates...")
             self.generate_server_certificate()
             return True
         else:
-            print("✅ SSL certificates are valid")
+            print(" SSL certificates are valid")
             return False
     
     def get_ssl_context(self):
@@ -268,15 +335,15 @@ class CertificateManager:
             return "CA certificate not found. Run certificate generation first."
         
         instructions = f"""
-# 🔐 SSL Certificate Installation Instructions
+#  SSL Certificate Installation Instructions
 
 ## Automatic Trust (Recommended)
 
 ### Windows (Run as Administrator):
 ```cmd
 certlm.msc
-# Navigate to: Trusted Root Certification Authorities → Certificates
-# Right-click → All Tasks → Import → Browse to: {ca_cert_path.absolute()}
+# Navigate to: Trusted Root Certification Authorities  Certificates
+# Right-click  All Tasks  Import  Browse to: {ca_cert_path.absolute()}
 ```
 
 ### macOS:
@@ -293,24 +360,24 @@ sudo update-ca-certificates
 ## Manual Browser Trust
 
 ### Chrome/Edge:
-1. Visit: https://localhost:8000
-2. Click "Advanced" → "Proceed to localhost (unsafe)"
-3. Click the lock icon → "Certificate" → "Details" tab
-4. Click "Copy to File" → Save as .cer file
-5. Settings → Privacy and Security → Manage Certificates
+1. Visit: https://127.0.0.1:8000
+2. Click "Advanced"  "Proceed to 127.0.0.1 (unsafe)"
+3. Click the lock icon  "Certificate"  "Details" tab
+4. Click "Copy to File"  Save as .cer file
+5. Settings  Privacy and Security  Manage Certificates
 6. Import to "Trusted Root Certification Authorities"
 
 ### Firefox:
-1. Visit: https://localhost:8000
-2. Click "Advanced" → "Accept the Risk and Continue"
-3. Click lock icon → "Connection not secure" → "More Information"
-4. "Security" tab → "View Certificate" → "Download"
-5. Settings → Privacy & Security → Certificates → "View Certificates"
+1. Visit: https://127.0.0.1:8000
+2. Click "Advanced"  "Accept the Risk and Continue"
+3. Click lock icon  "Connection not secure"  "More Information"
+4. "Security" tab  "View Certificate"  "Download"
+5. Settings  Privacy & Security  Certificates  "View Certificates"
 6. Import to "Authorities" tab
 
 ## Verify Installation:
 ```bash
-curl -I https://localhost:8000/health
+curl -I https://127.0.0.1:8000/health
 # Should return HTTP/2 200 without certificate errors
 ```
 
@@ -388,7 +455,7 @@ if %errorlevel% neq 0 (
     echo  Certificate Installation Complete!
     echo ================================================
     echo.
-    echo You can now access https://localhost:8000 without warnings.
+    echo You can now access https://127.0.0.1:8000 without warnings.
     echo Please restart your browser to see the changes.
 )
 
@@ -434,7 +501,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         echo " Certificate Installation Complete!"
         echo "================================================"
         echo
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate to system keychain."
@@ -460,7 +527,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "================================================"
         echo
         echo "System-wide certificate trust has been updated."
-        echo "You can now access https://localhost:8000 without warnings."
+        echo "You can now access https://127.0.0.1:8000 without warnings."
         echo "Please restart your browser to see the changes."
     else
         echo "Error: Failed to install certificate."
@@ -491,7 +558,7 @@ echo
 echo "Note: If you still see warnings, please:"
 echo "1. Restart your browser completely"
 echo "2. Clear browser cache and cookies for localhost"
-echo "3. Try accessing https://localhost:8000 again"
+echo "3. Try accessing https://127.0.0.1:8000 again"
 """)
         
         # Make Unix script executable
@@ -502,7 +569,7 @@ echo "3. Try accessing https://localhost:8000 again"
         with open(readme_file, 'w', encoding='utf-8') as f:
             f.write(self.install_ca_instructions())
         
-        print(f"📦 Client bundle created in: {bundle_dir}")
+        print(f" Client bundle created in: {bundle_dir}")
         return bundle_dir
     
     def health_check(self):
@@ -553,7 +620,7 @@ def main():
         cert_manager.generate_server_certificate()
     elif args.check:
         valid = cert_manager.is_certificate_valid()
-        print(f"Certificate valid: {'✅ Yes' if valid else '❌ No'}")
+        print(f"Certificate valid: {' Yes' if valid else ' No'}")
         if not valid:
             print("Run with --generate to create new certificates")
     elif args.instructions:
@@ -562,15 +629,15 @@ def main():
         cert_manager.create_client_bundle()
     elif args.health:
         status = cert_manager.health_check()
-        print("🔐 SSL Certificate Health Check:")
+        print(" SSL Certificate Health Check:")
         print("=" * 40)
         for key, value in status.items():
-            icon = "✅" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key == "ssl_connection" and value == "success") else "❌" if key.endswith("_exists") or key in ["certificate_valid", "ssl_connection"] else "ℹ️"
+            icon = "" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key == "ssl_connection" and value == "success") else "" if key.endswith("_exists") or key in ["certificate_valid", "ssl_connection"] else ""
             print(f"{icon} {key.replace('_', ' ').title()}: {value}")
     else:
         # Default: ensure certificates exist
         cert_manager.ensure_certificates()
-        print("\n📋 Available commands:")
+        print("\n Available commands:")
         print("  --generate     Generate new certificates")
         print("  --check        Check certificate status")
         print("  --instructions Show installation instructions")
