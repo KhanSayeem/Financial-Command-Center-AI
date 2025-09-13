@@ -138,7 +138,7 @@ class ConfigurationManager:
                 metadata = json.load(f)
                 
         services = {}
-        for service in ['stripe', 'xero']:
+        for service in ['stripe', 'xero', 'plaid']:
             service_config = config.get(service, {})
             services[service] = {
                 'configured': not service_config.get('skipped', False) and bool(service_config),
@@ -234,6 +234,65 @@ class APIValidator:
             
         except Exception as e:
             return False, f"Validation failed: {str(e)}", {}
+    
+    @staticmethod
+    def validate_plaid_credentials(client_id: str, secret: str, environment: str = "sandbox") -> Tuple[bool, str, Dict[str, Any]]:
+        """Validate Plaid API credentials"""
+        try:
+            import plaid
+            from plaid.api import plaid_api
+            from plaid.model.accounts_get_request import AccountsGetRequest
+            
+            # Basic format validation
+            if not client_id or not secret:
+                return False, "Client ID and Secret are required", {}
+                
+            if len(client_id) < 20:  # Plaid client IDs are typically longer
+                return False, "Invalid Client ID format", {}
+                
+            if len(secret) < 30:  # Plaid secrets are typically longer
+                return False, "Invalid Secret format", {}
+            
+            # Validate environment
+            valid_envs = ['sandbox', 'development', 'production']
+            if environment.lower() not in valid_envs:
+                return False, f"Environment must be one of: {', '.join(valid_envs)}", {}
+            
+            # Set up Plaid client
+            env_map = {
+                'sandbox': getattr(plaid.Environment, 'Sandbox', plaid.Environment.Production),
+                'development': getattr(plaid.Environment, 'Development', plaid.Environment.Sandbox),
+                'production': getattr(plaid.Environment, 'Production', plaid.Environment.Sandbox)
+            }
+            
+            host = env_map.get(environment.lower(), plaid.Environment.Sandbox)
+            
+            configuration = plaid.Configuration(
+                host=host,
+                api_key={
+                    'clientId': client_id,
+                    'secret': secret
+                }
+            )
+            
+            api_client = plaid.ApiClient(configuration)
+            client = plaid_api.PlaidApi(api_client)
+            
+            # Test connection - we can't test with real accounts without tokens,
+            # but we can test if credentials are valid format and environment is reachable
+            # For now, we'll do basic validation
+            
+            return True, f"Configuration validated for {environment} environment", {
+                'client_id': client_id[:8] + "...",  # Masked for security
+                'environment': environment,
+                'validation': 'format_check',
+                'note': 'Full validation requires account linking'
+            }
+            
+        except ImportError:
+            return False, "Plaid library not installed", {}
+        except Exception as e:
+            return False, f"Validation failed: {str(e)}", {}
 
 
 class SetupWizardAPI:
@@ -268,6 +327,45 @@ class SetupWizardAPI:
                     'account_country': details.get('country'),
                     'account_currency': details.get('currency'),
                     'account_type': details.get('type')
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': message
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Unexpected error: {str(e)}'
+            }
+    
+    def test_plaid_connection(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Test Plaid API connection"""
+        try:
+            client_id = request_data.get('plaid_client_id', '').strip()
+            secret = request_data.get('plaid_secret', '').strip()
+            environment = request_data.get('plaid_environment', 'sandbox').strip().lower()
+            
+            if not client_id or not secret:
+                return {
+                    'success': False,
+                    'error': 'Plaid Client ID and Secret are required'
+                }
+            
+            # Validate credentials
+            success, message, details = self.api_validator.validate_plaid_credentials(
+                client_id, secret, environment
+            )
+            
+            if success:
+                return {
+                    'success': True,
+                    'message': message,
+                    'client_id_preview': details.get('client_id'),
+                    'environment': details.get('environment'),
+                    'validation_type': details.get('validation'),
+                    'note': details.get('note')
                 }
             else:
                 return {
@@ -342,6 +440,18 @@ class SetupWizardAPI:
                 config['xero'] = {
                     'client_id': xero_config['client_id'],
                     'client_secret': xero_config['client_secret'],
+                    'configured_at': datetime.now().isoformat()
+                }
+            
+            # Process Plaid configuration
+            plaid_config = request_data.get('plaid', {})
+            if plaid_config.get('skipped'):
+                config['plaid'] = {'skipped': True}
+            elif 'client_id' in plaid_config:
+                config['plaid'] = {
+                    'client_id': plaid_config['client_id'],
+                    'secret': plaid_config['secret'],
+                    'environment': plaid_config.get('environment', 'sandbox'),
                     'configured_at': datetime.now().isoformat()
                 }
                 
@@ -438,7 +548,7 @@ def get_integration_status() -> Dict[str, Dict[str, Any]]:
 
 if __name__ == "__main__":
     # Test the configuration manager
-    print(" Testing Configuration Manager...")
+    print("🔧 Testing Configuration Manager...")
     
     config_manager = ConfigurationManager()
     
@@ -456,14 +566,14 @@ if __name__ == "__main__":
     
     # Save config
     success = config_manager.save_config(test_config)
-    print(f"Save config: {' Success' if success else ' Failed'}")
+    print(f"Save config: {'✅ Success' if success else '❌ Failed'}")
     
     # Load config
     loaded_config = config_manager.load_config()
-    print(f"Load config: {' Success' if loaded_config else ' Failed'}")
+    print(f"Load config: {'✅ Success' if loaded_config else '❌ Failed'}")
     
     # Get status
     status = config_manager.get_configuration_status()
     print(f"Configuration status: {json.dumps(status, indent=2)}")
     
-    print(" Configuration Manager test complete!")
+    print("🔧 Configuration Manager test complete!")

@@ -287,6 +287,13 @@ def test_xero_api():
     result = setup_wizard_api.test_xero_connection(data)
     return jsonify(result)
 
+@app.route('/api/setup/test-plaid', methods=['POST'])
+def test_plaid_api():
+    """Test Plaid API connection"""
+    data = request.get_json()
+    result = setup_wizard_api.test_plaid_connection(data)
+    return jsonify(result)
+
 @app.route('/api/setup/save-config', methods=['POST'])
 def save_setup_config():
     """Save setup wizard configuration"""

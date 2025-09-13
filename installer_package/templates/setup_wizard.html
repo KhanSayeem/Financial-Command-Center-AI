@@ -511,10 +511,76 @@
                 </div>
             </div>
 
-            <!-- Step 3: Xero Configuration -->
+            <!-- Step 3: Plaid Configuration -->
             <div class="step" id="step3">
                 <div class="step-title">
                     <span>Step 3:</span>
+                    Configure Plaid
+                </div>
+                <div class="step-description">
+                    Connect your bank accounts via Plaid to access real-time financial data, transaction history, and account balances. Create a Plaid account to get your credentials.
+                </div>
+
+                <div id="plaid-messages"></div>
+
+                <div class="service-card" id="plaidCard">
+                    <div class="service-header">
+                        <div class="service-title">
+                            <span class="service-icon">🏦</span>
+                            Plaid Banking API Configuration
+                        </div>
+                        <div class="service-status status-pending" id="plaidStatus">Pending</div>
+                    </div>
+
+                    <form id="plaidForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plaidClientId">Plaid Client ID</label>
+                                <input type="text" id="plaidClientId" name="plaid_client_id" placeholder="Your Plaid Client ID">
+                                <div class="input-help">From your Plaid dashboard</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="plaidSecret">Plaid Secret</label>
+                                <input type="password" id="plaidSecret" name="plaid_secret" placeholder="Your Plaid Secret Key">
+                                <div class="input-help">Keep this secure and private</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plaidEnvironment">Environment</label>
+                                <select id="plaidEnvironment" name="plaid_environment">
+                                    <option value="sandbox">Sandbox (Testing)</option>
+                                    <option value="development">Development</option>
+                                    <option value="production">Production (Live)</option>
+                                </select>
+                                <div class="input-help">Start with Sandbox for testing</div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-test" onclick="testPlaidConnection()">
+                            <span id="plaidTestSpinner" style="display: none;" class="loading">
+                                <div class="spinner"></div>
+                                Testing...
+                            </span>
+                            <span id="plaidTestText">Test Configuration</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <div>
+                        <button class="btn btn-skip" onclick="skipPlaid()">Skip for Demo</button>
+                        <button class="btn btn-primary" onclick="nextStep()" id="plaidNext" disabled>Next →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Xero Configuration -->
+            <div class="step" id="step4">
+                <div class="step-title">
+                    <span>Step 4:</span>
                     Configure Xero
                 </div>
                 <div class="step-description">
@@ -565,8 +631,8 @@
                 </div>
             </div>
 
-            <!-- Step 4: Summary & Completion -->
-            <div class="step" id="step4">
+            <!-- Step 5: Summary & Completion -->
+            <div class="step" id="step5">
                 <div class="step-title">
                     <span>✅</span>
                     Configuration Complete
@@ -588,6 +654,11 @@
                     <div class="config-item">
                         <div class="config-label">📊 Xero Integration</div>
                         <div class="config-value" id="xeroSummary">Not configured</div>
+                    </div>
+                    
+                    <div class="config-item">
+                        <div class="config-label">🏦 Plaid Banking</div>
+                        <div class="config-value" id="plaidSummary">Not configured</div>
                     </div>
                     
                     <div class="config-item">
@@ -615,8 +686,8 @@
                 </div>
             </div>
 
-            <!-- Step 5: Success -->
-            <div class="step" id="step5">
+            <!-- Step 6: Success -->
+            <div class="step" id="step6">
                 <div class="completion-screen">
                     <div class="completion-icon">🎉</div>
                     <div class="completion-title">Setup Complete!</div>
@@ -637,11 +708,13 @@
 
     <script>
         let currentStep = 1;
-        const totalSteps = 5;
+        const totalSteps = 6;
         let stripeConfigured = false;
         let xeroConfigured = false;
+        let plaidConfigured = false;
         let stripeSkipped = false;
         let xeroSkipped = false;
+        let plaidSkipped = false;
 
         function updateProgress() {
             const progress = (currentStep - 1) / (totalSteps - 1) * 100;
@@ -663,7 +736,7 @@
                 currentStep++;
                 showStep(currentStep);
                 
-                if (currentStep === 4) {
+                if (currentStep === 5) {
                     updateSummary();
                 }
             }
@@ -804,13 +877,86 @@
         function skipXero() {
             xeroSkipped = true;
             document.getElementById('xeroNext').disabled = false;
-            showMessage('xero-messages', 'success', 'Xero configuration skipped. You can configure it later in the dashboard.');
-            nextStep();
+            document.getElementById('xeroCard').style.opacity = '0.6';
+            showMessage('xero-messages', 'success', '✅ Xero integration skipped - Demo mode enabled');
+        }
+        
+        async function testPlaidConnection() {
+            const clientId = document.getElementById('plaidClientId').value;
+            const secret = document.getElementById('plaidSecret').value;
+            const environment = document.getElementById('plaidEnvironment').value;
+            
+            if (!clientId || !secret) {
+                showMessage('plaid-messages', 'error', 'Please enter your Plaid Client ID and Secret first.');
+                return;
+            }
+
+            const testSpinner = document.getElementById('plaidTestSpinner');
+            const testText = document.getElementById('plaidTestText');
+            const statusElement = document.getElementById('plaidStatus');
+
+            testSpinner.style.display = 'inline-flex';
+            testText.style.display = 'none';
+
+            try {
+                const response = await fetch(buildApiUrl('/api/setup/test-plaid'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        plaid_client_id: clientId,
+                        plaid_secret: secret,
+                        plaid_environment: environment
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    plaidConfigured = true;
+                    document.getElementById('plaidNext').disabled = false;
+                    statusElement.textContent = 'Configured';
+                    statusElement.className = 'service-status status-success';
+                    
+                    showMessage('plaid-messages', 'success', 
+                        `✅ ${result.message}<br>
+                        <strong>Client ID:</strong> ${result.client_id_preview}<br>
+                        <strong>Environment:</strong> ${result.environment}<br>
+                        <small>${result.note}</small>`
+                    );
+                } else {
+                    plaidConfigured = false;
+                    document.getElementById('plaidNext').disabled = true;
+                    statusElement.textContent = 'Failed';
+                    statusElement.className = 'service-status status-error';
+                    
+                    showMessage('plaid-messages', 'error', `❌ ${result.error}`);
+                }
+            } catch (error) {
+                plaidConfigured = false;
+                document.getElementById('plaidNext').disabled = true;
+                statusElement.textContent = 'Error';
+                statusElement.className = 'service-status status-error';
+                
+                showMessage('plaid-messages', 'error', `❌ Connection test failed: ${error.message}`);
+            } finally {
+                testSpinner.style.display = 'none';
+                testText.style.display = 'inline';
+            }
+        }
+        
+        function skipPlaid() {
+            plaidSkipped = true;
+            document.getElementById('plaidNext').disabled = false;
+            document.getElementById('plaidCard').style.opacity = '0.6';
+            showMessage('plaid-messages', 'success', '✅ Plaid integration skipped - Demo mode enabled');
         }
 
         function updateSummary() {
             const stripeSummary = document.getElementById('stripeSummary');
             const xeroSummary = document.getElementById('xeroSummary');
+            const plaidSummary = document.getElementById('plaidSummary');
 
             if (stripeConfigured) {
                 stripeSummary.textContent = 'Configured & Tested';
@@ -833,6 +979,17 @@
                 xeroSummary.textContent = 'Not Configured';
                 xeroSummary.style.color = '#e74c3c';
             }
+            
+            if (plaidConfigured) {
+                plaidSummary.textContent = 'Configured & Tested';
+                plaidSummary.style.color = '#27ae60';
+            } else if (plaidSkipped) {
+                plaidSummary.textContent = 'Skipped (Demo Mode)';
+                plaidSummary.style.color = '#f39c12';
+            } else {
+                plaidSummary.textContent = 'Not Configured';
+                plaidSummary.style.color = '#e74c3c';
+            }
         }
 
         async function saveConfiguration() {
@@ -851,7 +1008,12 @@
                     xero: xeroConfigured ? {
                         client_id: document.getElementById('xeroClientId').value,
                         client_secret: document.getElementById('xeroClientSecret').value
-                    } : { skipped: xeroSkipped }
+                    } : { skipped: xeroSkipped },
+                    plaid: plaidConfigured ? {
+                        client_id: document.getElementById('plaidClientId').value,
+                        secret: document.getElementById('plaidSecret').value,
+                        environment: document.getElementById('plaidEnvironment').value
+                    } : { skipped: plaidSkipped }
                 };
 
                 const response = await fetch(buildApiUrl('/api/setup/save-config'), {

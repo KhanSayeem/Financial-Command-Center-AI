@@ -213,12 +213,25 @@ def setup_claude_routes(app, logger=None):
         <div class="setup-card">
             <div class="step-title">
                 <span class="step-number">1</span>
-                Generate MCP Server Configuration
+                Generate Complete MCP Configuration
             </div>
-            <p>Click below to automatically generate your Claude Desktop configuration:</p>
+            <p>Your Claude Desktop configuration will include <strong>all configured MCP servers</strong> using your stored credentials:</p>
+            <ul style="margin: 15px 0; padding-left: 30px; color: #555;">
+                <li><strong>Financial Command Center</strong> - Core financial operations</li>
+                <li><strong>Stripe Payments</strong> - Payment processing (if configured)</li>
+                <li><strong>Xero Accounting</strong> - Accounting integration (if configured)</li>
+                <li><strong>Plaid Banking</strong> - Bank account data (if configured)</li>
+                <li><strong>Compliance Suite</strong> - Transaction monitoring & compliance</li>
+            </ul>
+            <div class="alert alert-info">
+                <strong>🔐 Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
+                <strong>🎯 Tailored:</strong> Only includes servers for services you've configured.<br>
+                <strong>📁 Dynamic:</strong> Automatically detects your project paths.
+            </div>
             <br>
-            <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Config</button>
+            <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Complete Config</button>
             <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">💾 Download Config</button>
+            <div id="configSummary" style="margin-top: 15px; display: none;"></div>
         </div>
         
         <div class="setup-card">
@@ -328,13 +341,46 @@ def setup_claude_routes(app, logger=None):
                     configData = data.config;
                     document.getElementById('downloadBtn').style.display = 'inline-flex';
                     
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-success';
-                    alert.innerHTML = '✅ Configuration generated! Click Download to save it.';
-                    document.querySelector('.setup-card').appendChild(alert);
+                    // Show configuration summary
+                    const summary = data.summary;
+                    const summaryDiv = document.getElementById('configSummary');
+                    
+                    let credentialsUsed = [];
+                    if (summary.credentials_used.stripe) credentialsUsed.push('Stripe');
+                    if (summary.credentials_used.xero) credentialsUsed.push('Xero');
+                    if (summary.credentials_used.plaid) credentialsUsed.push('Plaid');
+                    
+                    summaryDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>✅ Configuration Generated Successfully!</strong><br><br>
+                            <strong>📊 Summary:</strong><br>
+                            • <strong>${summary.total_servers} MCP servers</strong> included<br>
+                            • <strong>Servers:</strong> ${summary.servers.join(', ')}<br>
+                            • <strong>Credentials used:</strong> ${credentialsUsed.join(', ') || 'None (demo mode)'}<br>
+                            • <strong>Python:</strong> ${summary.python_executable}<br>
+                            <br><strong>Click Download to save your configuration file!</strong>
+                        </div>
+                    `;
+                    summaryDiv.style.display = 'block';
+                } else {
+                    const summaryDiv = document.getElementById('configSummary');
+                    summaryDiv.innerHTML = `
+                        <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
+                            <strong>❌ Configuration Generation Failed</strong><br>
+                            Error: ${data.message}
+                        </div>
+                    `;
+                    summaryDiv.style.display = 'block';
                 }
             } catch (error) {
-                alert('Failed to generate configuration: ' + error);
+                const summaryDiv = document.getElementById('configSummary');
+                summaryDiv.innerHTML = `
+                    <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
+                        <strong>❌ Network Error</strong><br>
+                        Failed to generate configuration: ${error.message}
+                    </div>
+                `;
+                summaryDiv.style.display = 'block';
             }
         }
         
@@ -361,42 +407,127 @@ def setup_claude_routes(app, logger=None):
 
     @app.route('/api/claude/generate-config')
     def generate_claude_config():
-        """Generate Claude Desktop MCP configuration"""
+        """Generate Claude Desktop MCP configuration with all servers using stored credentials"""
         try:
+            # Import configuration manager
+            from setup_wizard import ConfigurationManager
+            config_manager = ConfigurationManager()
+            stored_config = config_manager.load_config() or {}
+            
             # Get current server configuration
             port = int(os.getenv('FCC_PORT', '8000'))
             server_url = f"https://localhost:{port}"
             
-            # Generate configuration
-            # Get the absolute path to the MCP server
+            # Get absolute paths
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            mcp_server_path = os.path.join(current_dir, "mcp_server.py")
             python_exe = os.path.join(current_dir, ".venv", "Scripts", "python.exe")
             
             # Check if virtual environment Python exists, otherwise use system Python
             if not os.path.exists(python_exe):
                 python_exe = "python"
             
-            config = {
-                "mcpServers": {
-                    "financial-command-center": {
-                        "command": python_exe,
-                        "args": [mcp_server_path],
-                        "env": {
-                            "FCC_SERVER_URL": server_url,
-                            "FCC_API_KEY": "claude-desktop-integration"
-                        }
+            # Initialize MCP servers configuration
+            mcp_servers = {}
+            
+            # 1. Main Financial Command Center MCP (always included)
+            mcp_server_path = os.path.join(current_dir, "mcp_server.py")
+            if os.path.exists(mcp_server_path):
+                mcp_servers["financial-command-center"] = {
+                    "command": python_exe,
+                    "args": [mcp_server_path],
+                    "env": {
+                        "FCC_SERVER_URL": server_url,
+                        "FCC_API_KEY": "claude-desktop-integration"
                     }
                 }
-            }
+            
+            # 2. Stripe MCP (if configured)
+            stripe_config = stored_config.get('stripe', {})
+            if stripe_config and not stripe_config.get('skipped'):
+                stripe_mcp_path = os.path.join(current_dir, "stripe_mcp.py")
+                if os.path.exists(stripe_mcp_path):
+                    mcp_servers["stripe-payments"] = {
+                        "command": python_exe,
+                        "args": [stripe_mcp_path],
+                        "env": {
+                            "STRIPE_API_KEY": stripe_config.get('api_key'),
+                            "STRIPE_PUBLISHABLE_KEY": stripe_config.get('publishable_key', '')
+                        }
+                    }
+            
+            # 3. Xero MCP (if configured)
+            xero_config = stored_config.get('xero', {})
+            if xero_config and not xero_config.get('skipped'):
+                xero_mcp_path = os.path.join(current_dir, "xero_mcp.py")
+                if os.path.exists(xero_mcp_path):
+                    mcp_servers["xero-accounting"] = {
+                        "command": python_exe,
+                        "args": [xero_mcp_path],
+                        "env": {
+                            "XERO_CLIENT_ID": xero_config.get('client_id'),
+                            "XERO_CLIENT_SECRET": xero_config.get('client_secret')
+                        }
+                    }
+            
+            # 4. Plaid MCP (if configured)
+            plaid_config = stored_config.get('plaid', {})
+            if plaid_config and not plaid_config.get('skipped'):
+                plaid_mcp_path = os.path.join(current_dir, "plaid_mcp.py")
+                if os.path.exists(plaid_mcp_path):
+                    mcp_servers["plaid-banking"] = {
+                        "command": python_exe,
+                        "args": [plaid_mcp_path],
+                        "env": {
+                            "PLAID_CLIENT_ID": plaid_config.get('client_id'),
+                            "PLAID_SECRET": plaid_config.get('secret'),
+                            "PLAID_ENV": plaid_config.get('environment', 'sandbox')
+                        }
+                    }
+            
+            # 5. Compliance MCP (always included for monitoring)
+            compliance_mcp_path = os.path.join(current_dir, "compliance_mcp.py")
+            if os.path.exists(compliance_mcp_path):
+                # Use Plaid credentials for compliance monitoring if available
+                compliance_env = {}
+                if plaid_config and not plaid_config.get('skipped'):
+                    compliance_env.update({
+                        "PLAID_CLIENT_ID": plaid_config.get('client_id'),
+                        "PLAID_SECRET": plaid_config.get('secret'),
+                        "PLAID_ENV": plaid_config.get('environment', 'sandbox')
+                    })
+                if stripe_config and not stripe_config.get('skipped'):
+                    compliance_env["STRIPE_API_KEY"] = stripe_config.get('api_key')
+                
+                mcp_servers["compliance-suite"] = {
+                    "command": python_exe,
+                    "args": [compliance_mcp_path],
+                    "env": compliance_env
+                }
+            
+            config = {"mcpServers": mcp_servers}
             
             config_json = json.dumps(config, indent=2)
+            
+            # Generate summary of included servers
+            included_servers = list(mcp_servers.keys())
+            server_summary = {
+                'total_servers': len(included_servers),
+                'servers': included_servers,
+                'credentials_used': {
+                    'stripe': bool(stripe_config and not stripe_config.get('skipped')),
+                    'xero': bool(xero_config and not xero_config.get('skipped')),
+                    'plaid': bool(plaid_config and not plaid_config.get('skipped'))
+                },
+                'python_executable': python_exe,
+                'project_directory': current_dir
+            }
             
             return jsonify({
                 'success': True,
                 'config': config_json,
                 'server_url': server_url,
-                'message': 'Configuration generated successfully'
+                'message': f'Configuration generated with {len(included_servers)} MCP servers',
+                'summary': server_summary
             })
             
         except Exception as e:
