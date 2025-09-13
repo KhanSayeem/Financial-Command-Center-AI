@@ -79,60 +79,95 @@
 
 > **Important**: You need active Stripe and/or Xero accounts to see real business value. Demo mode available for testing.
 
-### **Option 1: One-Click Windows Installer** (≈ 1 minute) - **RECOMMENDED**
+### **Option 1: One-Click Launcher** (≈ 30 seconds) - **RECOMMENDED**
 
 **Best for**: Business users who want instant setup without technical complexity
 
-1. **Download** the installer from `installer_package/Financial-Command-Center-Launcher.exe`
-2. **Double-click** to run - no installation required!
-3. **Automatic Setup**:
-   - Creates Python virtual environment
-   - Installs all dependencies automatically
-   - Generates SSL certificates
-   - Launches web browser to `https://127.0.0.1:8000`
-   - **Creates desktop shortcut** for easy access
-   - **Adds system tray icon** for quick control
+#### **Windows (.cmd) - Instant Launch**
+1. **Download** or clone this repository
+2. **Double-click** `Financial-Command-Center-AI.cmd` - that's it!
+3. **First Run Automatic Setup**:
+   - Detects if this is your first time running
+   - Creates Python virtual environment automatically
+   - Installs all dependencies in background
+   - Generates SSL certificates for secure HTTPS
+   - **Creates desktop shortcut** for easy future access
+   - Launches web browser to `https://127.0.0.1:8000` (secured!)
+
+#### **Desktop Shortcut - For Daily Use**
+After first run, you'll have a desktop shortcut: **"Financial Command Center AI - Quick Start"**
+
+**Double-click the shortcut anytime to:**
+- ✅ **Start Flask server** on `https://127.0.0.1:8000` (HTTPS secured)
+- ✅ **Auto-open browser** to your Financial Command Center
+- ✅ **Run in background** - server continues after closing window
+- ✅ **Instant access** - No setup wizard, just straight to your dashboard
 
 **What you get:**
-- **Desktop shortcut** - Click to launch anytime
-- **System tray integration** - Always accessible from taskbar
-- **Automatic updates** - Built-in update checking
-- **Error recovery** - Intelligent troubleshooting
-- **Clean uninstall** - Right-click tray icon to exit
+- **Desktop shortcut** - One-click access to your financial dashboard
+- **HTTPS secured** - All connections use `https://127.0.0.1:8000`
+- **Background operation** - Server runs independently
+- **Professional startup** - Clean, branded launch experience
+- **Error recovery** - Built-in health checks and troubleshooting
 
 **Business Benefits:**
 - **Zero technical setup** - Perfect for accounting teams
 - **Professional deployment** - Ready for client environments
-- **Always accessible** - System tray integration
+- **Always secured** - HTTPS encryption for all data
 - **Reliable operation** - Automatic dependency management
 
 ---
 
-### **Option 2: Manual Install** (≈ 2 minutes)
+### **Option 2: Advanced Install** (≈ 2 minutes)
 
 **Best for**: Developers, IT teams, custom deployments
 
+#### **Windows - Multiple Launch Options**
+```cmd
+# Clone and setup
+git clone https://github.com/KhanSayeem/Financial-Command-Center-AI.git
+cd Financial-Command-Center-AI
+
+# Option A: Full launcher with shortcut creation (RECOMMENDED)
+Financial-Command-Center-AI.cmd
+
+# Option B: Quick start (if environment already set up)
+Quick-Start-Flask.cmd
+
+# Option C: Manual desktop shortcut creation
+Create-Desktop-Shortcut.cmd
+
+# Option D: Test/debug launcher
+Test-Quick-Launch.cmd
+```
+
+#### **Mac/Linux - Standard Setup**
 ```bash
 # Clone and setup
 git clone https://github.com/KhanSayeem/Financial-Command-Center-AI.git
 cd Financial-Command-Center-AI
 pip install -r requirements.txt
 
-# Launch (Windows)
-Launch-With-Trusted-Certs.cmd
-
-# Launch (Mac/Linux)
+# Launch with setup wizard
 python app_with_setup_wizard.py
 ```
 
+#### **What Each Script Does:**
+- **`Financial-Command-Center-AI.cmd`** - Main launcher, creates desktop shortcut on first run
+- **`Quick-Start-Flask.cmd`** - Direct Flask launch (used by desktop shortcut)
+- **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation tool
+- **`Test-Quick-Launch.cmd`** - Simple test launcher for debugging
+
 ### **Step 2: Connect Your Business Systems** (≈ 3 minutes)
 
-1. **Open** `https://127.0.0.1:8000` in your browser
+1. **Browser opens automatically** to `https://127.0.0.1:8000` (secured HTTPS!)
 2. **Setup Wizard** will guide you through:
    - **Stripe Connection** (for payment processing)
    - **Xero Connection** (for accounting)
    - **Security Configuration**
 3. **Test Connection** - verify data sync is working
+
+> ✅ **Note**: The launcher ensures HTTPS on `127.0.0.1:8000` for secure connections - no more unsecured localhost!
 
 ### **Step 3: See Immediate Value** (≈ 30 seconds)
 
@@ -145,6 +180,30 @@ python app_with_setup_wizard.py
 1. Process a test payment in Stripe
 2. Watch it automatically appear in your Xero dashboard
 3. Calculate time saved: **No more manual data entry!**
+
+---
+
+## **Daily Workflow - How Your Team Will Use This**
+
+### **First Time Setup** (≈ 2 minutes)
+1. **Double-click** `Financial-Command-Center-AI.cmd` 
+2. **Watch automatic setup** - dependencies install, SSL certificates generate
+3. **Desktop shortcut created** - "Financial Command Center AI - Quick Start"
+4. **Browser opens** to `https://127.0.0.1:8000` for initial configuration
+
+### **Every Day After** (≈ 5 seconds)
+1. **Double-click desktop shortcut** 
+2. **Flask server starts automatically** on `https://127.0.0.1:8000`
+3. **Browser opens** to your Financial Command Center dashboard
+4. **Start managing finances** - all integrations ready instantly
+
+### **Team Adoption**
+- **Accounting Team**: Use desktop shortcut every morning for daily reconciliation
+- **Business Owner**: Quick evening check-in on financial health
+- **Bookkeepers**: One-click access to synchronized invoice data
+- **IT Admins**: Server runs in background, minimal maintenance required
+
+---
 
 ## **How to Use Each View for Your Business**
 
@@ -478,7 +537,42 @@ If you're building custom integrations or connecting other business tools:
 
 ---
 
-### 💾 **Windows Installer Troubleshooting**
+### 💾 **Windows Launcher Troubleshooting**
+
+#### **"Financial-Command-Center-AI.cmd won't start"**
+1. **Check Python installation**: Ensure Python 3.8+ is installed
+2. **Run as administrator**: Right-click → "Run as administrator"
+3. **Check virtual environment**: The script creates `.venv` automatically
+4. **Internet connection**: Required for downloading dependencies
+
+#### **"Desktop shortcut not working"**
+1. **Manual shortcut creation**: Run `Create-Desktop-Shortcut.cmd`
+2. **Check target path**: Shortcut should point to `Quick-Start-Flask.cmd`
+3. **Permissions issue**: Run shortcut creation as administrator
+4. **Missing files**: Ensure `Quick-Start-Flask.cmd` exists in directory
+
+#### **"Server not starting on https://127.0.0.1:8000"**
+1. **Port conflict**: Check if port 8000 is already in use
+2. **SSL certificate issues**: Run `Test-Quick-Launch.cmd` for diagnosis
+3. **Virtual environment**: Delete `.venv` folder and run launcher again
+4. **Firewall blocking**: Allow Python through Windows Firewall
+
+#### **"PowerShell execution policy error"**
+1. **Open PowerShell as administrator**
+2. **Run**: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+3. **Alternative**: Use batch scripts instead of PowerShell versions
+
+#### **"Browser shows 'connection not secure' warning"**
+1. **Click "Advanced" → "Proceed to 127.0.0.1 (unsafe)"** - this is normal for self-signed certificates
+2. **Install certificate**: Check `/admin/ssl-help` for certificate installation
+3. **Use the app normally**: The connection is still encrypted despite the warning
+
+**🔧 Debug Tools:**
+- **`Test-Quick-Launch.cmd`** - Simple test launcher
+- **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation
+- **Check logs in terminal** - launcher shows detailed error messages
+
+### 💾 **Windows Installer Troubleshooting** (Legacy)
 
 #### **"Installer won't start or shows security warning"**
 1. **Right-click** installer → **"Run as administrator"**
