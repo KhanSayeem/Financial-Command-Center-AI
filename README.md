@@ -129,7 +129,7 @@ cd Financial-Command-Center-AI
 ### **Step 2: Launch Financial Command Center** (≈ 30 seconds)
 
 #### **Windows Users (Recommended)**
-1. **Double-click** `Financial-Command-Center-AI.cmd` in the `installer_package` folder
+1. **Double-click** `Financial-Command-Center-AI.cmd` in the `installer_package` folder to start
 2. **First Run Automatic Setup**:
    - Creates Python virtual environment automatically
    - Installs all dependencies in background
