@@ -11,7 +11,37 @@
 
 > **🚀 NEW: Claude Desktop AI Integration!** Configure credentials once in our web UI, then talk to ALL your financial data with natural language. **"Show me cash flow"** → instant answers from Stripe, Xero, and bank accounts!
 
-> **Revolutionary workflow**: Web UI setup → Auto-generated Claude config → Natural language financial management. **Zero JSON editing, zero credential copying!**
+> **Revolutionary workflow**: Download → Launch → Configure accounts → Generate Claude config → Natural language financial management. **Zero JSON editing, zero credential copying!**
+
+## ⚠️ **Prerequisites - What You Need Before Starting**
+
+### **Required Accounts** (at least one, more = better experience)
+- **🏦 Bank Account** - Any bank (for Plaid connection to get real transaction data)
+- **💳 Stripe Account** - For payment processing integration ([Create free account](https://stripe.com))
+- **📊 Xero Account** - For accounting/bookkeeping integration ([Create free trial](https://xero.com))
+- **🏦 Plaid Account** - For secure bank data access ([Create developer account](https://plaid.com))
+
+> **💡 Don't have all accounts?** No problem! You can skip services during setup and use demo mode to explore the interface.
+
+## **🗺️ What to Expect - Your Journey**
+
+### **🔄 The Complete Workflow:**
+1. **Download** → Get the Financial Command Center files
+2. **Launch** → Double-click launcher, system sets up automatically  
+3. **Configure** → Enter your financial account credentials (secure & encrypted)
+4. **Generate Claude Config** → One-click AI integration setup
+5. **Start Managing Finances with AI** → Natural language commands!
+
+### **⏱️ Time Investment:**
+- **First-time setup**: 5-10 minutes (one-time only)
+- **Daily use**: Instant access via desktop shortcut or Claude Desktop
+- **ROI**: Hours saved every week on manual financial tasks
+
+### **🔒 Security Promise:**
+- All credentials **encrypted** before storage
+- **No data leaves your computer** except to YOUR chosen financial services
+- **HTTPS secured** connections throughout
+- **Your data, your control** - delete anytime
 
 ---
 
@@ -79,24 +109,56 @@
 - **Solution**: Secure API-based access with individual permissions
 - **Compliance**: Meet SOC 2, GDPR, and financial regulations
 
-## **Get Started in 5 Minutes**
+## **🚀 Get Started - Complete Setup Guide**
 
-> **Important**: You need active Stripe and/or Xero accounts to see real business value. Demo mode available for testing.
+### **Step 1: Download the Project** (≈ 1 minute)
 
-### **Option 1: One-Click Launcher** (≈ 30 seconds) - **RECOMMENDED**
+#### **Option A: Download ZIP (Easiest)**
+1. **Click the green "Code" button** on this GitHub page
+2. **Select "Download ZIP"**
+3. **Extract** to your preferred location (Documents, Desktop, etc.)
+4. **Navigate** to the extracted folder
 
-**Best for**: Business users who want instant setup without technical complexity
+#### **Option B: Git Clone (For Developers)**
+```bash
+git clone https://github.com/KhanSayeem/Financial-Command-Center-AI.git
+cd Financial-Command-Center-AI
+```
 
-#### **Windows (.cmd) - Instant Launch**
-1. **Download** or clone this repository
-2. **Double-click** `Financial-Command-Center-AI.cmd` - that's it!
-3. **First Run Automatic Setup**:
-   - Detects if this is your first time running
+### **Step 2: Launch Financial Command Center** (≈ 30 seconds)
+
+#### **Windows Users (Recommended)**
+1. **Double-click** `Financial-Command-Center-AI.cmd` in the project folder
+2. **First Run Automatic Setup**:
    - Creates Python virtual environment automatically
    - Installs all dependencies in background
    - Generates SSL certificates for secure HTTPS
-   - **Creates desktop shortcut** for easy future access
-   - Launches web browser to `https://127.0.0.1:8000` (secured!)
+   - **Creates desktop shortcut** for future use
+   - Opens browser to `https://127.0.0.1:8000` (secured!)
+
+#### **Mac/Linux Users**
+```bash
+# One-time setup
+python -m venv .venv
+source .venv/bin/activate  # Mac/Linux
+pip install -r requirements.txt
+
+# Launch application
+python app_with_setup_wizard.py
+```
+
+#### **🖥️ After First Run (Windows)**
+You'll get a **desktop shortcut**: "**Financial Command Center AI - Quick Start**"
+
+**For daily use:**
+- **Double-click desktop shortcut** → Server starts → Browser opens
+- **Or**: Find "Financial Command Center" in your system tray
+- **Always launches on**: `https://127.0.0.1:8000` (secured HTTPS)
+
+**Perfect for:**
+- 📋 **Morning financial check-ins** 
+- 📈 **Quick invoice reviews**
+- 🤖 **Instant Claude Desktop financial queries**
 
 #### **Desktop Shortcut - For Daily Use**
 After first run, you'll have a desktop shortcut: **"Financial Command Center AI - Quick Start"**
@@ -162,41 +224,114 @@ python app_with_setup_wizard.py
 - **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation tool
 - **`Test-Quick-Launch.cmd`** - Simple test launcher for debugging
 
-### **Step 2: Connect Your Business Systems** (≈ 4 minutes)
+### **Step 3: Configure Your Financial Accounts** (≈ 5 minutes)
 
-1. **Browser opens automatically** to `https://127.0.0.1:8000` (secured HTTPS!)
-2. **Professional Setup Wizard** guides you through:
-   - **Step 1**: Welcome & security overview
-   - **Step 2**: Stripe connection (payment processing)
-   - **Step 3**: **NEW! Plaid banking** (bank account data)
-   - **Step 4**: Xero connection (accounting)
-   - **Step 5**: Configuration summary & save
-   - **Step 6**: Setup complete!
-3. **Test All Connections** - verify integrations are working
-4. **🎆 Ready for AI**: Your credentials are now ready for Claude Desktop!
+**Browser automatically opens** to `https://127.0.0.1:8000` showing the **Professional Setup Wizard**
 
-> ✅ **Revolutionary**: Credentials configured once, used everywhere - web dashboard AND Claude Desktop AI!
+#### **Setup Wizard Walkthrough:**
 
-### **Step 3: Enable Claude Desktop AI** (≈ 1 minute) - **OPTIONAL BUT AMAZING**
+**🎉 Step 1: Welcome**
+- Overview of what you're setting up
+- Security and encryption information
+- Click "Start Setup" to begin
 
-1. **Visit** `https://127.0.0.1:8000/claude/setup`
-2. **Click** "Generate Complete Config" - uses your stored credentials automatically
-3. **Download** complete `claude_desktop_config.json` with all 5 MCP servers
-4. **Install** in Claude Desktop folder (instructions provided)
-5. **Start talking** to your financial data: *"Show me our cash flow this month"*
+**💳 Step 2: Configure Stripe (Payment Processing)**
+- **If you have Stripe**: Enter your API keys from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
+  - Secret Key: `sk_test_...` or `sk_live_...`
+  - Publishable Key: `pk_test_...` or `pk_live_...` (optional)
+- **Test Connection** - verifies your keys work
+- **If you don't have Stripe**: Click "Skip for Demo" to continue
 
-### **Step 4: See Immediate Value** (≈ 30 seconds)
+**🏦 Step 3: Configure Plaid (Banking Data)**
+- **If you have Plaid**: Enter credentials from [Plaid Dashboard](https://dashboard.plaid.com/keys)
+  - Client ID: Your Plaid client identifier
+  - Secret Key: Your Plaid secret key
+  - Environment: Sandbox (testing) or Production (live)
+- **Test Connection** - validates your Plaid setup
+- **If you don't have Plaid**: Click "Skip for Demo" to continue
 
-- **View `/health`** - See all system integrations at a glance  
-- **Check `/xero/invoices`** - All your invoices in a clean interface
-- **Monitor `/xero/contacts`** - Customer data synchronized
-- **Test `/claude/setup`** - Generate AI configuration in seconds
-- **Create payments via API** - Automatic sync to accounting
+**📊 Step 4: Configure Xero (Accounting)**
+- **If you have Xero**: Enter OAuth credentials from [Xero Developer Portal](https://developer.xero.com/myapps)
+  - Client ID: Your Xero application client ID
+  - Client Secret: Your Xero application secret
+- **Test Configuration** - validates format and setup
+- **If you don't have Xero**: Click "Skip for Demo" to continue
 
-### **Quick Business Test**
-1. Process a test payment in Stripe
-2. Watch it automatically appear in your Xero dashboard
-3. Calculate time saved: **No more manual data entry!**
+**✅ Step 5: Review & Save**
+- See summary of what you've configured
+- All credentials are **encrypted** before saving
+- Click "Save & Complete Setup"
+
+**🎆 Step 6: Setup Complete!**
+- Your Financial Command Center is now ready
+- Credentials are securely stored and ready for Claude Desktop
+- You can access the main dashboard
+
+### **Step 4: Enable Claude Desktop AI** (≈ 2 minutes) - **OPTIONAL BUT GAME-CHANGING**
+
+**After completing your financial account setup**, you can now connect to Claude Desktop for natural language financial management.
+
+#### **Navigate to Claude Setup:**
+1. **From the main dashboard**: Click the "**Setup Claude Desktop**" button
+2. **Or visit directly**: `https://127.0.0.1:8000/claude/setup`
+3. **You'll see**: Complete instructions and configuration generator
+
+#### **Generate Your Personal Configuration:**
+1. **Click "Generate Complete Config"** - automatically uses your stored credentials
+2. **See the summary**: Shows which services you configured and how many MCP servers
+3. **Download** the `claude_desktop_config.json` file
+4. **Verify paths**: Config contains YOUR specific directory and Python paths
+
+#### **Install in Claude Desktop:**
+```
+Windows: %APPDATA%\Claude\claude_desktop_config.json
+macOS: ~/Library/Application Support/Claude/claude_desktop_config.json  
+Linux: ~/.config/Claude/claude_desktop_config.json
+```
+
+#### **Start Using AI Financial Management:**
+1. **Restart Claude Desktop** completely
+2. **Look for "Financial Command Center"** in available tools
+3. **Start asking questions**: *"Show me our current financial health"*
+4. **Get instant answers** from ALL your connected financial systems!
+
+### **Step 5: Explore Your Financial Command Center** (≈ 2 minutes)
+
+**Now that everything is set up, explore what you can do:**
+
+#### **Via Web Dashboard:**
+- **View `/`** - Main dashboard with financial overview
+- **Check `/health`** - See all system integrations status  
+- **Browse `/xero/invoices`** - All your invoices in a clean interface (if Xero configured)
+- **Monitor `/xero/contacts`** - Customer data synchronized (if Xero configured)
+- **Visit `/claude/setup`** - Generate or re-generate AI configuration
+
+#### **Via Claude Desktop (if configured):**
+- **"What's our overall financial health right now?"**
+- **"Show me all unpaid invoices over $1000"**
+- **"List recent bank transactions from Plaid"**
+- **"Give me a complete financial summary for this month"**
+- **"Check all integration statuses and any issues"**
+
+### **🚑 Quick Troubleshooting**
+
+#### **"Financial-Command-Center-AI.cmd won't start"**
+- **Check**: Python 3.8+ is installed on your system
+- **Try**: Run as administrator (right-click → "Run as administrator")
+- **Fix**: Ensure internet connection for downloading dependencies
+
+#### **"Setup wizard shows connection errors"**
+- **Stripe**: Double-check your API keys from [dashboard.stripe.com](https://dashboard.stripe.com/apikeys)
+- **Xero**: Verify client ID/secret from [developer.xero.com](https://developer.xero.com/myapps)
+- **Plaid**: Confirm credentials from [dashboard.plaid.com](https://dashboard.plaid.com/keys)
+
+#### **"Claude Desktop doesn't see Financial Command Center"**
+- **Check**: Config file is in correct location (`%APPDATA%\Claude\claude_desktop_config.json` on Windows)
+- **Verify**: Paths in config file point to your actual project directory
+- **Fix**: Restart Claude Desktop completely after installing config
+- **Regenerate**: Visit `/claude/setup` and download fresh config if paths changed
+
+> **Need more help?** Check the detailed `CLAUDE_DESKTOP_SETUP.md` guide in the project folder.
 
 ---
 
