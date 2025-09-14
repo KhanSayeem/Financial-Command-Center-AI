@@ -118,7 +118,7 @@
 2. **Select "Download ZIP"**
 3. **Extract** to your preferred location (Documents, Desktop, etc.)
 4. **Navigate** to the extracted folder
-5. **Double-click** `Financial-Command-Center-AI.cmd` in the `installer_package` folder
+5. **Double-click** `Launch-Financial-Command-Center.cmd` in the `installer_package` folder
 
 #### **Option B: Git Clone (For Developers)**
 ```bash
