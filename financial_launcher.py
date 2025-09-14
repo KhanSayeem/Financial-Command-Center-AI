@@ -1274,7 +1274,8 @@ class FinancialLauncher:
                     args = os.path.join(repo_root, 'financial_launcher.py')
 
             icon_path = str(Path(repo_root, 'assets', 'launcher_icon.ico'))
-            icon = icon_path if Path(icon_path).exists() else ''
+            # Ensure we use absolute path and add index for ICO files
+            icon = f'{icon_path},0' if Path(icon_path).exists() else ''
             
             # Quick Start targets (prefer PowerShell for better error handling)
             if os.path.exists(quick_start_ps1):

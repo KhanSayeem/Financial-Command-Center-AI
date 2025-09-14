@@ -29,11 +29,34 @@ def setup_claude_routes(app, logger=None):
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
+        /* Root variables for consistent color scheme */
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --border-color: #e2e8f0;
+            --border-radius: 8px;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0; 
             padding: 20px; 
-            background: #f5f7fa; 
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
         
         .container {
@@ -42,164 +65,194 @@ def setup_claude_routes(app, logger=None):
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-color);
             color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            margin: 0;
-            margin-bottom: 10px;
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
         }
         
         .header p {
-            margin: 10px 0 0 0;
+            margin: 0;
             opacity: 0.9;
+            font-size: 1.1rem;
         }
         
         .setup-card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
         }
         
         .step-title {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            color: #333;
+            color: var(--text-primary);
         }
         
         .step-number {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 30px;
-            height: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 32px;
+            height: 32px;
+            background: var(--primary-color);
             border-radius: 50%;
             font-weight: 600;
-            margin-right: 15px;
+            margin-right: 0.75rem;
             color: white;
+            font-size: 0.875rem;
         }
         
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: #667eea;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
             color: white;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: var(--border-radius);
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
             border: none;
-            margin: 5px;
+            margin: 0.25rem;
+            font-size: 0.875rem;
         }
         
         .btn:hover {
-            background: #5a6fd8;
+            background: var(--primary-hover);
+            transform: translateY(-1px);
         }
         
         .btn-primary {
-            background: #667eea;
+            background: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-hover);
         }
         
         .btn-success {
-            background: #27ae60;
+            background: var(--success-color);
         }
         
         .btn-success:hover {
-            background: #229954;
+            background: #047857;
         }
         
         .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
+            border: 1px solid transparent;
         }
         
         .alert-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
         }
         
         .alert-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: #eff6ff;
+            border-color: #bfdbfe;
             color: #1e40af;
         }
         
         .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #b45309;
+            background: #fffbeb;
+            border-color: #fed7aa;
+            color: #92400e;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
         }
         
         .command-example {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            color: #155724;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 0.75rem 0;
+            color: var(--text-primary);
         }
         
         .important-step {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: var(--primary-color);
             color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 10px 0;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
         .important-step h3 {
-            margin: 0 0 10px 0;
-            color: #ffffff !important;
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            font-size: 1.1em;
+            margin: 0 0 0.5rem 0;
+            color: white;
+            font-weight: 600;
+            font-size: 1.125rem;
         }
         
         .important-step p {
             margin: 0;
-            color: #ffffff !important;
-            font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            font-size: 1.05em;
-            letter-spacing: 0.5px;
+            color: white;
+            font-weight: 500;
         }
         
         code {
-            background: rgba(0,0,0,0.1);
-            padding: 4px 8px;
+            background: var(--bg-secondary);
+            padding: 0.25rem 0.5rem;
             border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
         }
         
-        ol {
-            margin-left: 20px;
-            margin-top: 10px;
+        ol, ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
         }
         
         .setup-card p {
-            color: #666;
+            color: var(--text-secondary);
             line-height: 1.6;
+            margin: 0.75rem 0;
+        }
+        
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -224,22 +277,22 @@ def setup_claude_routes(app, logger=None):
                 <li><strong>Compliance Suite</strong> - Transaction monitoring & compliance</li>
             </ul>
             <div class="alert alert-info">
-                <strong>🔐 Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
-                <strong>🎯 Tailored:</strong> Only includes servers for services you've configured.<br>
-                <strong>📁 Dynamic:</strong> Automatically detects your project paths and Python setup.<br>
-                <strong>📱 Portable:</strong> Customized for YOUR specific directory and Python installation.
+                <strong>Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
+                <strong>Tailored:</strong> Only includes servers for services you've configured.<br>
+                <strong>Dynamic:</strong> Automatically detects your project paths and Python setup.<br>
+                <strong>Portable:</strong> Customized for YOUR specific directory and Python installation.
             </div>
             
             <div class="alert alert-warning">
-                <strong>⚠️ Important for Teams:</strong><br>
+                <strong>Important for Teams:</strong><br>
                 This configuration contains paths specific to your computer. Each team member should:<br>
                 1. Run their own Financial Command Center setup<br>
                 2. Generate their own Claude Desktop config from <code>/claude/setup</code><br>
                 3. This ensures correct paths for their system (Windows/Mac/Linux)
             </div>
             <br>
-            <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Complete Config</button>
-            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">💾 Download Config</button>
+            <button class="btn btn-primary" onclick="generateConfig()">Generate Complete Config</button>
+            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">Download Config</button>
             <div id="configSummary" style="margin-top: 15px; display: none;"></div>
         </div>
         
@@ -250,7 +303,7 @@ def setup_claude_routes(app, logger=None):
             </div>
             <p>If you don't have Claude Desktop installed yet:</p>
             <div class="alert alert-info">
-                <strong>📥 Download Claude Desktop:</strong><br>
+                <strong>Download Claude Desktop:</strong><br>
                 <a href="https://claude.ai/download" target="_blank" style="color: #1e40af; text-decoration: none;">https://claude.ai/download</a><br>
                 <small>Available for Windows, macOS, and Linux</small>
             </div>
@@ -262,7 +315,7 @@ def setup_claude_routes(app, logger=None):
                 Install Configuration File
             </div>
             <div class="alert alert-warning">
-                <strong>📁 Place the downloaded config file here:</strong><br><br>
+                <strong>Configuration File Location:</strong><br><br>
                 <strong>Windows:</strong><br>
                 <code>%APPDATA%\\Claude\\claude_desktop_config.json</code><br><br>
                 <strong>macOS:</strong><br>
@@ -271,7 +324,7 @@ def setup_claude_routes(app, logger=None):
                 <code>~/.config/Claude/claude_desktop_config.json</code>
             </div>
             <div class="alert alert-success">
-                <strong>💡 Easy Installation:</strong><br>
+                <strong>Installation Steps:</strong><br>
                 1. Open File Explorer / Finder<br>
                 2. Navigate to the folder above<br>
                 3. Create the "Claude" folder if it doesn't exist<br>
@@ -285,12 +338,12 @@ def setup_claude_routes(app, logger=None):
                 Verify Configuration Paths
             </div>
             <div class="alert alert-info">
-                <strong>🔍 Quick Check:</strong> Open the downloaded <code>claude_desktop_config.json</code> and verify:<br>
+                <strong>Verification Steps:</strong> Open the downloaded <code>claude_desktop_config.json</code> and verify:<br>
                 • Python executable path exists on your computer<br>
                 • MCP server script paths point to your project directory<br>
                 • All paths use your actual username and directory structure<br><br>
-                <strong>💻 Example:</strong> Paths should look like <code>C:\\Users\\[YourName]\\...\\python.exe</code><br>
-                <strong>ℹ️ If paths look wrong:</strong> Re-generate config after ensuring your project is in the right location
+                <strong>Example:</strong> Paths should look like <code>C:\\Users\\[YourName]\\...\\python.exe</code><br>
+                <strong>If paths look wrong:</strong> Re-generate config after ensuring your project is in the right location
             </div>
         </div>
         
@@ -301,8 +354,8 @@ def setup_claude_routes(app, logger=None):
             </div>
             <div style="text-align: center; margin: 20px 0;">
                 <div class="important-step">
-                    <h3>⚠️ Important Step</h3>
-                    <p>Close Claude Desktop completely and reopen it</p>
+                    <h3>Important Step</h3>
+                    <p style="color: white;">Close Claude Desktop completely and reopen it</p>
                 </div>
             </div>
             <ol style="margin-left: 20px; margin-top: 10px;">
@@ -319,36 +372,36 @@ def setup_claude_routes(app, logger=None):
                 Try Sample Commands
             </div>
             <div class="alert alert-success">
-                <strong>🎉 Once connected, try these AI commands in Claude Desktop:</strong>
+                <strong>Sample Commands:</strong> Once connected, try these AI commands in Claude Desktop:
             </div>
             
             <div class="command-example">
-                <strong>💰 "Show me our cash flow this month"</strong><br>
+                <strong>"Show me our cash flow this month"</strong><br>
                 <em>Get real-time financial overview with current balances and trends</em>
             </div>
             
             <div class="command-example">
-                <strong>🧾 "List all unpaid invoices over $1000"</strong><br>
+                <strong>"List all unpaid invoices over $1000"</strong><br>
                 <em>Instantly filter and display high-value outstanding payments</em>
             </div>
             
             <div class="command-example">
-                <strong>👥 "Find contact details for [Customer Name]"</strong><br>
+                <strong>"Find contact details for [Customer Name]"</strong><br>
                 <em>Quick customer lookup with complete contact information</em>
             </div>
             
             <div class="command-example">
-                <strong>📊 "Check system health and integrations"</strong><br>
+                <strong>"Check system health and integrations"</strong><br>
                 <em>Monitor all connected services and identify any issues</em>
             </div>
         </div>
         
         <div class="setup-card" style="text-align: center;">
-            <h3>🚀 Ready to Continue?</h3>
+            <h3>Ready to Continue?</h3>
             <p>Once you've completed the setup above, your Claude Desktop integration will be ready!</p>
             <div style="margin-top: 20px;">
-                <a href="/admin/dashboard" class="btn btn-primary">📊 Admin Dashboard</a>
-                <a href="/" class="btn">🏠 Home</a>
+                <a href="/admin/dashboard" class="btn btn-primary">Admin Dashboard</a>
+                <a href="/" class="btn">Home</a>
             </div>
         </div>
     </div>
@@ -377,7 +430,7 @@ def setup_claude_routes(app, logger=None):
                     let setupInfo = '';
                     if (summary.portable_instructions) {
                         setupInfo = `
-                            <br><strong>📁 Your Setup Details:</strong><br>
+                            <br><strong>Your Setup Details:</strong><br>
                             • <strong>Python:</strong> ${summary.portable_instructions.python_location}<br>
                             • <strong>Directory:</strong> ${summary.project_directory}<br>
                             • <strong>Note:</strong> ${summary.portable_instructions.note}<br>
@@ -387,7 +440,7 @@ def setup_claude_routes(app, logger=None):
                     summaryDiv.innerHTML = `
                         <div class="alert alert-success">
                             <strong>✅ Configuration Generated Successfully!</strong><br><br>
-                            <strong>📊 Summary:</strong><br>
+                            <strong>Summary:</strong><br>
                             • <strong>${summary.total_servers} MCP servers</strong> included<br>
                             • <strong>Servers:</strong> ${summary.servers.join(', ')}<br>
                             • <strong>Credentials used:</strong> ${credentialsUsed.join(', ') || 'None (demo mode)'}<br>

@@ -104,7 +104,8 @@ if not demo.is_demo:
 # NEW: Health check endpoint (no auth required)
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({
+    """Health check endpoint - returns JSON for API clients or HTML for browsers"""
+    health_data = {
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'version': '2.0.0',
@@ -115,7 +116,367 @@ def health_check():
             'stripe': 'available', 
             'plaid': 'available'
         }
-    })
+    }
+    
+    # Check if request wants HTML (browser) or JSON (API)
+    if 'text/html' in request.headers.get('Accept', '') and 'application/json' not in request.args:
+        return render_health_dashboard(health_data)
+    
+    return jsonify(health_data)
+
+
+def render_health_dashboard(health_data):
+    """Render HTML health dashboard with clean styling"""
+    banner = demo.banner_html()
+    
+    # Determine status colors and icons
+    status_info = {
+        'healthy': {'color': 'var(--success-color)', 'icon': 'fas fa-check-circle', 'text': 'System Healthy'},
+        'warning': {'color': 'var(--warning-color)', 'icon': 'fas fa-exclamation-triangle', 'text': 'Minor Issues'},
+        'error': {'color': 'var(--danger-color)', 'icon': 'fas fa-times-circle', 'text': 'System Error'}
+    }
+    
+    current_status = status_info.get(health_data['status'], status_info['healthy'])
+    
+    # SSL Certificate status (simplified for installer package)
+    ssl_status = 'healthy'
+    ssl_info = 'Application running with HTTPS support'
+    
+    template = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>System Health - Financial Command Center AI</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        
+        <style>
+            /* Root variables for consistent color scheme */
+            :root {{
+                --primary-color: #2563eb;
+                --primary-hover: #1d4ed8;
+                --secondary-color: #64748b;
+                --success-color: #059669;
+                --warning-color: #d97706;
+                --danger-color: #dc2626;
+                --text-primary: #1e293b;
+                --text-secondary: #64748b;
+                --bg-primary: #ffffff;
+                --bg-secondary: #f8fafc;
+                --border-color: #e2e8f0;
+                --border-radius: 8px;
+                --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            }}
+            
+            * {{
+                box-sizing: border-box;
+            }}
+            
+            body {{
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                line-height: 1.6;
+            }}
+            
+            .container {{
+                max-width: 1200px;
+                margin: 0 auto;
+            }}
+            
+            .header {{
+                background: {current_status['color']};
+                color: white;
+                padding: 2rem;
+                border-radius: var(--border-radius);
+                margin-bottom: 2rem;
+                text-align: center;
+            }}
+            
+            .header h1 {{
+                font-size: 2rem;
+                font-weight: 600;
+                margin: 0 0 0.5rem 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+            }}
+            
+            .header p {{
+                margin: 0;
+                opacity: 0.9;
+                font-size: 1.1rem;
+            }}
+            
+            .stats {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }}
+            
+            .stat-card {{
+                background: var(--bg-primary);
+                padding: 1.5rem;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                border: 1px solid var(--border-color);
+                border-left: 4px solid var(--success-color);
+            }}
+            
+            .stat-card.warning {{
+                border-left-color: var(--warning-color);
+            }}
+            
+            .stat-header {{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 1rem;
+            }}
+            
+            .stat-title {{
+                font-size: 1.125rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }}
+            
+            .stat-icon {{
+                color: var(--primary-color);
+                font-size: 1.25rem;
+            }}
+            
+            .stat-status {{
+                padding: 0.25rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                background: #d1fae5;
+                color: #065f46;
+            }}
+            
+            .stat-value {{
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: var(--text-primary);
+                margin-bottom: 0.5rem;
+            }}
+            
+            .stat-description {{
+                color: var(--text-secondary);
+                font-size: 0.875rem;
+            }}
+            
+            .section {{
+                background: var(--bg-primary);
+                padding: 1.5rem;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                margin-bottom: 1.5rem;
+                border: 1px solid var(--border-color);
+            }}
+            
+            .section h2 {{
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: var(--text-primary);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }}
+            
+            .detail-item {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid var(--border-color);
+            }}
+            
+            .detail-item:last-child {{
+                border-bottom: none;
+            }}
+            
+            .detail-label {{
+                font-weight: 500;
+                color: var(--text-primary);
+            }}
+            
+            .detail-value {{
+                color: var(--text-secondary);
+                font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+                font-size: 0.875rem;
+            }}
+            
+            .btn {{
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                background: var(--primary-color);
+                color: white;
+                text-decoration: none;
+                border-radius: var(--border-radius);
+                font-weight: 500;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                border: none;
+                margin: 0.25rem;
+                font-size: 0.875rem;
+            }}
+            
+            .btn:hover {{
+                background: var(--primary-hover);
+                transform: translateY(-1px);
+            }}
+            
+            .actions {{
+                text-align: center;
+                margin-top: 2rem;
+                padding: 1.5rem;
+                background: var(--bg-primary);
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                border: 1px solid var(--border-color);
+            }}
+            
+            .refresh-info {{
+                margin-top: 1rem;
+                padding: 1rem;
+                background: var(--bg-secondary);
+                border-radius: var(--border-radius);
+                color: var(--text-secondary);
+                font-size: 0.875rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }}
+        </style>
+        
+        <script>
+            // Auto-refresh every 30 seconds
+            setTimeout(() => {{
+                if (document.visibilityState === 'visible') {{
+                    window.location.reload();
+                }}
+            }}, 30000);
+            
+            function refreshHealth() {{
+                window.location.reload();
+            }}
+        </script>
+    </head>
+    <body>
+        {banner}
+        <div class="container">
+            <div class="header">
+                <h1><i class="{current_status['icon']}"></i>{current_status['text']}</h1>
+                <p>System status as of {health_data['timestamp'][:19].replace('T', ' ')}</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <i class="fas fa-server stat-icon"></i>
+                            Application
+                        </div>
+                        <span class="stat-status">Running</span>
+                    </div>
+                    <div class="stat-value">v{health_data['version']}</div>
+                    <div class="stat-description">Core application is operational</div>
+                </div>
+                
+                <div class="stat-card {'warning' if health_data['security'] != 'enabled' else ''}">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <i class="fas fa-shield-alt stat-icon"></i>
+                            Security
+                        </div>
+                        <span class="stat-status">{health_data['security'].title()}</span>
+                    </div>
+                    <div class="stat-value">{health_data['security'].title()}</div>
+                    <div class="stat-description">API key authentication & rate limiting</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <i class="fas fa-lock stat-icon"></i>
+                            SSL/TLS
+                        </div>
+                        <span class="stat-status">Secured</span>
+                    </div>
+                    <div class="stat-value">HTTPS</div>
+                    <div class="stat-description">{ssl_info}</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <i class="fas fa-database stat-icon"></i>
+                            Mode
+                        </div>
+                        <span class="stat-status">{health_data['mode'].title()}</span>
+                    </div>
+                    <div class="stat-value">{health_data['mode'].title()} Mode</div>
+                    <div class="stat-description">{'Using sample data for testing' if health_data['mode'] == 'demo' else 'Connected to live services'}</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-puzzle-piece"></i>Integration Status</h2>
+                {chr(10).join([f'<div class="detail-item"><span class="detail-label">{integration.title()}</span><span class="detail-value">{status.title()}</span></div>' for integration, status in health_data['integrations'].items()])}
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-info-circle"></i>System Information</h2>
+                <div class="detail-item">
+                    <span class="detail-label">Version</span>
+                    <span class="detail-value">{health_data['version']}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Mode</span>
+                    <span class="detail-value">{health_data['mode']}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Security</span>
+                    <span class="detail-value">{health_data['security']}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Last Check</span>
+                    <span class="detail-value">{health_data['timestamp'][:19].replace('T', ' ')}</span>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">Quick Actions</h3>
+                <button onclick="refreshHealth()" class="btn"><i class="fas fa-sync-alt"></i>Refresh Status</button>
+                <a href="/admin/dashboard" class="btn"><i class="fas fa-tachometer-alt"></i>Admin Dashboard</a>
+                <a href="/" class="btn"><i class="fas fa-home"></i>Home</a>
+            </div>
+            
+            <div class="refresh-info">
+                <i class="fas fa-clock"></i>
+                This page auto-refreshes every 30 seconds
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return template
 
 # NEW: API key management (if security enabled)
 if SECURITY_ENABLED:
@@ -162,17 +523,150 @@ if SECURITY_ENABLED:
 def index():
     banner = demo.banner_html()
     return banner + """
-    <html>
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Financial Command Center AI</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        
         <style>
-            body { font-family: 'Segoe UI', sans-serif; margin: 40px; background: #f5f7fa; }
-            .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
-            .header { text-align: center; margin-bottom: 40px; }
-            .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
-            .feature { background: #f8f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; }
-            .btn { background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin: 5px; }
-            .btn:hover { background: #5a6fd8; }
+            /* Root variables for consistent color scheme */
+            :root {
+                --primary-color: #2563eb;
+                --primary-hover: #1d4ed8;
+                --secondary-color: #64748b;
+                --success-color: #059669;
+                --warning-color: #d97706;
+                --danger-color: #dc2626;
+                --text-primary: #1e293b;
+                --text-secondary: #64748b;
+                --bg-primary: #ffffff;
+                --bg-secondary: #f8fafc;
+                --border-color: #e2e8f0;
+                --border-radius: 8px;
+                --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            }
+            
+            * {
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                line-height: 1.6;
+            }
+            
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+            }
+            
+            .header {
+                background: var(--primary-color);
+                color: white;
+                padding: 2rem;
+                border-radius: var(--border-radius);
+                margin-bottom: 2rem;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+                font-weight: 600;
+                margin: 0 0 0.5rem 0;
+            }
+            
+            .header p {
+                margin: 0;
+                opacity: 0.9;
+                font-size: 1.1rem;
+            }
+            
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+                margin: 2rem 0;
+            }
+            
+            .feature {
+                background: var(--bg-primary);
+                padding: 1.5rem;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                border: 1px solid var(--border-color);
+                border-left: 4px solid var(--primary-color);
+                transition: all 0.2s ease;
+            }
+            
+            .feature:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+            }
+            
+            .feature h3 {
+                margin: 0 0 0.75rem 0;
+                font-size: 1.125rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .feature p {
+                margin: 0;
+                color: var(--text-secondary);
+                line-height: 1.5;
+            }
+            
+            .feature i {
+                color: var(--primary-color);
+                font-size: 1.25rem;
+            }
+            
+            .actions {
+                text-align: center;
+                margin-top: 2rem;
+                padding: 1.5rem;
+                background: var(--bg-primary);
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                border: 1px solid var(--border-color);
+            }
+            
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                background: var(--primary-color);
+                color: white;
+                text-decoration: none;
+                border-radius: var(--border-radius);
+                font-weight: 500;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                border: none;
+                margin: 0.25rem;
+                font-size: 0.875rem;
+            }
+            
+            .btn:hover {
+                background: var(--primary-hover);
+                transform: translateY(-1px);
+            }
+            
+            .btn i {
+                font-size: 0.875rem;
+            }
         </style>
     </head>
     <body>
@@ -184,27 +678,28 @@ def index():
             
             <div class="features">
                 <div class="feature">
-                    <h3> Secure API Access</h3>
-                    <p>Enterprise-grade authentication and rate limiting</p>
+                    <h3><i class="fas fa-shield-alt"></i>Secure API Access</h3>
+                    <p>Enterprise-grade authentication and rate limiting with comprehensive audit logging</p>
                 </div>
                 <div class="feature">
-                    <h3> Payment Processing</h3>
-                    <p>Stripe integration for secure payment handling</p>
+                    <h3><i class="fas fa-credit-card"></i>Payment Processing</h3>
+                    <p>Stripe integration for secure payment handling and subscription management</p>
                 </div>
                 <div class="feature">
-                    <h3> Banking Data</h3>
-                    <p>Plaid integration for real-time account access</p>
+                    <h3><i class="fas fa-university"></i>Banking Data</h3>
+                    <p>Plaid integration for real-time account access and transaction monitoring</p>
                 </div>
                 <div class="feature">
-                    <h3> Accounting</h3>
-                    <p>Xero integration for invoices and contacts</p>
+                    <h3><i class="fas fa-calculator"></i>Accounting</h3>
+                    <p>Xero integration for invoices, contacts, and comprehensive financial reporting</p>
                 </div>
             </div>
             
-            <div style="text-align: center; margin-top: 40px;">
-                <a href="/login" class="btn"> Connect to Xero</a>
-                <a href="/admin/dashboard" class="btn"> Admin Dashboard</a>
-                <a href="/health" class="btn"> Health Check</a>
+            <div class="actions">
+                <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">Get Started</h3>
+                <a href="/login" class="btn"><i class="fas fa-plug"></i>Connect to Xero</a>
+                <a href="/admin/dashboard" class="btn"><i class="fas fa-tachometer-alt"></i>Admin Dashboard</a>
+                <a href="/health" class="btn"><i class="fas fa-heartbeat"></i>Health Check</a>
             </div>
         </div>
     </body>

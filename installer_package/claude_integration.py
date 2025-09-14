@@ -224,10 +224,10 @@ def setup_claude_routes(app, logger=None):
                 <li><strong>Compliance Suite</strong> - Transaction monitoring & compliance</li>
             </ul>
             <div class="alert alert-info">
-                <strong>🔐 Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
-                <strong>🎯 Tailored:</strong> Only includes servers for services you've configured.<br>
-                <strong>📁 Dynamic:</strong> Automatically detects your project paths and Python setup.<br>
-                <strong>📱 Portable:</strong> Customized for YOUR specific directory and Python installation.
+                <strong>Secure:</strong> Uses your encrypted credentials from the setup wizard.<br>
+                <strong>Tailored:</strong> Only includes servers for services you've configured.<br>
+                <strong>Dynamic:</strong> Automatically detects your project paths and Python setup.<br>
+                <strong>Portable:</strong> Customized for YOUR specific directory and Python installation.
             </div>
             
             <div class="alert alert-warning">
@@ -238,8 +238,8 @@ def setup_claude_routes(app, logger=None):
                 3. This ensures correct paths for their system (Windows/Mac/Linux)
             </div>
             <br>
-            <button class="btn btn-primary" onclick="generateConfig()">📄 Generate Complete Config</button>
-            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">💾 Download Config</button>
+            <button class="btn btn-primary" onclick="generateConfig()">Generate Complete Config</button>
+            <button class="btn btn-success" onclick="downloadConfig()" id="downloadBtn" style="display:none;">Download Config</button>
             <div id="configSummary" style="margin-top: 15px; display: none;"></div>
         </div>
         
@@ -250,7 +250,7 @@ def setup_claude_routes(app, logger=None):
             </div>
             <p>If you don't have Claude Desktop installed yet:</p>
             <div class="alert alert-info">
-                <strong>📥 Download Claude Desktop:</strong><br>
+                <strong>Download Claude Desktop:</strong><br>
                 <a href="https://claude.ai/download" target="_blank" style="color: #1e40af; text-decoration: none;">https://claude.ai/download</a><br>
                 <small>Available for Windows, macOS, and Linux</small>
             </div>
@@ -262,7 +262,7 @@ def setup_claude_routes(app, logger=None):
                 Install Configuration File
             </div>
             <div class="alert alert-warning">
-                <strong>📁 Place the downloaded config file here:</strong><br><br>
+                <strong>Place the downloaded config file here:</strong><br><br>
                 <strong>Windows:</strong><br>
                 <code>%APPDATA%\\Claude\\claude_desktop_config.json</code><br><br>
                 <strong>macOS:</strong><br>
@@ -271,7 +271,7 @@ def setup_claude_routes(app, logger=None):
                 <code>~/.config/Claude/claude_desktop_config.json</code>
             </div>
             <div class="alert alert-success">
-                <strong>💡 Easy Installation:</strong><br>
+                <strong>Easy Installation:</strong><br>
                 1. Open File Explorer / Finder<br>
                 2. Navigate to the folder above<br>
                 3. Create the "Claude" folder if it doesn't exist<br>
@@ -285,12 +285,12 @@ def setup_claude_routes(app, logger=None):
                 Verify Configuration Paths
             </div>
             <div class="alert alert-info">
-                <strong>🔍 Quick Check:</strong> Open the downloaded <code>claude_desktop_config.json</code> and verify:<br>
+                <strong>Quick Check:</strong> Open the downloaded <code>claude_desktop_config.json</code> and verify:<br>
                 • Python executable path exists on your computer<br>
                 • MCP server script paths point to your project directory<br>
                 • All paths use your actual username and directory structure<br><br>
-                <strong>💻 Example:</strong> Paths should look like <code>C:\\Users\\[YourName]\\...\\python.exe</code><br>
-                <strong>ℹ️ If paths look wrong:</strong> Re-generate config after ensuring your project is in the right location
+                <strong>Example:</strong> Paths should look like <code>C:\\Users\\[YourName]\\...\\python.exe</code><br>
+                <strong>If paths look wrong:</strong> Re-generate config after ensuring your project is in the right location
             </div>
         </div>
         
@@ -319,36 +319,36 @@ def setup_claude_routes(app, logger=None):
                 Try Sample Commands
             </div>
             <div class="alert alert-success">
-                <strong>🎉 Once connected, try these AI commands in Claude Desktop:</strong>
+                <strong>Once connected, try these AI commands in Claude Desktop:</strong>
             </div>
             
             <div class="command-example">
-                <strong>💰 "Show me our cash flow this month"</strong><br>
+                <strong>"Show me our cash flow this month"</strong><br>
                 <em>Get real-time financial overview with current balances and trends</em>
             </div>
             
             <div class="command-example">
-                <strong>🧾 "List all unpaid invoices over $1000"</strong><br>
+                <strong>"List all unpaid invoices over $1000"</strong><br>
                 <em>Instantly filter and display high-value outstanding payments</em>
             </div>
             
             <div class="command-example">
-                <strong>👥 "Find contact details for [Customer Name]"</strong><br>
+                <strong>"Find contact details for [Customer Name]"</strong><br>
                 <em>Quick customer lookup with complete contact information</em>
             </div>
             
             <div class="command-example">
-                <strong>📊 "Check system health and integrations"</strong><br>
+                <strong>"Check system health and integrations"</strong><br>
                 <em>Monitor all connected services and identify any issues</em>
             </div>
         </div>
         
         <div class="setup-card" style="text-align: center;">
-            <h3>🚀 Ready to Continue?</h3>
+            <h3>Ready to Continue?</h3>
             <p>Once you've completed the setup above, your Claude Desktop integration will be ready!</p>
             <div style="margin-top: 20px;">
-                <a href="/admin/dashboard" class="btn btn-primary">📊 Admin Dashboard</a>
-                <a href="/" class="btn">🏠 Home</a>
+                <a href="/admin/dashboard" class="btn btn-primary">Admin Dashboard</a>
+                <a href="/" class="btn">Home</a>
             </div>
         </div>
     </div>
@@ -377,7 +377,7 @@ def setup_claude_routes(app, logger=None):
                     let setupInfo = '';
                     if (summary.portable_instructions) {
                         setupInfo = `
-                            <br><strong>📁 Your Setup Details:</strong><br>
+                            <br><strong>Your Setup Details:</strong><br>
                             • <strong>Python:</strong> ${summary.portable_instructions.python_location}<br>
                             • <strong>Directory:</strong> ${summary.project_directory}<br>
                             • <strong>Note:</strong> ${summary.portable_instructions.note}<br>
@@ -386,8 +386,8 @@ def setup_claude_routes(app, logger=None):
                     
                     summaryDiv.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>✅ Configuration Generated Successfully!</strong><br><br>
-                            <strong>📊 Summary:</strong><br>
+                            <strong>Configuration Generated Successfully!</strong><br><br>
+                            <strong>Summary:</strong><br>
                             • <strong>${summary.total_servers} MCP servers</strong> included<br>
                             • <strong>Servers:</strong> ${summary.servers.join(', ')}<br>
                             • <strong>Credentials used:</strong> ${credentialsUsed.join(', ') || 'None (demo mode)'}<br>
@@ -400,7 +400,7 @@ def setup_claude_routes(app, logger=None):
                     const summaryDiv = document.getElementById('configSummary');
                     summaryDiv.innerHTML = `
                         <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
-                            <strong>❌ Configuration Generation Failed</strong><br>
+                            <strong>Configuration Generation Failed</strong><br>
                             Error: ${data.message}
                         </div>
                     `;
@@ -410,7 +410,7 @@ def setup_claude_routes(app, logger=None):
                 const summaryDiv = document.getElementById('configSummary');
                 summaryDiv.innerHTML = `
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
-                        <strong>❌ Network Error</strong><br>
+                        <strong>Network Error</strong><br>
                         Failed to generate configuration: ${error.message}
                     </div>
                 `;

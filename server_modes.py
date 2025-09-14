@@ -134,12 +134,12 @@ class ServerModeManager:
         </head>
         <body>
             <div class="container">
-                <div class="icon">🔒</div>
+                <div class="icon"></div>
                 <h1>HTTPS Required</h1>
                 <p class="subtitle">Financial Command Center AI requires a secure connection</p>
                 
                 <div class="security-notice">
-                    <h3>🛡️ Security Notice</h3>
+                    <h3>Security Notice</h3>
                     <p>This application handles sensitive financial data and requires encrypted connections for your protection.</p>
                 </div>
                 
@@ -148,7 +148,7 @@ class ServerModeManager:
                     {{ https_url }}
                 </div>
                 
-                <a href="{{ https_url }}" class="btn">🔐 Continue with HTTPS</a>
+                <a href="{{ https_url }}" class="btn">Continue with HTTPS</a>
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
                     <p style="color: #6c757d; font-size: 0.9rem;">
@@ -300,12 +300,12 @@ class ServerModeManager:
         </head>
         <body>
             <div class="container">
-                <div class="warning-icon">⚠️</div>
+                <div class="warning-icon"></div>
                 <h1>Unsecured Connection Warning</h1>
                 <p class="subtitle">You are accessing Financial Command Center AI over an unsecured HTTP connection</p>
                 
                 <div class="risk-notice">
-                    <h3>🚨 Security Risks</h3>
+                    <h3>Security Risks</h3>
                     <ul class="risk-list">
                         <li><strong>Data Interception:</strong> Your financial data could be intercepted by third parties</li>
                         <li><strong>Man-in-the-Middle Attacks:</strong> Attackers could modify requests and responses</li>
@@ -324,8 +324,8 @@ class ServerModeManager:
                 </div>
                 
                 <div style="margin: 30px 0;">
-                    <a href="{{ https_url }}" class="btn-primary">🔐 Switch to HTTPS Now</a>
-                    <a href="{{ current_url }}" class="btn-secondary">⚠️ Continue with HTTP (Not Recommended)</a>
+                    <a href="{{ https_url }}" class="btn-primary">Switch to HTTPS Now</a>
+                    <a href="{{ current_url }}" class="btn-secondary">Continue with HTTP (Not Recommended)</a>
                 </div>
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
@@ -424,14 +424,14 @@ class ServerModeManager:
             </head>
             <body>
                 <div class="container">
-                    <h1>🔐 SSL Certificate Setup Guide</h1>
+                    <h1>SSL Certificate Setup Guide</h1>
                     
                     <div class="alert alert-info">
-                        <h3>📋 Current Certificate Status</h3>
+                        <h3>Current Certificate Status</h3>
                         <pre>{{ health_status }}</pre>
                     </div>
                     
-                    <h2>🚀 Quick Setup</h2>
+                    <h2>Quick Setup</h2>
                     
                     <div class="step">
                         <h3>Step 1: Generate Certificates</h3>
@@ -472,7 +472,7 @@ class ServerModeManager:
                     <div class="code">python cert_manager.py --generate</div>
                     <p>This will create new certificates valid for 365 days.</p>
                     
-                    <h2>🏢 Enterprise Setup</h2>
+                    <h2>Enterprise Setup</h2>
                     
                     <div class="step">
                         <h3>Custom Certificate Authority</h3>
@@ -490,7 +490,7 @@ class ServerModeManager:
                         <div class="code">ALLOW_HTTP=true python app.py</div>
                     </div>
                     
-                    <h2>🐳 Docker Setup</h2>
+                    <h2>Docker Setup</h2>
                     
                     <div class="step">
                         <h3>Docker Compose with SSL</h3>
@@ -506,9 +506,9 @@ ports:
                     </div>
                     
                     <div style="margin-top: 40px; text-align: center;">
-                        <a href="/admin/certificate-bundle" class="btn">📦 Download Certificate Bundle</a>
-                        <a href="/health" class="btn">💓 System Health Check</a>
-                        <a href="/" class="btn">🏠 Home</a>
+                        <a href="/admin/certificate-bundle" class="btn">Download Certificate Bundle</a>
+                        <a href="/health" class="btn">System Health Check</a>
+                        <a href="/" class="btn">Home</a>
                     </div>
                     
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; color: #6c757d; font-size: 0.9rem;">

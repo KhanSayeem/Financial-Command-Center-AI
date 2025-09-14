@@ -526,7 +526,7 @@
                 <div class="service-card" id="plaidCard">
                     <div class="service-header">
                         <div class="service-title">
-                            <span class="service-icon">🏦</span>
+                            <span class="service-icon">P</span>
                             Plaid Banking API Configuration
                         </div>
                         <div class="service-status status-pending" id="plaidStatus">Pending</div>
@@ -634,7 +634,7 @@
             <!-- Step 5: Summary & Completion -->
             <div class="step" id="step5">
                 <div class="step-title">
-                    <span>✅</span>
+                    <span>Step 5:</span>
                     Configuration Complete
                 </div>
                 <div class="step-description">
@@ -647,27 +647,27 @@
                     <h3 style="margin-bottom: 20px;">Configuration Summary</h3>
                     
                     <div class="config-item">
-                        <div class="config-label">💳 Stripe Integration</div>
+                        <div class="config-label">Stripe Integration</div>
                         <div class="config-value" id="stripeSummary">Not configured</div>
                     </div>
                     
                     <div class="config-item">
-                        <div class="config-label">📊 Xero Integration</div>
+                        <div class="config-label">Xero Integration</div>
                         <div class="config-value" id="xeroSummary">Not configured</div>
                     </div>
                     
                     <div class="config-item">
-                        <div class="config-label">🏦 Plaid Banking</div>
+                        <div class="config-label">Plaid Banking</div>
                         <div class="config-value" id="plaidSummary">Not configured</div>
                     </div>
                     
                     <div class="config-item">
-                        <div class="config-label">🔐 Security</div>
+                        <div class="config-label">Security</div>
                         <div class="config-value">AES-256 Encryption</div>
                     </div>
                     
                     <div class="config-item">
-                        <div class="config-label">📁 Storage</div>
+                        <div class="config-label">Storage</div>
                         <div class="config-value">Local encrypted files</div>
                     </div>
                 </div>
@@ -689,7 +689,7 @@
             <!-- Step 6: Success -->
             <div class="step" id="step6">
                 <div class="completion-screen">
-                    <div class="completion-icon">🎉</div>
+                    <div class="completion-icon">✓</div>
                     <div class="completion-title">Setup Complete!</div>
                     <div class="completion-message">
                         Your Financial Command Center is now configured and ready to use. 
@@ -697,9 +697,9 @@
                     </div>
                     
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <a href="/admin/dashboard" class="btn btn-primary">📊 Go to Dashboard</a>
-                        <a href="/health" class="btn btn-secondary">💓 Check System Health</a>
-                        <button class="btn btn-skip" onclick="location.reload()">🔄 Run Wizard Again</button>
+                        <a href="/admin/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                        <a href="/health" class="btn btn-secondary">Check System Health</a>
+                        <button class="btn btn-skip" onclick="location.reload()">Run Wizard Again</button>
                     </div>
                 </div>
             </div>
@@ -798,7 +798,7 @@
                     statusElement.className = 'service-status status-connected';
                     card.classList.add('connected');
                     document.getElementById('stripeNext').disabled = false;
-                    showMessage('stripe-messages', 'success', `✅ Connected to Stripe successfully! Account: ${result.account_name || 'N/A'}`);
+                    showMessage('stripe-messages', 'success', `Connected to Stripe successfully! Account: ${result.account_name || 'N/A'}`);
                 } else {
                     throw new Error(result.error || 'Connection failed');
                 }
@@ -806,7 +806,7 @@
                 statusElement.textContent = 'Error';
                 statusElement.className = 'service-status status-error';
                 card.classList.add('error');
-                showMessage('stripe-messages', 'error', `❌ Connection failed: ${error.message}`);
+                showMessage('stripe-messages', 'error', `Connection failed: ${error.message}`);
             } finally {
                 testSpinner.style.display = 'none';
                 testText.style.display = 'inline';
@@ -852,7 +852,7 @@
                     statusElement.className = 'service-status status-connected';
                     card.classList.add('connected');
                     document.getElementById('xeroNext').disabled = false;
-                    showMessage('xero-messages', 'success', '✅ Xero configuration validated successfully!');
+                    showMessage('xero-messages', 'success', 'Xero configuration validated successfully!');
                 } else {
                     throw new Error(result.error || 'Configuration validation failed');
                 }
@@ -860,7 +860,7 @@
                 statusElement.textContent = 'Error';
                 statusElement.className = 'service-status status-error';
                 card.classList.add('error');
-                showMessage('xero-messages', 'error', `❌ Validation failed: ${error.message}`);
+                showMessage('xero-messages', 'error', `Validation failed: ${error.message}`);
             } finally {
                 testSpinner.style.display = 'none';
                 testText.style.display = 'inline';
@@ -878,7 +878,7 @@
             xeroSkipped = true;
             document.getElementById('xeroNext').disabled = false;
             document.getElementById('xeroCard').style.opacity = '0.6';
-            showMessage('xero-messages', 'success', '✅ Xero integration skipped - Demo mode enabled');
+            showMessage('xero-messages', 'success', 'Xero integration skipped - Demo mode enabled');
         }
         
         async function testPlaidConnection() {
@@ -919,8 +919,8 @@
                     statusElement.textContent = 'Configured';
                     statusElement.className = 'service-status status-success';
                     
-                    showMessage('plaid-messages', 'success', 
-                        `✅ ${result.message}<br>
+                    showMessage('plaid-messages', 'success',
+                        `${result.message}<br>
                         <strong>Client ID:</strong> ${result.client_id_preview}<br>
                         <strong>Environment:</strong> ${result.environment}<br>
                         <small>${result.note}</small>`
@@ -931,7 +931,7 @@
                     statusElement.textContent = 'Failed';
                     statusElement.className = 'service-status status-error';
                     
-                    showMessage('plaid-messages', 'error', `❌ ${result.error}`);
+                    showMessage('plaid-messages', 'error', `${result.error}`);
                 }
             } catch (error) {
                 plaidConfigured = false;
@@ -939,7 +939,7 @@
                 statusElement.textContent = 'Error';
                 statusElement.className = 'service-status status-error';
                 
-                showMessage('plaid-messages', 'error', `❌ Connection test failed: ${error.message}`);
+                showMessage('plaid-messages', 'error', `Connection test failed: ${error.message}`);
             } finally {
                 testSpinner.style.display = 'none';
                 testText.style.display = 'inline';
@@ -950,7 +950,7 @@
             plaidSkipped = true;
             document.getElementById('plaidNext').disabled = false;
             document.getElementById('plaidCard').style.opacity = '0.6';
-            showMessage('plaid-messages', 'success', '✅ Plaid integration skipped - Demo mode enabled');
+            showMessage('plaid-messages', 'success', 'Plaid integration skipped - Demo mode enabled');
         }
 
         function updateSummary() {

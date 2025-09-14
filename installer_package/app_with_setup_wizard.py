@@ -1547,10 +1547,10 @@ def profile():
                 {''.join([f'<div class="account"><strong>{account.name}</strong><br><small>Code: {account.code}</small></div>' for account in accounts.accounts[:5]])}
                 
                 <div style="margin-top: 30px;">
-                    <a href="/xero/contacts" class="btn">📋 View Contacts</a>
-                    <a href="/xero/invoices" class="btn">🧾 View Invoices</a>
-                    <a href="/admin/dashboard" class="btn">📊 Admin Dashboard</a>
-                    <a href="/" class="btn">🏠 Home</a>
+                    <a href="/xero/contacts" class="btn">View Contacts</a>
+                    <a href="/xero/invoices" class="btn">View Invoices</a>
+                    <a href="/admin/dashboard" class="btn">Admin Dashboard</a>
+                    <a href="/" class="btn">Home</a>
                 </div>
             </div>
         </body>
@@ -1750,7 +1750,7 @@ def view_xero_contacts():
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>📋 Xero Contacts</h1>
+                    <h1>Xero Contacts</h1>
                     <p>Connected to tenant: {session['tenant_id']}</p>
                 </div>
                 
@@ -1774,14 +1774,14 @@ def view_xero_contacts():
                         </div>
                     </div>
                     
-                    <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search contacts..." onkeyup="filterContacts()">
+                    <input type="text" id="searchBox" class="search-box" placeholder="Search contacts..." onkeyup="filterContacts()">
                     
                     <div class="contacts-grid" id="contactsGrid">
                         {''.join([
                             f'''<div class="contact-card" data-name="{contact['name'].lower()}" data-email="{contact['email'].lower()}">
                                 <div class="contact-name">{contact['name']}</div>
-                                <div class="contact-email">📧 {contact['email']}</div>
-                                <div class="contact-phone">📞 {contact['phone']}</div>
+                                <div class="contact-email">{contact['email']}</div>
+                                <div class="contact-phone">{contact['phone']}</div>
                                 <div class="contact-tags">
                                     <span class="tag">Status: {contact['status']}</span>
                                     {('<span class="tag customer">Customer</span>' if contact['is_customer'] else '')}
@@ -1794,9 +1794,9 @@ def view_xero_contacts():
                 </div>
                 
                 <div class="nav-buttons">
-                    <a href="/xero/invoices" class="btn">🧾 View Invoices</a>
-                    <a href="/profile" class="btn secondary">👤 Back to Profile</a>
-                    <a href="/" class="btn secondary">🏠 Home</a>
+                    <a href="/xero/invoices" class="btn">View Invoices</a>
+                    <a href="/profile" class="btn secondary">Back to Profile</a>
+                    <a href="/" class="btn secondary">Home</a>
                 </div>
             </div>
             
@@ -1828,7 +1828,7 @@ def view_xero_contacts():
         <html>
         <head><title>Error - Xero Contacts</title></head>
         <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
-            <h1 style="color: #e74c3c;">❌ Error Loading Contacts</h1>
+            <h1 style="color: #e74c3c;">Error Loading Contacts</h1>
             <p>There was an error loading your Xero contacts:</p>
             <p style="color: #666; font-style: italic;">{str(e)}</p>
             <p><a href="/login" style="color: #667eea;">Try logging in again</a> or <a href="/profile" style="color: #667eea;">return to profile</a></p>
@@ -2051,7 +2051,7 @@ def view_xero_invoices():
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🧾 Xero Invoices</h1>
+                    <h1>Xero Invoices</h1>
                     <p>Connected to tenant: {session['tenant_id']}</p>
                 </div>
                 
@@ -2076,7 +2076,7 @@ def view_xero_invoices():
                     </div>
                     
                     <div class="search-filter">
-                        <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search invoices..." onkeyup="filterInvoices()">
+                        <input type="text" id="searchBox" class="search-box" placeholder="Search invoices..." onkeyup="filterInvoices()">
                         <select id="statusFilter" class="filter-select" onchange="filterInvoices()">
                             <option value="">All Statuses</option>
                             <option value="DRAFT">Draft</option>
@@ -2118,9 +2118,9 @@ def view_xero_invoices():
                 </div>
                 
                 <div class="nav-buttons">
-                    <a href="/xero/contacts" class="btn">📋 View Contacts</a>
-                    <a href="/profile" class="btn secondary">👤 Back to Profile</a>
-                    <a href="/" class="btn secondary">🏠 Home</a>
+                    <a href="/xero/contacts" class="btn">View Contacts</a>
+                    <a href="/profile" class="btn secondary">Back to Profile</a>
+                    <a href="/" class="btn secondary">Home</a>
                 </div>
             </div>
             
@@ -2157,7 +2157,7 @@ def view_xero_invoices():
         <html>
         <head><title>Error - Xero Invoices</title></head>
         <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
-            <h1 style="color: #e74c3c;">❌ Error Loading Invoices</h1>
+            <h1 style="color: #e74c3c;">Error Loading Invoices</h1>
             <p>There was an error loading your Xero invoices:</p>
             <p style="color: #666; font-style: italic;">{str(e)}</p>
             <p><a href="/login" style="color: #667eea;">Try logging in again</a> or <a href="/profile" style="color: #667eea;">return to profile</a></p>
@@ -2385,7 +2385,7 @@ def admin_dashboard():
     <body>
         <div class="container">
             <div class="header">
-                <h1>🏦 Financial Command Center AI</h1>
+                <h1>Financial Command Center AI</h1>
                 <p>Admin Dashboard - System Management & Monitoring</p>
             </div>
             
@@ -2423,14 +2423,14 @@ def admin_dashboard():
                 <h2>🔌 Integration Status</h2>
                 <div class="integration-status">
                     <div class="integration-card {{ 'configured' if stripe_configured else 'skipped' if stripe_skipped else 'not-configured' }}">
-                        <h3>💳 Stripe Integration</h3>
-                        <p><strong>Status:</strong> {{ '✅ Configured & Active' if stripe_configured else '⏭️ Skipped (Demo Mode)' if stripe_skipped else '❌ Not Configured' }}</p>
+                        <h3>Stripe Integration</h3>
+                        <p><strong>Status:</strong> {{ 'Configured & Active' if stripe_configured else '⏭️ Skipped (Demo Mode)' if stripe_skipped else '❌ Not Configured' }}</p>
                         <p><strong>Payment Processing:</strong> {{ 'Enabled' if stripe_configured else 'Demo Mode' if stripe_skipped else 'Disabled' }}</p>
                     </div>
                     
                     <div class="integration-card {{ 'configured' if xero_configured else 'skipped' if xero_skipped else 'not-configured' }}">
-                        <h3>📊 Xero Integration</h3>
-                        <p><strong>Status:</strong> {{ '✅ Configured & Active' if xero_configured else '⏭️ Skipped (Demo Mode)' if xero_skipped else '❌ Not Configured' }}</p>
+                        <h3>Xero Integration</h3>
+                        <p><strong>Status:</strong> {{ 'Configured & Active' if xero_configured else '⏭️ Skipped (Demo Mode)' if xero_skipped else '❌ Not Configured' }}</p>
                         <p><strong>Accounting Sync:</strong> {{ 'Enabled' if xero_configured else 'Demo Mode' if xero_skipped else 'Disabled' }}</p>
                     </div>
                     
@@ -2486,15 +2486,15 @@ def admin_dashboard():
             </div>
             
             <div class="section">
-                <h2>🚀 Quick Actions</h2>
+                <h2>Quick Actions</h2>
                 <a href="/claude/setup" class="btn" style="background: #2563eb;">Connect to Claude Desktop</a>
-                <a href="/setup" class="btn">⚙️ Configuration Wizard</a>
-                <a href="/health" class="btn">💓 Health Check</a>
+                <a href="/setup" class="btn">Configuration Wizard</a>
+                <a href="/health" class="btn">Health Check</a>
                 {% if xero_configured %}
-                <a href="/login" class="btn">🔗 Connect Xero</a>
+                <a href="/login" class="btn">Connect Xero</a>
                 {% endif %}
-                <a href="/admin/create-demo-key" class="btn">🔑 Create Demo Key</a>
-                <a href="/" class="btn">🏠 Home</a>
+                <a href="/admin/create-demo-key" class="btn">Create Demo Key</a>
+                <a href="/" class="btn">Home</a>
             </div>
         </div>
     </body>
@@ -2547,15 +2547,15 @@ def create_demo_key():
     </head>
     <body>
         <div class="container">
-            <h1>🔑 Demo API Key Created!</h1>
+            <h1>Demo API Key Created!</h1>
             
             <div class="key-box">
                 <h3>Your New API Key:</h3>
                 <div class="code">{demo_key}</div>
-                <p><strong>⚠️ Important:</strong> Save this key securely - it won't be shown again!</p>
+                <p><strong>Important:</strong> Save this key securely - it won't be shown again!</p>
             </div>
             
-            <h3>🧪 Test Your API Key:</h3>
+            <h3>Test Your API Key:</h3>
             
             <h4>1. Test Authentication:</h4>
             <div class="code">
@@ -2569,7 +2569,7 @@ curl -H "X-API-Key: {demo_key}" https://127.0.0.1:8000/health
             
             <div style="margin-top: 30px;">
                 <a href="/admin/dashboard" class="btn">← Back to Dashboard</a>
-                <a href="/setup" class="btn">⚙️ Configuration Wizard</a>
+                <a href="/setup" class="btn">Configuration Wizard</a>
             </div>
         </div>
     </body>
