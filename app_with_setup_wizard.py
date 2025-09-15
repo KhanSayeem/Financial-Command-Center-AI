@@ -83,6 +83,16 @@ except ImportError as e:
 except Exception as e:
     print(f"WARNING: Claude integration setup failed: {e}")
 
+# Import and setup Warp AI Terminal integration
+try:
+    from warp_integration import setup_warp_routes
+    warp_setup_result = setup_warp_routes(app, logger)
+    print("Warp AI Terminal integration loaded")
+except ImportError as e:
+    print(f"WARNING: Warp integration not available: {e}")
+except Exception as e:
+    print(f"WARNING: Warp integration setup failed: {e}")
+
 def get_credentials_or_redirect():
     """Get credentials from setup wizard or redirect to setup if not configured"""
     credentials = get_configured_credentials()
@@ -215,9 +225,10 @@ def index():
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0 0 15px 0; font-size: 1.5rem;">AI-Powered Financial Operations</h3>
-                <p style="margin-bottom: 20px; opacity: 0.9;">Connect Claude Desktop to manage your finances with natural language commands</p>
+                <p style="margin-bottom: 20px; opacity: 0.9;">Connect Claude Desktop or Warp Terminal to manage your finances with natural language commands</p>
                 <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
                     <a href="/claude/setup" class="btn" style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); font-weight: 600; padding: 12px 24px;">Setup Claude Desktop</a>
+                    <a href="/warp/setup" class="btn" style="background: linear-gradient(135deg, #6366f1, #5b21b6); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); font-weight: 600; padding: 12px 24px;">Setup Warp Terminal</a>
                     <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-size: 0.9em; border: 1px solid rgba(255,255,255,0.2);">Try: "Show me our cash flow this month"</div>
                 </div>
             </div>
@@ -255,7 +266,8 @@ def index():
             </div>
             
             <div style="text-align: center; margin-top: 40px;">
-                <a href="/claude/setup" class="btn" style="background: #2563eb; font-size: 1.1em; padding: 16px 32px;">Connect to Claude Desktop</a><br><br>
+                <a href="/claude/setup" class="btn" style="background: #2563eb; font-size: 1.1em; padding: 16px 32px;">Connect to Claude Desktop</a>
+                <a href="/warp/setup" class="btn" style="background: #6366f1; font-size: 1.1em; padding: 16px 32px;">Connect to Warp Terminal</a><br><br>
                 {xero_buttons}
                 <a href="/admin/dashboard" class="btn">Admin Dashboard</a>
                 <a href="/health" class="btn">Health Check</a>
@@ -2488,6 +2500,7 @@ def admin_dashboard():
             <div class="section">
                 <h2>Quick Actions</h2>
                 <a href="/claude/setup" class="btn" style="background: #2563eb;">Connect to Claude Desktop</a>
+                <a href="/warp/setup" class="btn" style="background: #6366f1;">Connect to Warp Terminal</a>
                 <a href="/setup" class="btn">Configuration Wizard</a>
                 <a href="/health" class="btn">Health Check</a>
                 {% if xero_configured %}
