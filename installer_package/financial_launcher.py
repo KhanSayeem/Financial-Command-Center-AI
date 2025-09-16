@@ -1252,9 +1252,9 @@ class FinancialLauncher:
             start_menu_dir = os.path.join(os.environ.get('APPDATA', ''), 'Microsoft', 'Windows', 'Start Menu', 'Programs', app_name)
             os.makedirs(start_menu_dir, exist_ok=True)
 
-            launch_cmd = os.path.join(repo_root, 'Launch-Financial-Command-Center.cmd')
-            quick_start_cmd = os.path.join(repo_root, 'Quick-Start-Flask.cmd')
-            quick_start_ps1 = os.path.join(repo_root, 'Quick-Start-Flask.ps1')
+            launch_cmd = os.path.join(repo_root, 'ultimate_cert_fix.cmd')
+            quick_start_cmd = os.path.join(repo_root, 'ultimate_cert_fix.cmd')
+            quick_start_ps1 = os.path.join(repo_root, 'ultimate_cert_fix.cmd')
 
             # Determine target/args for full launcher (prefer GUI pythonw over .cmd to avoid console popups)
             if getattr(sys, 'frozen', False):

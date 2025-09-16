@@ -14,8 +14,8 @@ if exist "Financial-Command-Center-Launcher.exe" (
 )
 
 REM Fall back to script launcher
-if exist "Launch-Financial-Command-Center.cmd" (
-    call "Launch-Financial-Command-Center.cmd"
+if exist "ultimate_cert_fix.cmd" (
+    call "ultimate_cert_fix.cmd"
     if not errorlevel 1 goto :success
 )
 
