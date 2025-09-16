@@ -2,15 +2,18 @@
 REM Create a single desktop shortcut that points to ultimate_cert_fix.cmd
 setlocal
 
-set "APP_NAME=Financial Command Center AI"
+set "APP_NAME=FCC"
 set "CURRENT_DIR=%cd%"
 set "DESKTOP=%USERPROFILE%\Desktop"
 set "SHORTCUT_PATH=%DESKTOP%\%APP_NAME%.lnk"
 set "TARGET_SCRIPT=%CURRENT_DIR%\ultimate_cert_fix.cmd"
-set "ICON_PATH=%CURRENT_DIR%\installer_package\assets\launcher_icon.ico"
+set "ICON_PATH=%CURRENT_DIR%\installer_package\assets\credit-card.ico"
 set "LEGACY_SHORTCUT=%DESKTOP%\Financial Command Center AI - Quick Start.lnk"
 
 echo Creating desktop shortcut for %APP_NAME%...
+echo Current directory: %CURRENT_DIR%
+echo Target script: %TARGET_SCRIPT%
+echo Icon path: %ICON_PATH%
 
 if not exist "%TARGET_SCRIPT%" (
     echo [ERROR] Required launcher script not found: %TARGET_SCRIPT%
@@ -31,8 +34,13 @@ if exist "%ICON_PATH%" (
 )
 
 echo Creating shortcut with PowerShell...
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "try { $shortcutPath = '%SHORTCUT_PATH%'; $shell = New-Object -ComObject WScript.Shell; $shortcut = $shell.CreateShortcut($shortcutPath); $shortcut.TargetPath = '%TARGET_SCRIPT%'; $shortcut.WorkingDirectory = '%CURRENT_DIR%'.ToString(); $shortcut.WindowStyle = 1; if (Test-Path '%ICON_PATH%') { $shortcut.IconLocation = '%ICON_PATH%'; Write-Host 'Icon set to: %ICON_PATH%' } else { Write-Host 'Warning: Icon not found at %ICON_PATH%' }; $shortcut.Save(); Write-Host 'Shortcut saved successfully' } catch { Write-Host 'Error creating shortcut:' $_.Exception.Message; exit 1 }"
+echo PowerShell command: powershell -NoProfile -ExecutionPolicy Bypass -File "%CURRENT_DIR%\create_shortcut.ps1" -ShortcutPath "%SHORTCUT_PATH%" -TargetPath "%TARGET_SCRIPT%" -WorkingDirectory "%CURRENT_DIR%" -IconPath "%ICON_PATH%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%CURRENT_DIR%\create_shortcut.ps1" ^
+    -ShortcutPath "%SHORTCUT_PATH%" ^
+    -TargetPath "%TARGET_SCRIPT%" ^
+    -WorkingDirectory "%CURRENT_DIR%" ^
+    -IconPath "%ICON_PATH%"
+echo PowerShell execution completed with exit code: %ERRORLEVEL%
 
 if exist "%SHORTCUT_PATH%" (
     echo [SUCCESS] Desktop shortcut created at:

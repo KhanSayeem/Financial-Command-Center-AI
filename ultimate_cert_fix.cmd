@@ -8,7 +8,7 @@ pushd "%SCRIPT_DIR%" >nul
 for %%I in ("%SCRIPT_DIR%.") do set "SCRIPT_DIR=%%~fI"
 
 set "INSTALL_FLAG_FILE=%SCRIPT_DIR%\.fcc_installed"
-set "DESKTOP_SHORTCUT=%USERPROFILE%\Desktop\Financial Command Center AI.lnk"
+set "DESKTOP_SHORTCUT=%USERPROFILE%\Desktop\FCC.lnk"
 
 if exist "%INSTALL_FLAG_FILE%" (
     if exist "%DESKTOP_SHORTCUT%" (
@@ -100,7 +100,11 @@ echo Step 4: Verifying certificate health...
 if "!LAUNCH_MODE!"=="install" (
     echo.
     echo Step 5: Creating desktop shortcut for future quick launches...
-    call "%SCRIPT_DIR%Create-Desktop-Shortcut.cmd"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\create_shortcut.ps1" ^
+        -ShortcutPath "%DESKTOP_SHORTCUT%" ^
+        -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
+        -WorkingDirectory "%SCRIPT_DIR%" ^
+        -IconPath "%SCRIPT_DIR%\installer_package\assets\credit-card.ico"
     if exist "%DESKTOP_SHORTCUT%" (
         echo  - Desktop shortcut created successfully
         echo  - Use the desktop shortcut for quick launches in the future
@@ -111,6 +115,21 @@ if "!LAUNCH_MODE!"=="install" (
 
     echo %DATE% %TIME% > "%INSTALL_FLAG_FILE%"
     echo  - Installation flag file created
+)
+
+if "!LAUNCH_MODE!"=="repair" (
+    echo.
+    echo Step 5: Recreating desktop shortcut...
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\create_shortcut.ps1" ^
+        -ShortcutPath "%DESKTOP_SHORTCUT%" ^
+        -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
+        -WorkingDirectory "%SCRIPT_DIR%" ^
+        -IconPath "%SCRIPT_DIR%\installer_package\assets\credit-card.ico"
+    if exist "%DESKTOP_SHORTCUT%" (
+        echo  - Desktop shortcut recreated successfully
+    ) else (
+        echo  - Warning: Could not recreate desktop shortcut
+    )
 )
 
 :launch_app
