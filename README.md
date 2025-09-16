@@ -118,7 +118,7 @@
 2. **Select "Download ZIP"**
 3. **Extract** to your preferred location (Documents, Desktop, etc.)
 4. **Navigate** to the extracted folder
-5. **Double-click** `Launch-Financial-Command-Center.cmd` in the `installer_package` folder
+5. **Double-click** `ultimate_cert_fix.cmd` in the project root folder
 
 #### **Option B: Git Clone (For Developers)**
 ```bash
@@ -129,7 +129,7 @@ cd Financial-Command-Center-AI
 ### **Step 2: Launch Financial Command Center** (≈ 30 seconds)
 
 #### **Windows Users (Recommended)**
-1. **Double-click** `Financial-Command-Center-AI.cmd` in the `installer_package` folder to start
+1. **Double-click** `ultimate_cert_fix.cmd` in the project root folder to start
 2. **First Run Automatic Setup**:
    - Creates Python virtual environment automatically
    - Installs all dependencies in background
@@ -196,10 +196,10 @@ git clone https://github.com/KhanSayeem/Financial-Command-Center-AI.git
 cd Financial-Command-Center-AI
 
 # Option A: Full launcher with shortcut creation (RECOMMENDED)
-Financial-Command-Center-AI.cmd
+ultimate_cert_fix.cmd
 
 # Option B: Quick start (if environment already set up)
-Quick-Start-Flask.cmd
+ultimate_cert_fix.cmd
 
 # Option C: Manual desktop shortcut creation
 Create-Desktop-Shortcut.cmd
@@ -220,8 +220,8 @@ python app_with_setup_wizard.py
 ```
 
 #### **What Each Script Does:**
-- **`Financial-Command-Center-AI.cmd`** - Main launcher, creates desktop shortcut on first run
-- **`Quick-Start-Flask.cmd`** - Direct Flask launch (used by desktop shortcut)
+- **`ultimate_cert_fix.cmd`** - Main launcher, creates desktop shortcut on first run
+- **`ultimate_cert_fix.cmd`** - Direct Flask launch (used by desktop shortcut)
 - **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation tool
 - **`Test-Quick-Launch.cmd`** - Simple test launcher for debugging
 
@@ -318,7 +318,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ### **🚑 Quick Troubleshooting**
 
-#### **"Financial-Command-Center-AI.cmd won't start"**
+#### **"ultimate_cert_fix.cmd won't start"**
 - **Check**: Python 3.8+ is installed on your system
 - **Try**: Run as administrator (right-click → "Run as administrator")
 - **Fix**: Ensure internet connection for downloading dependencies
@@ -341,7 +341,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 ## **Daily Workflow - How Your Team Will Use This**
 
 ### **First Time Setup** (≈ 2 minutes)
-1. **Double-click** `Financial-Command-Center-AI.cmd` 
+1. **Double-click** `ultimate_cert_fix.cmd` 
 2. **Watch automatic setup** - dependencies install, SSL certificates generate
 3. **Desktop shortcut created** - "Financial Command Center AI - Quick Start"
 4. **Browser opens** to `https://127.0.0.1:8000` for initial configuration
@@ -485,7 +485,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 ### 📈 **Claude Desktop Setup - Complete Integration Guide**
 
 #### **Step 1: Setup Financial Command Center** (3 minutes)
-1. **Run our launcher**: `Financial-Command-Center-AI.cmd`
+1. **Run our launcher**: `ultimate_cert_fix.cmd`
 2. **Complete setup wizard**: Configure Stripe, Xero, Plaid credentials (one time only)
 3. **Test connections**: Ensure all integrations are working
 
@@ -766,7 +766,7 @@ If you're building custom integrations or connecting other business tools:
 
 ### 💾 **Windows Launcher Troubleshooting**
 
-#### **"Financial-Command-Center-AI.cmd won't start"**
+#### **"ultimate_cert_fix.cmd won't start"**
 1. **Check Python installation**: Ensure Python 3.8+ is installed
 2. **Run as administrator**: Right-click → "Run as administrator"
 3. **Check virtual environment**: The script creates `.venv` automatically
@@ -774,9 +774,9 @@ If you're building custom integrations or connecting other business tools:
 
 #### **"Desktop shortcut not working"**
 1. **Manual shortcut creation**: Run `Create-Desktop-Shortcut.cmd`
-2. **Check target path**: Shortcut should point to `Quick-Start-Flask.cmd`
+2. **Check target path**: Shortcut should point to `ultimate_cert_fix.cmd`
 3. **Permissions issue**: Run shortcut creation as administrator
-4. **Missing files**: Ensure `Quick-Start-Flask.cmd` exists in directory
+4. **Missing files**: Ensure `ultimate_cert_fix.cmd` exists in directory
 
 #### **"Server not starting on https://127.0.0.1:8000"**
 1. **Port conflict**: Check if port 8000 is already in use

@@ -62,7 +62,7 @@ The system checks for Python in this order:
 
 ### **For Individual Users**
 1. **Clone/download** Financial Command Center to your preferred directory
-2. **Run setup**: `Financial-Command-Center-AI.cmd` (Windows) or `python app_with_setup_wizard.py` (Mac/Linux)
+2. **Run setup**: `ultimate_cert_fix.cmd` (Windows) or `python app_with_setup_wizard.py` (Mac/Linux)
 3. **Configure credentials** in the web UI setup wizard
 4. **Generate config**: Visit `https://127.0.0.1:8000/claude/setup`
 5. **Download** your personalized `claude_desktop_config.json`

@@ -395,7 +395,7 @@ def create_installer_package_full():
         "launcher_requirements.txt",
         "LAUNCHER_README.md",
         "QUICK_START.txt",
-        "Launch-Financial-Command-Center.cmd",
+        "ultimate_cert_fix.cmd",
     ]:
         fp = Path(fname)
         if fp.exists():
