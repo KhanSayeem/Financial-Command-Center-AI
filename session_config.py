@@ -126,63 +126,73 @@ class SessionConfigManager:
     def configure_oauth_session_handlers(self, api_client):
         """Configure OAuth session handlers with enhanced error handling"""
         from flask import session
-        
+
         @api_client.oauth2_token_getter
         def get_token_from_session():
-            """Enhanced token getter with logging and error handling"""
+            """Retrieve the latest OAuth token from session metadata or disk storage"""
             try:
                 token = session.get('token')
+                if not token:
+                    try:
+                        from xero_client import get_stored_token
+                        token = get_stored_token()
+                    except Exception as store_error:
+                        logger.debug(f"Token store unavailable: {store_error}")
                 if token:
-                    logger.debug("OAuth token retrieved from session")
-                    # Validate token structure
+                    logger.debug("OAuth token retrieved from persistent store")
                     required_fields = ['access_token', 'token_type']
                     if all(field in token for field in required_fields):
                         return token
-                    else:
-                        logger.warning("OAuth token missing required fields")
-                        return None
-                else:
-                    logger.debug("No OAuth token found in session")
+                    logger.warning("OAuth token missing required fields")
                     return None
-            except Exception as e:
-                logger.error(f"Error retrieving OAuth token from session: {e}")
+                logger.debug("No OAuth token available in session or store")
                 return None
-        
+            except Exception as e:
+                logger.error(f"Error retrieving OAuth token: {e}")
+                return None
+
         @api_client.oauth2_token_saver
         def save_token_to_session(token):
-            """Enhanced token saver with validation and logging"""
+            """Persist OAuth tokens to disk and keep lightweight session metadata"""
             try:
                 if not token:
                     logger.warning("Attempted to save empty OAuth token")
                     return
-                
-                # Filter allowed token fields for security
+
                 allowed_fields = {
                     "access_token", "refresh_token", "token_type",
                     "expires_in", "expires_at", "scope", "id_token"
                 }
                 filtered_token = {k: v for k, v in token.items() if k in allowed_fields}
-                
+
                 if not filtered_token.get('access_token'):
                     logger.error("OAuth token missing access_token")
                     return
-                
-                # Make session permanent to persist across browser sessions
+
+                try:
+                    from xero_client import store_token
+                    store_token(filtered_token)
+                except Exception as storage_error:
+                    logger.warning(f"Failed to persist OAuth token to disk: {storage_error}")
+
                 session.permanent = True
-                session['token'] = filtered_token
+                session.pop('token', None)
+                session['token_meta'] = {
+                    'has_refresh_token': bool(filtered_token.get('refresh_token')),
+                    'stored_at': datetime.now().isoformat()
+                }
                 session.modified = True
-                
-                logger.info("OAuth token saved to session successfully")
+
+                logger.info("OAuth token metadata saved to session")
                 logger.debug(f"Token fields: {list(filtered_token.keys())}")
-                
-                # Save a backup of the token to file for debugging (in dev mode only)
+
                 if self.app and self.app.config.get('DEBUG', False):
                     self._backup_token_for_debug(filtered_token)
-                
+
             except Exception as e:
-                logger.error(f"Error saving OAuth token to session: {e}")
+                logger.error(f"Error saving OAuth token: {e}")
                 raise
-    
+
     def _backup_token_for_debug(self, token):
         """Backup token for debugging purposes (development only)"""
         try:

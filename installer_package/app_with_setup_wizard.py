@@ -31,7 +31,7 @@ from xero_python.api_client.oauth2 import OAuth2Token
 from xero_python.exceptions import AccountingBadRequestException
 from xero_python.identity import IdentityApi
 from xero_python.api_client import serialize
-from xero_client import save_token_and_tenant
+from xero_client import save_token_and_tenant, has_stored_token, get_stored_token, clear_token_and_tenant
 
 # Add our security layer
 sys.path.append('.')
@@ -58,7 +58,27 @@ app = Flask(__name__)
 # Enable debug mode for session debugging
 app.config['DEBUG'] = True
 
+# Global integration state placeholders
+api_client = None
+oauth = None
+xero = None
+session_config = None
+XERO_AVAILABLE = False
+
+def _build_xero_redirect_uri():
+    """Compute the redirect URI used for Xero OAuth callbacks."""
+    port = os.getenv('FCC_PORT') or os.getenv('PORT') or '8000'
+    force_https = os.getenv('FORCE_HTTPS', 'true').lower() == 'true'
+    allow_http = os.getenv('ALLOW_HTTP', 'false').lower() == 'true'
+    scheme = 'https' if force_https or not allow_http else 'http'
+    host = os.getenv('XERO_REDIRECT_HOST', 'localhost')
+    return f"{scheme}://{host}:{port}/callback"
+
+app.config['XERO_REDIRECT_URI'] = os.getenv('XERO_REDIRECT_URI', _build_xero_redirect_uri())
+
 # Initialize enhanced session configuration
+session_config = configure_flask_sessions(app)
+
 # This will be properly configured after we set up the Xero client
 
 # Initialize setup wizard API
@@ -107,52 +127,67 @@ def update_api_client_token(api_client, token):
         api_client.configuration.oauth2_token.token = token
     return api_client
 
-def initialize_xero_client():
-    """Initialize Xero API client with configured credentials"""
-    credentials = get_credentials_or_redirect()
-    
+
+def has_active_xero_token():
+    """Check whether a Xero OAuth token is available via session metadata or persistent storage."""
+    try:
+        if session.get('token_meta'):
+            return True
+    except RuntimeError:
+        pass
+    try:
+        return has_stored_token()
+    except Exception as token_error:
+        logger.debug(f"Token availability check failed: {token_error}")
+        return False
+
+def initialize_xero_client(credentials=None):
+    """Initialize Xero API client and attach OAuth session handlers."""
+    global api_client, oauth, xero, session_config, XERO_AVAILABLE
+
+    credentials = credentials or get_credentials_or_redirect()
+
     xero_client_id = credentials.get('XERO_CLIENT_ID')
     xero_client_secret = credentials.get('XERO_CLIENT_SECRET')
-    
+
     if not xero_client_id or not xero_client_secret:
-        return None
-        
-    # Set app config for Xero
-    app.config['XERO_CLIENT_ID'] = xero_client_id
-    app.config['XERO_CLIENT_SECRET'] = xero_client_secret
-    
-    # Initialize OAuth2Token
-    oauth2_token = OAuth2Token(
-        client_id=xero_client_id,
-        client_secret=xero_client_secret,
-    )
-    
-    # Initialize API client
-    api_client = ApiClient(Configuration(oauth2_token=oauth2_token))
-    
-    # Configure enhanced session management with OAuth token handlers
-    session_config = configure_flask_sessions(app, api_client)
-    
-    return api_client
-
-# Try to initialize Xero (will be None if not configured)
-api_client = initialize_xero_client()
-session_config = None  # Will be set if Xero is available
-
-if api_client:
-    try:
-        oauth, xero = init_oauth(app)
-        # Configure enhanced session management now that we have the API client
-        session_config = configure_flask_sessions(app, api_client)
-        XERO_AVAILABLE = True
-        print("Xero and enhanced session management initialized")
-    except Exception as e:
         XERO_AVAILABLE = False
-        print(f"WARNING: Xero initialization failed - configuration needed: {e}")
+        oauth = None
+        xero = None
+        return None
+
+    try:
+        app.config['XERO_CLIENT_ID'] = xero_client_id
+        app.config['XERO_CLIENT_SECRET'] = xero_client_secret
+        app.config['XERO_REDIRECT_URI'] = os.getenv('XERO_REDIRECT_URI', _build_xero_redirect_uri())
+
+        oauth2_token = OAuth2Token(
+            client_id=xero_client_id,
+            client_secret=xero_client_secret,
+        )
+
+        api_client = ApiClient(Configuration(oauth2_token=oauth2_token))
+        if session_config:
+            session_config.configure_oauth_session_handlers(api_client)
+        else:
+            session_config = configure_flask_sessions(app, api_client)
+
+        oauth, xero = init_oauth(app)
+        XERO_AVAILABLE = True
+        logger.info("Xero OAuth client initialized without restart requirement")
+        return api_client
+    except Exception as exc:
+        logger.warning(f"Failed to initialize Xero client: {exc}")
+        api_client = None
+        oauth = None
+        xero = None
+        XERO_AVAILABLE = False
+        return None
+
+api_client = initialize_xero_client()
+if XERO_AVAILABLE:
+    print("Xero and enhanced session management initialized")
 else:
-    XERO_AVAILABLE = False
-    # Still configure basic session management even without Xero
-    session_config = configure_flask_sessions(app)
     print("WARNING: Xero not configured - setup wizard required")
 
 # Routes
@@ -305,42 +340,20 @@ def save_setup_config():
         result = setup_wizard_api.save_configuration(data)
         
         if result['success']:
-            # Safely update global configuration flags without Flask reinitialization
-            global XERO_AVAILABLE, api_client, oauth, xero
-            
-            # Check if Xero was configured and update flags accordingly
+            global XERO_AVAILABLE, api_client, oauth, xero, session_config
+
             credentials = get_credentials_or_redirect()
-            if credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'):
-                try:
-                    # Update app config
-                    app.config['XERO_CLIENT_ID'] = credentials['XERO_CLIENT_ID']
-                    app.config['XERO_CLIENT_SECRET'] = credentials['XERO_CLIENT_SECRET']
-                    
-                    # Create new API client (but don't reinitialize Flask decorators)
-                    from xero_python.api_client import ApiClient, Configuration
-                    from xero_python.api_client.oauth2 import OAuth2Token
-                    
-                    oauth2_token = OAuth2Token(
-                        client_id=credentials['XERO_CLIENT_ID'],
-                        client_secret=credentials['XERO_CLIENT_SECRET'],
-                    )
-                    
-                    api_client = ApiClient(Configuration(oauth2_token=oauth2_token))
-                    
-                    # Initialize OAuth (but only if not already done)
-                    if not oauth or not xero:
-                        from xero_oauth import init_oauth
-                        oauth, xero = init_oauth(app)
-                    
-                    XERO_AVAILABLE = True
-                    result['xero_status'] = 'configured'
-                    
-                except Exception as xero_error:
-                    logger.warning(f"Failed to initialize Xero after config save: {xero_error}")
-                    result['xero_status'] = 'saved_but_needs_restart'
+            has_xero_credentials = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
+            client = initialize_xero_client(credentials)
+
+            if has_xero_credentials and client:
+                result['xero_status'] = 'configured'
+            elif has_xero_credentials:
+                result['xero_status'] = 'saved_but_needs_restart'
+                logger.warning('Xero configuration saved but client failed to initialize - restart may be required.')
             else:
                 result['xero_status'] = 'skipped'
-                
+
         return jsonify(result)
         
     except Exception as e:
@@ -477,18 +490,25 @@ def test_oauth_flow():
         'session_config_available': session_config is not None,
     }
     
-    # Test session token handling
-    current_token = session.get('token')
-    current_tenant = session.get('tenant_id')
-    
-    token_info = {
-        'has_token': current_token is not None,
-        'token_type': type(current_token).__name__ if current_token else None,
-        'token_keys': list(current_token.keys()) if isinstance(current_token, dict) else [],
-        'has_tenant_id': current_tenant is not None,
-        'tenant_id': current_tenant
-    }
-    
+    # Test session token handling
+    token_meta = session.get('token_meta')
+    current_tenant = session.get('tenant_id')
+    store_error = None
+    stored_token = {}
+    try:
+        from xero_client import get_stored_token
+        stored_token = get_stored_token()
+    except Exception as err:
+        store_error = str(err)
+
+    token_info = {
+        'session_has_metadata': token_meta is not None,
+        'stored_token_keys': list(stored_token.keys()) if isinstance(stored_token, dict) else [],
+        'has_stored_token': bool(stored_token.get('access_token')) if isinstance(stored_token, dict) else False,
+        'has_tenant_id': current_tenant is not None,
+        'tenant_id': current_tenant,
+        'store_error': store_error
+    }
     return jsonify({
         'oauth_config': oauth_config,
         'token_info': token_info,
@@ -1362,7 +1382,7 @@ def login():
     
     try:
         logger.info("Initiating Xero OAuth redirect")
-        redirect_uri = "https://localhost:8000/callback"
+        redirect_uri = app.config.get('XERO_REDIRECT_URI', _build_xero_redirect_uri())
         logger.info(f"Using redirect URI: {redirect_uri}")
         return xero.authorize_redirect(redirect_uri=redirect_uri)
     except Exception as e:
@@ -1406,7 +1426,7 @@ def callback():
                     'client_id': app.config['XERO_CLIENT_ID'],
                     'client_secret': app.config['XERO_CLIENT_SECRET'],
                     'code': code,
-                    'redirect_uri': 'https://localhost:8000/callback'
+                    'redirect_uri': app.config.get('XERO_REDIRECT_URI', _build_xero_redirect_uri())
                 }
                 
                 import requests
@@ -1448,25 +1468,46 @@ def callback():
         
         logger.info(f"Received OAuth token with fields: {list(token.keys())}")
         
-        # The enhanced session configuration handles token storage automatically via the API client's token saver
-        # But we need to ensure the token is properly stored by triggering the saver manually if needed
+        # The enhanced session configuration handles token storage automatically via the API client token saver
+
+        # Ensure the filtered token payload is available for downstream persistence
+
+        allowed_fields = {
+
+            "access_token", "refresh_token", "token_type",
+
+            "expires_in", "expires_at", "scope", "id_token"
+
+        }
+
+        filtered_token = {k: v for k, v in token.items() if k in allowed_fields}
+
         try:
-            # Filter and store the token manually to ensure it's saved
-            allowed_fields = {
-                "access_token", "refresh_token", "token_type",
-                "expires_in", "expires_at", "scope", "id_token"
-            }
-            filtered_token = {k: v for k, v in token.items() if k in allowed_fields}
-            
-            from flask import session
+
             session.permanent = True
-            session['token'] = filtered_token
+
+            session.pop('token', None)
+
+            session['token_meta'] = {
+
+                'has_refresh_token': bool(filtered_token.get('refresh_token')),
+
+                'stored_at': datetime.now().isoformat()
+
+            }
+
             session.modified = True
-            logger.info("OAuth token stored in session successfully")
+
+            logger.info("OAuth token metadata stored for session")
+
         except Exception as token_error:
-            logger.error(f"Failed to store token in session: {token_error}")
+
+            logger.error(f"Failed to store token metadata: {token_error}")
+
             return f"Authorization failed: Token storage error: {str(token_error)}", 400
-        
+
+
+
         # Get tenant information
         from xero_python.identity import IdentityApi
         try:
@@ -1484,7 +1525,7 @@ def callback():
             logger.info(f"Connected to Xero tenant: {tenant_id}")
             
             # Save token and tenant using existing function
-            save_token_and_tenant(filtered_token, tenant_id)
+            save_token_and_tenant(filtered_token, tenant_id, app.config['XERO_CLIENT_ID'], app.config['XERO_CLIENT_SECRET'])
             
         except Exception as identity_error:
             logger.error(f"Failed to get Xero identity: {identity_error}")
@@ -1509,7 +1550,7 @@ def profile():
     if not XERO_AVAILABLE:
         return redirect(url_for('setup_wizard'))
         
-    if 'token' not in session:
+    if not has_active_xero_token():
         return redirect(url_for('login'))
     if 'tenant_id' not in session:
         return "No tenant selected.", 400
@@ -1563,6 +1604,8 @@ def profile():
 def logout():
     """Logout from Xero"""
     session.pop('token', None)
+    session.pop('token_meta', None)
+    clear_token_and_tenant()
     session.pop('tenant_id', None)
     return redirect(url_for('index'))
 
@@ -1574,7 +1617,7 @@ def view_xero_contacts():
     if not XERO_AVAILABLE:
         return redirect(url_for('setup_wizard'))
         
-    if 'token' not in session:
+    if not has_active_xero_token():
         return redirect(url_for('login'))
     if 'tenant_id' not in session:
         return "No tenant selected. Please <a href='/login'>login again</a>.", 400
@@ -1842,7 +1885,7 @@ def view_xero_invoices():
     if not XERO_AVAILABLE:
         return redirect(url_for('setup_wizard'))
         
-    if 'token' not in session:
+    if not has_active_xero_token():
         return redirect(url_for('login'))
     if 'tenant_id' not in session:
         return "No tenant selected. Please <a href='/login'>login again</a>.", 400
