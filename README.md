@@ -13,6 +13,60 @@
 
 > **Revolutionary workflow**: Download → Launch → Configure accounts → Generate Claude config → Natural language financial management. **Zero JSON editing, zero credential copying!**
 
+## 🚀 **Quick Navigation**
+**New user?** → [Complete Setup Guide](#-get-started---complete-setup-guide) | **Already set up?** → [Daily Workflow](#daily-workflow---how-your-team-will-use-this) | **Need AI integration?** → [Claude Desktop Setup](#-claude-desktop-setup---complete-integration-guide) | **Having issues?** → [Troubleshooting](#-business-setup--troubleshooting)
+
+## 📑 **Table of Contents**
+
+### 🚀 **Quick Start**
+- [Prerequisites](#-prerequisites---what-you-need-before-starting)
+- [What to Expect](#-what-to-expect---your-journey)
+- [Business Impact & ROI](#business-impact--roi)
+- [Who Should Use This?](#who-should-use-this)
+
+### 🛠️ **Setup & Installation**
+- [Complete Setup Guide](#-get-started---complete-setup-guide)
+  - [Step 1: Download the Project](#step-1-download-the-project--1-minute)
+  - [Step 2: Launch Financial Command Center](#step-2-launch-financial-command-center--30-seconds)
+  - [Step 3: Configure Your Financial Accounts](#step-3-configure-your-financial-accounts--5-minutes)
+  - [Step 4: Enable Claude Desktop AI](#step-4-enable-claude-desktop-ai--2-minutes---optional-but-game-changing)
+  - [Step 5: Explore Your Financial Command Center](#step-5-explore-your-financial-command-center--2-minutes)
+
+### 💼 **Usage & Workflows**
+- [Daily Workflow](#daily-workflow---how-your-team-will-use-this)
+- [How to Use Each View](#how-to-use-each-view-for-your-business)
+  - [Home Dashboard](#home-dashboard----your-command-center)
+  - [Health Dashboard](#health-dashboard----system-monitoring)
+  - [Customer Contacts](#customer-contacts----crm-view)
+  - [Invoice Management](#invoice-management----financial-control)
+  - [Admin Panel](#-admin-panel----system-control)
+
+### 🤖 **AI Integration**
+- [Claude Desktop AI Integration](#-revolutionary-claude-desktop-ai-integration)
+- [MCP Integration](#-claude-desktop-mcp-integration---zero-configuration)
+- [Setup Guide](#-claude-desktop-setup---complete-integration-guide)
+- [Sample AI Commands](#-sample-ai-financial-commands)
+- [Enterprise Security](#-enterprise-security-without-enterprise-costs)
+
+### 💡 **Business Scenarios**
+- [Real Business Scenarios](#-real-business-scenarios)
+- [Implementation Timeline](#-implementation-timeline)
+- [Integration Endpoints](#-integration-endpoints-for-developers)
+
+### 🔧 **Support & Troubleshooting**
+- [Business Setup & Troubleshooting](#-business-setup--troubleshooting)
+- [Windows Launcher Troubleshooting](#-windows-launcher-troubleshooting)
+- [Windows Installer Troubleshooting](#-windows-installer-troubleshooting-legacy)
+
+### 🏗️ **Technical Details**
+- [Architecture](#-architecture)
+- [Development](#-development)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
+
+---
+
 ## ⚠️ **Prerequisites - What You Need Before Starting**
 
 ### **Required Accounts** (at least one, more = better experience)
@@ -108,6 +162,8 @@
 - **Problem**: Sharing login credentials between team members
 - **Solution**: Secure API-based access with individual permissions
 - **Compliance**: Meet SOC 2, GDPR, and financial regulations
+
+[⬆️ Back to Top](#-table-of-contents)
 
 ## **🚀 Get Started - Complete Setup Guide**
 
@@ -338,6 +394,8 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ---
 
+[⬆️ Back to Top](#-table-of-contents)
+
 ## **Daily Workflow - How Your Team Will Use This**
 
 ### **First Time Setup** (≈ 2 minutes)
@@ -441,6 +499,8 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 | Get system overview | `/` | Start of workday |
 | Configure new integration | `/admin/dashboard` | During setup/changes |
 | Generate API key for developer | `/admin/dashboard` | When building integrations |
+
+[⬆️ Back to Top](#-table-of-contents)
 
 ## **🤖 REVOLUTIONARY: Claude Desktop AI Integration**
 
@@ -616,6 +676,8 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **Monitoring**: Each user can check `/health` dashboard
 - **Support**: Logs automatically generated in user folders
 
+[⬆️ Back to Top](#-table-of-contents)
+
 ## 🎢 **Real Business Scenarios**
 
 ### 🚪 **Scenario 1: E-commerce Store Owner**
@@ -711,6 +773,8 @@ If you're building custom integrations or connecting other business tools:
 - `GET /setup` - Guided setup wizard
 - `POST /api/create-key` - Generate API keys for integrations
 - `GET /admin/dashboard` - System administration
+
+[⬆️ Back to Top](#-table-of-contents)
 
 ## ⚙️ **Business Setup & Troubleshooting**
 
@@ -824,6 +888,8 @@ If you're building custom integrations or connecting other business tools:
 3. **Restart application**: Exit and relaunch installer
 
 **📞 Need Help?** Check `launcher.log` file in installation folder for detailed error information.
+
+[⬆️ Back to Top](#-table-of-contents)
 
 ## 🏗️ Architecture
 
