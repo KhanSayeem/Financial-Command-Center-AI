@@ -286,9 +286,11 @@ python app_with_setup_wizard.py
 #### **Install in Claude Desktop:**
 ```
 Windows: %APPDATA%\Claude\claude_desktop_config.json
-macOS: ~/Library/Application Support/Claude/claude_desktop_config.json  
+macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
+
+> **⚠️ Important**: After installing the config file, verify the file paths in `claude_desktop_config.json` match your actual project directory. If you moved or renamed the project folder, update all paths from `"Stripe Playground"` to your current folder name (e.g., `"FCC"`), and ensure Python executable paths are correct.
 
 #### **Start Using AI Financial Management:**
 1. **Restart Claude Desktop** completely
@@ -495,9 +497,11 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 #### **Step 3: Install in Claude Desktop** (1 minute)
 ```
 Windows: %APPDATA%\Claude\claude_desktop_config.json
-macOS: ~/Library/Application Support/Claude/claude_desktop_config.json  
+macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
+
+> **🔧 Troubleshooting**: If MCP servers won't connect, check that all file paths in the config match your actual directory structure. Common fix: Update paths from old folder names to current location.
 
 #### **Step 4: Start Using AI Financial Management** (immediately)
 1. **Restart Claude Desktop** completely

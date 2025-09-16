@@ -7,33 +7,11 @@ pushd "%SCRIPT_DIR%" >nul
 
 for %%I in ("%SCRIPT_DIR%.") do set "SCRIPT_DIR=%%~fI"
 
-set "INSTALL_FLAG_FILE=%SCRIPT_DIR%\.fcc_installed"
-set "DESKTOP_SHORTCUT=%USERPROFILE%\Desktop\Financial Command Center AI.lnk"
-
-if exist "%INSTALL_FLAG_FILE%" (
-    if exist "%DESKTOP_SHORTCUT%" (
-        set "LAUNCH_MODE=quick"
-        echo.
-        echo ================================================================
-        echo  QUICK LAUNCHER - Financial Command Center AI
-        echo ================================================================
-        echo.
-    ) else (
-        set "LAUNCH_MODE=repair"
-        echo.
-        echo ================================================================
-        echo  REPAIR MODE - Financial Command Center AI
-        echo ================================================================
-        echo.
-    )
-) else (
-    set "LAUNCH_MODE=install"
-    echo.
-    echo ================================================================
-    echo  INSTALLER - Financial Command Center AI (First Time Setup)
-    echo ================================================================
-    echo.
-)
+echo.
+echo ================================================================
+echo  ULTIMATE CERTIFICATE FIX AND LAUNCHER - Financial Command Center AI
+echo ================================================================
+echo.
 
 if not defined LOCALAPPDATA (
     set "LOCALAPPDATA=%USERPROFILE%\AppData\Local"
@@ -43,13 +21,7 @@ set "DESKTOP_CERT=%USERPROFILE%\Desktop\mkcert-rootCA.crt"
 
 echo Step 1: Closing previous Financial Command Center Python processes...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$repo = Convert-Path $env:SCRIPT_DIR; $procs = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'python' -and $_.Path -and $_.Path.StartsWith($repo, [System.StringComparison]::OrdinalIgnoreCase) }; if ($procs) { $procs | ForEach-Object { Write-Host (' - Stopping PID {0}' -f $_.Id) -ForegroundColor Yellow; try { $_ | Stop-Process -Force -ErrorAction Stop } catch { Write-Host ('   Warning: ' + $_.Exception.Message) -ForegroundColor DarkYellow } } } else { Write-Host ' - No running repo python processes found.' -ForegroundColor DarkGray }"
-
-if "!LAUNCH_MODE!"=="quick" (
-    echo.
-    echo Skipping certificate setup - Quick launch mode enabled.
-    goto launch_app
-)
+    "$repo = Convert-Path $env:SCRIPT_DIR; $procs = Get-Process -ErrorAction SilentlyContinue ^| Where-Object { $_.Name -eq 'python' -and $_.Path -and $_.Path.StartsWith($repo, [System.StringComparison]::OrdinalIgnoreCase) }; if ($procs) { $procs ^| ForEach-Object { Write-Host (' - Stopping PID {0}' -f $_.Id) -ForegroundColor Yellow; try { $_ ^| Stop-Process -Force -ErrorAction Stop } catch { Write-Host ('   Warning: ' + $_.Exception.Message) -ForegroundColor DarkYellow } } } else { Write-Host ' - No running repo python processes found.' -ForegroundColor DarkGray }"
 
 echo.
 echo Step 2: Ensuring mkcert root certificate exists...
@@ -97,25 +69,8 @@ echo.
 echo Step 4: Verifying certificate health...
 "%PYTHON_CMD%" "cert_manager.py" --health
 
-if "!LAUNCH_MODE!"=="install" (
-    echo.
-    echo Step 5: Creating desktop shortcut for future quick launches...
-    call "%SCRIPT_DIR%Create-Desktop-Shortcut.cmd"
-    if exist "%DESKTOP_SHORTCUT%" (
-        echo  - Desktop shortcut created successfully
-        echo  - Use the desktop shortcut for quick launches in the future
-    ) else (
-        echo  - Warning: Could not create desktop shortcut
-        echo  - Try running as administrator if the issue persists
-    )
-
-    echo %DATE% %TIME% > "%INSTALL_FLAG_FILE%"
-    echo  - Installation flag file created
-)
-
-:launch_app
 echo.
-echo Step 6: Launching Financial Command Center...
+echo Step 5: Launching Financial Command Center without reinstalling...
 set "FCC_HOST=127.0.0.1"
 if not defined FCC_PORT set "FCC_PORT=8000"
 set "SERVER_URL=https://%FCC_HOST%:%FCC_PORT%"
@@ -126,24 +81,7 @@ set "ALLOW_HTTP=false"
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 set "APP_MODE=demo"
-set "XERO_REDIRECT_HOST=localhost"
-
-if "!LAUNCH_MODE!"=="quick" (
-    set "PYTHON_CMD="
-    set "VENV_PY=%SCRIPT_DIR%\.venv\Scripts\python.exe"
-    if exist "%VENV_PY%" (
-        set "PYTHON_CMD=%VENV_PY%"
-    )
-    if not defined PYTHON_CMD (
-        for /f "delims=" %%P in ('where python 2^>nul') do (
-            if not defined PYTHON_CMD set "PYTHON_CMD=%%P"
-        )
-    )
-    if not defined PYTHON_CMD (
-        echo [ERROR] Python 3 was not found in PATH. Please install Python 3.11+ and re-run this tool.
-        goto cleanup_fail
-    )
-)
+set "XERO_REDIRECT_HOST=%FCC_HOST%"
 
 if exist "%VENV_PY%" (
     echo  - Using virtual environment Python at %VENV_PY%
@@ -177,27 +115,9 @@ echo.
 echo ================================================================
 echo  Next Steps
 echo ================================================================
-if "!LAUNCH_MODE!"=="install" (
-    echo INSTALLATION COMPLETE!
-    echo.
-    echo 1. A desktop shortcut has been created for quick future launches
-    echo 2. If the browser did not open, navigate manually to %SERVER_URL%
-    echo 3. If you still see "Not Secure", import mkcert-rootCA.crt from your Desktop
-    echo 4. Restart your browser after trusting the certificate
-    echo.
-    echo IMPORTANT: Next time, just double-click the desktop shortcut for instant launch!
-) else if "!LAUNCH_MODE!"=="quick" (
-    echo QUICK LAUNCH COMPLETE!
-    echo.
-    echo 1. If the browser did not open, navigate manually to %SERVER_URL%
-    echo 2. The app should start much faster in quick launch mode
-) else (
-    echo REPAIR COMPLETE!
-    echo.
-    echo 1. Desktop shortcut has been recreated
-    echo 2. If the browser did not open, navigate manually to %SERVER_URL%
-    echo 3. If you still see certificate issues, delete .fcc_installed and run again for full setup
-)
+echo 1. If the browser did not open, navigate manually to %SERVER_URL%
+echo 2. If you still see "Not Secure", import mkcert-rootCA.crt from your Desktop
+echo 3. Restart your browser after trusting the certificate
 echo.
 goto done
 
