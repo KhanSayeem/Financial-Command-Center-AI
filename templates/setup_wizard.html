@@ -358,6 +358,16 @@ function beginSetup() {
     }, 100);
 }
 
+function scrollToStep(elementId) {
+    const target = document.getElementById(elementId);
+    if (!target) {
+        return;
+    }
+    const offset = 80;
+    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(targetPosition, 0), behavior: 'smooth' });
+}
+
 function showStep(step) {
     document.querySelectorAll('.step').forEach((section) => section.classList.remove('active'));
     const target = document.getElementById('step' + step);
@@ -374,7 +384,9 @@ function showStep(step) {
 
 function nextStep() {
     if (currentStep < totalSteps) {
-        showStep(currentStep + 1);
+        const upcomingStep = currentStep + 1;
+        showStep(upcomingStep);
+        requestAnimationFrame(() => scrollToStep('step' + upcomingStep));
     } else {
         // Show completion
         document.querySelectorAll('.step').forEach((section) => section.classList.remove('active'));
@@ -382,6 +394,7 @@ function nextStep() {
         document.getElementById('completion').style.display = 'block';
         currentStep = totalSteps;
         updateProgress();
+        requestAnimationFrame(() => scrollToStep('completion'));
     }
 }
 
