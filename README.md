@@ -9,7 +9,7 @@
 [![AI Integration](https://img.shields.io/badge/Claude%20Desktop-MCP%20Integration-purple.svg)]()
 [![Banking](https://img.shields.io/badge/Plaid-Banking%20API-green.svg)]()
 
-> ** NEW: Claude Desktop AI Integration!** Configure credentials once in our web UI, then talk to ALL your financial data with natural language. **"Show me cash flow"** → instant answers from Stripe, Xero, and bank accounts!
+> **NEW: Claude Desktop AI Integration!** Configure credentials once in our web UI, then talk to ALL your financial data with natural language. **"Show me cash flow"** → instant answers from Stripe, Xero, and bank accounts!
 
 > **Revolutionary workflow**: Download → Launch → Configure accounts → Generate Claude config → Natural language financial management. **Zero JSON editing, zero credential copying!**
 
@@ -70,14 +70,14 @@
 ##  **Prerequisites - What You Need Before Starting**
 
 ### **Required Accounts** (at least one, more = better experience)
-- ** Bank Account** - Any bank (for Plaid connection to get real transaction data)
-- ** Stripe Account** - For payment processing integration ([Create free account](https://stripe.com))
-- ** Xero Account** - For accounting/bookkeeping integration ([Create free trial](https://xero.com))
-- ** Plaid Account** - For secure bank data access ([Create developer account](https://plaid.com))
+- **Bank Account** - Any bank (for Plaid connection to get real transaction data)
+- **Stripe Account** - For payment processing integration ([Create free account](https://stripe.com))
+- **Xero Account** - For accounting/bookkeeping integration ([Create free trial](https://xero.com))
+- **Plaid Account** - For secure bank data access ([Create developer account](https://plaid.com))
 
-> ** Don't have all accounts?** No problem! You can skip services during setup and use demo mode to explore the interface.
+> **Don't have all accounts?** No problem! You can skip services during setup and use demo mode to explore the interface.
 
-## ** What to Expect - Your Journey**
+## **What to Expect - Your Journey**
 
 ### ** The Complete Workflow:**
 1. **Download** → Get the Financial Command Center files
@@ -282,19 +282,19 @@ python app_with_setup_wizard.py
 
 #### **Setup Wizard Walkthrough:**
 
-** Step 1: Welcome**
+**Step 1: Welcome**
 - Overview of what you're setting up
 - Security and encryption information
 - Click "Start Setup" to begin
 
-** Step 2: Configure Stripe (Payment Processing)**
+**Step 2: Configure Stripe (Payment Processing)**
 - **If you have Stripe**: Enter your API keys from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
   - Secret Key: `sk_test_...` or `sk_live_...`
   - Publishable Key: `pk_test_...` or `pk_live_...` (optional)
 - **Test Connection** - verifies your keys work
 - **If you don't have Stripe**: Click "Skip for Demo" to continue
 
-** Step 3: Configure Plaid (Banking Data)**
+**Step 3: Configure Plaid (Banking Data)**
 - **If you have Plaid**: Enter credentials from [Plaid Dashboard](https://dashboard.plaid.com/keys)
   - Client ID: Your Plaid client identifier
   - Secret Key: Your Plaid secret key
@@ -302,19 +302,19 @@ python app_with_setup_wizard.py
 - **Test Connection** - validates your Plaid setup
 - **If you don't have Plaid**: Click "Skip for Demo" to continue
 
-** Step 4: Configure Xero (Accounting)**
+**Step 4: Configure Xero (Accounting)**
 - **If you have Xero**: Enter OAuth credentials from [Xero Developer Portal](https://developer.xero.com/myapps)
   - Client ID: Your Xero application client ID
   - Client Secret: Your Xero application secret
 - **Test Configuration** - validates format and setup
 - **If you don't have Xero**: Click "Skip for Demo" to continue
 
-** Step 5: Review & Save**
+**Step 5: Review & Save**
 - See summary of what you've configured
 - All credentials are **encrypted** before saving
 - Click "Save & Complete Setup"
 
-** Step 6: Setup Complete!**
+**Step 6: Setup Complete!**
 - Your Financial Command Center is now ready
 - Credentials are securely stored and ready for Claude Desktop
 - You can access the main dashboard
@@ -341,7 +341,7 @@ macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
 
-> ** Important**: After installing the config file, verify the file paths in `claude_desktop_config.json` match your actual project directory. If you moved or renamed the project folder, update all paths from `"Stripe Playground"` to your current folder name (e.g., `"FCC"`), and ensure Python executable paths are correct.
+> **Important**: After installing the config file, verify the file paths in `claude_desktop_config.json` match your actual project directory. If you moved or renamed the project folder, update all paths from `"Stripe Playground"` to your current folder name (e.g., `"FCC"`), and ensure Python executable paths are correct.
 
 #### **Start Using AI Financial Management:**
 1. **Restart Claude Desktop** completely
@@ -367,7 +367,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **"Give me a complete financial summary for this month"**
 - **"Check all integration statuses and any issues"**
 
-### ** Quick Troubleshooting**
+### **Quick Troubleshooting**
 
 #### **"ultimate_cert_fix.cmd won't start"**
 - **Check**: Python 3.8+ is installed on your system
@@ -565,7 +565,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ### 💬 **Sample AI Financial Commands**
 
-#### ** Business Health Monitoring**
+#### **Business Health Monitoring**
 ```
 "What's our overall financial health right now?"
 "Show me cash flow trends for this quarter"
@@ -573,7 +573,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Give me a complete financial dashboard summary"
 ```
 
-#### ** Invoice & Customer Management**  
+#### **Invoice & Customer Management**  
 ```
 "List all overdue invoices and their amounts"
 "Find invoices for Global Systems Ltd"
@@ -589,7 +589,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Check account balances across all connected banks"
 ```
 
-#### ** Advanced Financial Intelligence**
+#### **Advanced Financial Intelligence**
 ```
 "Compare this month's revenue vs last month"
 "Create a summary for our board meeting next week"
@@ -599,13 +599,13 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ###  **Enterprise Security Without Enterprise Costs**
 
-#### ** Bank-Level Security**
+#### **Bank-Level Security**
 - **Encrypted API Connections** - All data transmission protected
 - **Zero Credential Sharing** - No more shared logins
 - **Audit Trails** - Complete activity logging
 - **Compliance Ready** - SOC 2, GDPR, PCI DSS compatible
 
-#### **🛡️ Cost vs. Enterprise Solutions**
+#### **Cost vs. Enterprise Solutions**
 | Feature | Enterprise Solution | Financial Command Center |
 |---------|-------------------|-------------------------|
 | **Setup Cost** | $50,000-$200,000 | **Free (Open Source)** |
@@ -671,7 +671,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **Monitoring**: Each user can check `/health` dashboard
 - **Support**: Logs automatically generated in user folders
 
-[ Back to Top](#-table-of-contents)
+[Back to Top](#-table-of-contents)
 
 ##  **Real Business Scenarios**
 
@@ -1046,10 +1046,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ##  **Support**
 
-- ** Email**: khansayeem03@gmail.com
-- ** GitHub Issues**: [Report bugs or request features](https://github.com/KhanSayeem/Financial-Command-Center-AI/issues)
-- ** Documentation**: Check the repository for additional guides
-- ** Community**: Join our discussions in GitHub Discussions
+- **Email**: khansayeem03@gmail.com
+- **GitHub Issues**: [Report bugs or request features](https://github.com/KhanSayeem/Financial-Command-Center-AI/issues)
+- **Documentation**: Check the repository for additional guides
+- **Community**: Join our discussions in GitHub Discussions
 
 ---
 
@@ -1088,7 +1088,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 [![GitHub Stars](https://img.shields.io/github/stars/KhanSayeem/Financial-Command-Center-AI?style=social)](https://github.com/KhanSayeem/Financial-Command-Center-AI)
 
-Made with ❤️ and ✨ by [KhanSayeem](https://github.com/KhanSayeem)
+Made by [KhanSayeem](https://github.com/KhanSayeem)
 
 </div>
 
@@ -1132,4 +1132,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-** Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today!**
+**Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today!**
