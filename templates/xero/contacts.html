@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block title %}Xero Contacts · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-3">
+            <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Xero contacts</h1>
+            <p class="text-sm text-muted-foreground">Browse enriched contact cards with instant filtering and status highlights.</p>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Total contacts</p>
+                <p class="text-2xl font-semibold text-foreground">{{ stats.total }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Customers</p>
+                <p class="text-2xl font-semibold text-foreground">{{ stats.customers }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Suppliers</p>
+                <p class="text-2xl font-semibold text-foreground">{{ stats.suppliers }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">With email</p>
+                <p class="text-2xl font-semibold text-foreground">{{ stats.with_email }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border border-border/70 p-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-1">
+                <h2 class="text-lg font-semibold text-foreground">Search contacts</h2>
+                <p class="text-sm text-muted-foreground">Filter by name, email, or status. Results update as you type.</p>
+            </div>
+            <div class="relative w-full max-w-sm">
+                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+                <input id="contact-search" type="search" placeholder="Search contacts" class="w-full rounded-lg border border-border/70 bg-background pl-9 pr-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+        </div>
+
+        <div id="contact-empty" class="hidden rounded-lg border border-dashed border-border/70 bg-muted/50 p-8 text-center text-sm text-muted-foreground">
+            No contacts match your search.
+        </div>
+
+        <div id="contact-list" class="mt-6 grid gap-4 lg:grid-cols-2">
+            {% for contact in contacts %}
+                <article class="contact-card card border border-border/70 p-5 transition hover:border-primary/40" data-filter="{{ (contact.name ~ ' ' ~ contact.email ~ ' ' ~ contact.status)|lower }}">
+                    <header class="flex items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-foreground">{{ contact.name }}</h3>
+                            <p class="text-xs text-muted-foreground">{{ contact.status or 'Unknown status' }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            {% if contact.is_customer %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                    <i data-lucide="user-check" class="h-3.5 w-3.5"></i>
+                                    Customer
+                                </span>
+                            {% endif %}
+                            {% if contact.is_supplier %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+                                    <i data-lucide="package" class="h-3.5 w-3.5"></i>
+                                    Supplier
+                                </span>
+                            {% endif %}
+                        </div>
+                    </header>
+                    <dl class="mt-4 space-y-2 text-sm">
+                        <div class="flex items-center gap-3 text-muted-foreground">
+                            <i data-lucide="mail" class="h-4 w-4"></i>
+                            <span>{{ contact.email or 'No email available' }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-muted-foreground">
+                            <i data-lucide="phone" class="h-4 w-4"></i>
+                            <span>{{ contact.phone or 'No phone on file' }}</span>
+                        </div>
+                    </dl>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_scripts %}
+<script>
+  const searchInput = document.getElementById('contact-search');
+  const cards = Array.from(document.querySelectorAll('.contact-card'));
+  const emptyState = document.getElementById('contact-empty');
+
+  function applyFilter(value) {
+    const query = value.trim().toLowerCase();
+    let anyVisible = false;
+    cards.forEach((card) => {
+      const matches = card.dataset.filter.includes(query);
+      card.style.display = matches ? '' : 'none';
+      if (matches) {
+        anyVisible = true;
+      }
+    });
+    emptyState.classList.toggle('hidden', anyVisible);
+  }
+
+  searchInput?.addEventListener('input', (event) => {
+    applyFilter(event.target.value);
+  });
+</script>
+{% endblock %}

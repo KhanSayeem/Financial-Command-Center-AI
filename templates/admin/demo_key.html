@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+
+{% block title %}Demo API Key Created · Financial Command Center AI{% endblock %}
+
+{% set commands = commands or [] %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+    <div class="card border border-emerald-200 bg-emerald-50/70 p-7">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-2">
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-emerald-700">
+                    <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+                    Demo key ready
+                </span>
+                <h1 class="text-3xl font-semibold tracking-tight text-emerald-900">Your sandbox credential is live</h1>
+                <p class="text-sm text-emerald-800">Use this key to authenticate API requests during client walkthroughs or internal QA.</p>
+            </div>
+            <a href="/admin/dashboard" class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white/80 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-white">
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                Back to dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card border border-border/70 p-6 shadow-card">
+        <h2 class="text-lg font-semibold text-foreground">API key</h2>
+        <p class="mt-2 text-sm text-muted-foreground">Copy this value and store it securely. It will not be shown again.</p>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+            <code class="flex-1 rounded-lg border border-border/70 bg-muted/60 px-4 py-3 text-sm text-foreground">{{ demo_key }}</code>
+            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-4 py-2 text-xs font-medium text-muted-foreground" data-copy="{{ demo_key }}">
+                <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                Copy key
+            </button>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card border border-border/70 p-6">
+            <h2 class="text-lg font-semibold text-foreground">Quick validation</h2>
+            <p class="mt-2 text-sm text-muted-foreground">Run these commands from a terminal to verify authentication and explore the API surface.</p>
+            <div class="mt-4 space-y-4">
+                {% for command in commands %}
+                    <div class="rounded-lg border border-border/70 bg-muted/60 p-4">
+                        <p class="text-sm font-semibold text-foreground">{{ command.title }}</p>
+                        <pre class="mt-2 overflow-x-auto text-xs text-muted-foreground"><code>{{ command.snippet }}</code></pre>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="card border border-border/70 p-6">
+            <h2 class="text-lg font-semibold text-foreground">Next steps</h2>
+            <ul class="mt-3 space-y-3 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2">
+                    <i data-lucide="toggle-right" class="h-4 w-4 text-primary"></i>
+                    Switch to live mode when you are ready to connect production credentials.
+                </li>
+                <li class="flex items-center gap-2">
+                    <i data-lucide="shield" class="h-4 w-4 text-primary"></i>
+                    Share the SSL help guide so browsers trust your local certificates.
+                </li>
+                <li class="flex items-center gap-2">
+                    <i data-lucide="bot" class="h-4 w-4 text-primary"></i>
+                    Connect Claude Desktop or Warp Terminal to demo natural language workflows.
+                </li>
+            </ul>
+            <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                <a href="/admin/mode" class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-3 py-2 font-medium text-muted-foreground transition hover:text-foreground"><i data-lucide="git-branch" class="h-3.5 w-3.5"></i>Open mode settings</a>
+                <a href="/admin/ssl-help" class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-3 py-2 font-medium text-muted-foreground transition hover:text-foreground"><i data-lucide="book-open" class="h-3.5 w-3.5"></i>SSL help</a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_scripts %}
+<script>
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-copy]');
+    if (!button) return;
+    const value = button.getAttribute('data-copy');
+    navigator.clipboard.writeText(value);
+    button.classList.add('bg-primary', 'text-primary-foreground');
+    setTimeout(() => {
+      button.classList.remove('bg-primary', 'text-primary-foreground');
+    }, 1200);
+  });
+</script>
+{% endblock %}

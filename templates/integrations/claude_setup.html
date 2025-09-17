@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block title %}Claude Desktop Integration · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="card border border-border/70 p-7 shadow-card">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-primary">
+                    <i data-lucide="bot" class="h-3.5 w-3.5"></i>
+                    Claude Desktop
+                </span>
+                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Connect Claude to your financial cockpit</h1>
+                <p class="text-sm text-muted-foreground">Guide Claude through a trusted HTTPS endpoint so natural-language commands can orchestrate workflows across Stripe, Plaid, and Xero.</p>
+            </div>
+            <a href="/admin/dashboard" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80">
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                Back to admin
+            </a>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Prerequisites</h2>
+            <ul class="space-y-3 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Claude Desktop installed (latest version).</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Financial Command Center running over HTTPS (see SSL help in admin).</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Demo API key generated from the admin dashboard.</li>
+            </ul>
+        </section>
+
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Connection details</h2>
+            <dl class="grid gap-3 text-sm">
+                <div>
+                    <dt class="text-muted-foreground">Local endpoint</dt>
+                    <dd class="font-medium text-foreground">{{ server_url }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">API key header</dt>
+                    <dd class="font-medium text-foreground">X-API-Key</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">Recommended scope</dt>
+                    <dd class="font-medium text-foreground">read, write</dd>
+                </div>
+            </dl>
+        </section>
+    </div>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Setup steps</h2>
+        <ol class="space-y-4 text-sm text-muted-foreground">
+            <li>
+                <span class="font-medium text-foreground">1. Add a new tool in Claude Desktop</span>
+                <p>Open Claude preferences → Tools → “Add custom tool” and provide the HTTPS endpoint above.</p>
+            </li>
+            <li>
+                <span class="font-medium text-foreground">2. Provide authentication</span>
+                <p>Use the generated API key and set header <code>X-API-Key</code>. Claude will include this header in every request.</p>
+            </li>
+            <li>
+                <span class="font-medium text-foreground">3. Test with a natural-language command</span>
+                <p>Try <code>Show the latest five invoices and mark any overdue ones</code>. Claude will call the Command Center endpoints.</p>
+            </li>
+        </ol>
+    </section>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Example prompts</h2>
+        <div class="grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                “Summarize Stripe payments above $1,000 this week.”
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                “List Xero contacts flagged as suppliers with outstanding balances.”
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

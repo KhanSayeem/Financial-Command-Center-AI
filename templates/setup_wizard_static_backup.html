@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block title %}Setup Wizard · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="card border border-border/70 p-7 shadow-card">
+        <div class="space-y-3">
+            <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Financial Command Center setup</h1>
+            <p class="text-sm text-muted-foreground">Follow the guided steps to connect Stripe, Plaid, and Xero credentials securely. The wizard stores secrets using the encrypted configuration manager.</p>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">1. Stripe credentials</h2>
+            <p class="text-sm text-muted-foreground">Add a restricted Stripe API key with read/write access. The wizard saves the key encrypted on disk.</p>
+            <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Paste your <strong>secret API key</strong> (sk_live_...)</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Optionally add the publishable key for client demos</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Use the “Test connection” button to validate permissions</li>
+            </ul>
+        </section>
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">2. Xero OAuth credentials</h2>
+            <p class="text-sm text-muted-foreground">Provide your Xero client ID and secret. The wizard guides you through authenticating the organisation.</p>
+            <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2"><i data-lucide="zap" class="h-4 w-4 text-sky-600"></i> Enter the client ID and secret generated in the Xero developer portal</li>
+                <li class="flex items-center gap-2"><i data-lucide="zap" class="h-4 w-4 text-sky-600"></i> Use the callback button to sign in and approve access</li>
+                <li class="flex items-center gap-2"><i data-lucide="zap" class="h-4 w-4 text-sky-600"></i> The wizard stores the refresh token and tenant details automatically</li>
+            </ul>
+        </section>
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">3. Plaid optional configuration</h2>
+            <p class="text-sm text-muted-foreground">Skip this step for demo mode or add sandbox keys to show Plaid workflows.</p>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                Set <code>PLAID_CLIENT_ID</code> and <code>PLAID_SECRET</code> if you plan to demo banking data.
+            </div>
+        </section>
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">4. Review &amp; save</h2>
+            <p class="text-sm text-muted-foreground">The wizard summarises configuration choices and lets you download a backup of encrypted secrets.</p>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                Use the "Save configuration" button to persist credentials and restart integrations.
+            </div>
+        </section>
+    </div>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Helpful endpoints</h2>
+        <ul class="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+            <li class="flex items-center gap-2"><i data-lucide="activity" class="h-4 w-4 text-primary"></i> <code>/health</code> — verify the health dashboard after saving credentials.</li>
+            <li class="flex items-center gap-2"><i data-lucide="key" class="h-4 w-4 text-primary"></i> <code>/admin/create-demo-key</code> — generate API keys for Claude or Warp.</li>
+            <li class="flex items-center gap-2"><i data-lucide="shield" class="h-4 w-4 text-primary"></i> <code>/admin/ssl-help</code> — install the local CA certificate for trusted demos.</li>
+            <li class="flex items-center gap-2"><i data-lucide="bot" class="h-4 w-4 text-primary"></i> <code>/claude/setup</code> — connect AI copilots once connectors are configured.</li>
+        </ul>
+    </section>
+</div>
+{% endblock %}

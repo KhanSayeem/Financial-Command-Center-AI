@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %}Warp Terminal Integration · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="card border border-border/70 p-7 shadow-card">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-amber-700">
+                    <i data-lucide="terminal" class="h-3.5 w-3.5"></i>
+                    Warp Terminal
+                </span>
+                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Drive compliance MCP commands from Warp</h1>
+                <p class="text-sm text-muted-foreground">Run compliance and financial MCP actions using a single command palette inside Warp. The Command Center exposes a secure HTTPS endpoint for Warp workflows.</p>
+            </div>
+            <a href="/admin/dashboard" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80">
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                Back to admin
+            </a>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Configuration</h2>
+            <dl class="grid gap-3 text-sm">
+                <div>
+                    <dt class="text-muted-foreground">Server endpoint</dt>
+                    <dd class="font-medium text-foreground">{{ server_url }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">Script entry point</dt>
+                    <dd class="font-medium text-foreground">warp-mcp</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">Authentication header</dt>
+                    <dd class="font-medium text-foreground">X-API-Key</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Before you start</h2>
+            <ul class="space-y-3 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Warp terminal installed with workflows enabled.</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Demo API key generated from the admin dashboard.</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> SSL certificate trusted (see admin → SSL help).</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Steps</h2>
+        <ol class="space-y-4 text-sm text-muted-foreground">
+            <li><span class="font-medium text-foreground">1. Create a new Warp workflow</span> — open Warp → Workflows → “New workflow”.</li>
+            <li><span class="font-medium text-foreground">2. Configure the command</span> — call <code>warp-mcp</code> with parameters pointing to the HTTPS endpoint above and add the API key header.</li>
+            <li><span class="font-medium text-foreground">3. Run compliance prompts</span> — e.g. <code>Check SOC2 evidence status</code> or <code>Summarize high-risk invoices</code>.</li>
+        </ol>
+    </section>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Recommended prompts</h2>
+        <div class="grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                “Run a compliance MCP report for SOC2 controls”
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                “List invoices above $5,000 that are overdue”
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

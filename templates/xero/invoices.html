@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block title %}Xero Invoices · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-3">
+            <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Xero invoices</h1>
+            <p class="text-sm text-muted-foreground">Track invoice status, outstanding balances, and payment progress.</p>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Invoices</p>
+                <p class="text-2xl font-semibold text-foreground">{{ stats.count }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Total value</p>
+                <p class="text-2xl font-semibold text-foreground">${{ '%.2f'|format(stats.total_amount) }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Amount due</p>
+                <p class="text-2xl font-semibold text-foreground">${{ '%.2f'|format(stats.total_due) }}</p>
+            </div>
+            <div class="card border border-border/70 px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground">Amount paid</p>
+                <p class="text-2xl font-semibold text-foreground">${{ '%.2f'|format(stats.total_paid) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border border-border/70 p-6">
+        <form class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between" method="get">
+            <div class="space-y-1">
+                <h2 class="text-lg font-semibold text-foreground">Filter by status</h2>
+                <p class="text-sm text-muted-foreground">Select a status to refocus the invoice list.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <select name="status" class="rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    {% for option, label in [('DRAFT,SUBMITTED,AUTHORISED', 'Open statuses'), ('PAID', 'Paid'), ('DRAFT', 'Draft'), ('AUTHORISED', 'Authorised'), ('SUBMITTED', 'Submitted'), ('VOIDED', 'Voided')] %}
+                        <option value="{{ option }}" {% if status_filter == option %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                    <i data-lucide="filter" class="h-4 w-4"></i>
+                    Apply
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-6 overflow-x-auto">
+            <table class="min-w-full divide-y divide-border/70 text-sm">
+                <thead class="bg-muted/60 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                        <th class="whitespace-nowrap px-4 py-3 text-left">Invoice</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-left">Contact</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-left">Status</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-right">Total</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-right">Amount due</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-right">Paid</th>
+                        <th class="whitespace-nowrap px-4 py-3 text-left">Dates</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60">
+                    {% for invoice in invoices %}
+                        <tr class="transition hover:bg-muted/40">
+                            <td class="px-4 py-3 font-medium text-foreground">{{ invoice.invoice_number }}</td>
+                            <td class="px-4 py-3 text-muted-foreground">{{ invoice.contact_name }}</td>
+                            <td class="px-4 py-3">
+                                {% set status = invoice.status|lower %}
+                                {% set badge_classes = {
+                                    'paid': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                                    'authorised': 'bg-sky-50 text-sky-700 border border-sky-200',
+                                    'submitted': 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                                    'draft': 'bg-amber-50 text-amber-700 border border-amber-200',
+                                    'voided': 'bg-rose-50 text-rose-700 border border-rose-200'
+                                } %}
+                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium {{ badge_classes.get(status, 'bg-muted/60 text-muted-foreground border border-border/70') }}">
+                                    <i data-lucide="file-text" class="h-3.5 w-3.5"></i>
+                                    {{ invoice.status.title() if invoice.status else 'Unknown' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right text-foreground">${{ '%.2f'|format(invoice.total) }}</td>
+                            <td class="px-4 py-3 text-right text-foreground">${{ '%.2f'|format(invoice.amount_due) }}</td>
+                            <td class="px-4 py-3 text-right text-foreground">${{ '%.2f'|format(invoice.amount_paid) }}</td>
+                            <td class="px-4 py-3 text-muted-foreground">
+                                <div>Issued: {{ invoice.issued_date or '—' }}</div>
+                                <div>Due: {{ invoice.due_date or '—' }}</div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
