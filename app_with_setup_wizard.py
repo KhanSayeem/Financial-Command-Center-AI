@@ -205,6 +205,19 @@ def has_active_xero_token():
         logger.debug(f"Token availability check failed: {token_error}")
         return False
 
+
+
+def build_xero_setup_url(*, external: bool = False) -> str:
+    """Return the setup wizard URL anchored to the Xero step."""
+    base = url_for('setup_wizard', _external=external)
+    return f"{base}#step3"
+
+
+def redirect_to_xero_setup():
+    """Redirect users to the Xero connection section of the wizard."""
+    return redirect(build_xero_setup_url())
+
+
 def initialize_xero_client(credentials=None):
     """Initialize Xero API client and attach OAuth session handlers."""
     global api_client, oauth, xero, session_config, XERO_AVAILABLE
@@ -264,14 +277,7 @@ def index():
 
     integration_status = get_integration_status()
 
-    nav_items = build_nav(
-        'overview',
-        extras=[
-            ('contacts', 'Contacts', 'view_xero_contacts', {}),
-            ('invoices', 'Invoices', 'view_xero_invoices', {}),
-            ('setup', 'Setup', 'setup_wizard', {}),
-        ],
-    )
+    nav_items = build_nav('overview')
 
     configured_integrations = sum(1 for data in integration_status.values() if data.get('configured'))
     total_integrations = len(integration_status)
@@ -488,14 +494,7 @@ def index():
 @app.route('/setup')
 def setup_wizard():
     """Setup wizard main page"""
-    nav_items = build_nav(
-        'setup',
-        extras=[
-            ('contacts', 'Contacts', 'view_xero_contacts', {}),
-            ('invoices', 'Invoices', 'view_xero_invoices', {}),
-            ('setup', 'Setup', 'setup_wizard', {}),
-        ],
-    )
+    nav_items = build_nav('setup')
     return render_template('setup_wizard.html', nav_items=nav_items)
 
 @app.route('/api/setup/test-stripe', methods=['POST'])
@@ -811,7 +810,7 @@ def login():
         return jsonify({
             'error': 'Xero not configured',
             'message': 'Complete setup wizard first',
-            'setup_url': url_for('setup_wizard', _external=True)
+            'setup_url': build_xero_setup_url(external=True)
         }), 400
     
     try:
@@ -1002,16 +1001,29 @@ def callback():
 def profile():
     """Xero profile page"""
     if not XERO_AVAILABLE:
-        return redirect(url_for('setup_wizard'))
-        
+        return redirect_to_xero_setup()
+
     if not has_active_xero_token():
-        return redirect(url_for('login'))
+        return redirect_to_xero_setup()
     if 'tenant_id' not in session:
         return "No tenant selected.", 400
 
     try:
         accounting = AccountingApi(api_client)
         accounts = accounting.get_accounts(session['tenant_id'])
+        
+        contacts = accounting.get_contacts(xero_tenant_id=session['tenant_id'])
+        contacts_data = []
+        for contact in (contacts.contacts or [])[:50]:
+            contacts_data.append({
+                'contact_id': getattr(contact, 'contact_id', 'N/A'),
+                'name': getattr(contact, 'name', 'N/A') or 'N/A',
+                'email': getattr(contact, 'email_address', 'N/A') or 'N/A',
+                'phone': getattr(contact, 'phone_number', 'N/A') or 'N/A',
+                'status': str(getattr(contact, 'contact_status', 'N/A')) if hasattr(contact, 'contact_status') else 'N/A',
+                'is_supplier': bool(getattr(contact, 'is_supplier', False)),
+                'is_customer': bool(getattr(contact, 'is_customer', False)),
+            })
         
         stats = {
             'total': len(contacts_data),
@@ -1020,14 +1032,7 @@ def profile():
             'with_email': sum(1 for c in contacts_data if c['email'] and c['email'] != 'N/A'),
         }
 
-        nav_items = build_nav(
-            'contacts',
-            extras=[
-                ('overview', 'Overview', 'index', {}),
-                ('invoices', 'Invoices', 'view_xero_invoices', {}),
-                ('setup', 'Setup', 'setup_wizard', {}),
-            ],
-        )
+        nav_items = build_nav('contacts')
 
         return render_template(
             'xero/contacts.html',
@@ -1054,10 +1059,10 @@ def logout():
 def view_xero_contacts():
     """Web UI for viewing Xero contacts"""
     if not XERO_AVAILABLE:
-        return redirect(url_for('setup_wizard'))
+        return redirect_to_xero_setup()
 
     if not has_active_xero_token():
-        return redirect(url_for('login'))
+        return redirect_to_xero_setup()
     if 'tenant_id' not in session:
         return "No tenant selected. Please <a href='/login'>login again</a>.", 400
 
@@ -1087,14 +1092,7 @@ def view_xero_contacts():
             'with_email': sum(1 for c in contacts_data if c['email'] and c['email'] != 'N/A'),
         }
 
-        nav_items = build_nav(
-            'contacts',
-            extras=[
-                ('overview', 'Overview', 'index', {}),
-                ('invoices', 'Invoices', 'view_xero_invoices', {}),
-                ('setup', 'Setup', 'setup_wizard', {}),
-            ],
-        )
+        nav_items = build_nav('contacts')
 
         return render_template(
             'xero/contacts.html',
@@ -1112,10 +1110,10 @@ def view_xero_contacts():
 def view_xero_invoices():
     """Web UI for viewing Xero invoices"""
     if not XERO_AVAILABLE:
-        return redirect(url_for('setup_wizard'))
+        return redirect_to_xero_setup()
 
     if not has_active_xero_token():
-        return redirect(url_for('login'))
+        return redirect_to_xero_setup()
     if 'tenant_id' not in session:
         return "No tenant selected. Please <a href='/login'>login again</a>.", 400
 
@@ -1164,14 +1162,7 @@ def view_xero_invoices():
             'total_paid': sum(inv['amount_paid'] for inv in invoices_data),
         }
 
-        nav_items = build_nav(
-            'invoices',
-            extras=[
-                ('overview', 'Overview', 'index', {}),
-                ('contacts', 'Contacts', 'view_xero_contacts', {}),
-                ('setup', 'Setup', 'setup_wizard', {}),
-            ],
-        )
+        nav_items = build_nav('invoices')
 
         return render_template(
             'xero/invoices.html',
@@ -1193,7 +1184,7 @@ def get_xero_contacts():
         return jsonify({
             'error': 'Xero not configured',
             'message': 'Complete setup wizard first',
-            'setup_url': url_for('setup_wizard', _external=True)
+            'setup_url': build_xero_setup_url(external=True)
         }), 400
         
     if not session.get("token"):
@@ -1353,14 +1344,7 @@ def create_stripe_payment():
 def admin_dashboard():
     """Admin dashboard using the shared Shadcn templates."""
     context = build_admin_dashboard_context(SECURITY_ENABLED, security if SECURITY_ENABLED else None, demo)
-    nav_items = build_nav(
-        'admin',
-        extras=[
-            ('contacts', 'Contacts', 'view_xero_contacts', {}),
-            ('invoices', 'Invoices', 'view_xero_invoices', {}),
-            ('setup', 'Setup', 'setup_wizard', {}),
-        ],
-    )
+    nav_items = build_nav('admin')
     return render_template(
         'admin/dashboard.html',
         nav_items=nav_items,
@@ -1393,14 +1377,7 @@ def create_demo_key():
         },
     ]
 
-    nav_items = build_nav(
-        'admin',
-        extras=[
-            ('contacts', 'Contacts', 'view_xero_contacts', {}),
-            ('invoices', 'Invoices', 'view_xero_invoices', {}),
-            ('setup', 'Setup', 'setup_wizard', {}),
-        ],
-    )
+    nav_items = build_nav('admin')
 
     return render_template(
         'admin/demo_key.html',
