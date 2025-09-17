@@ -9,22 +9,22 @@
 [![AI Integration](https://img.shields.io/badge/Claude%20Desktop-MCP%20Integration-purple.svg)]()
 [![Banking](https://img.shields.io/badge/Plaid-Banking%20API-green.svg)]()
 
-> **🚀 NEW: Claude Desktop AI Integration!** Configure credentials once in our web UI, then talk to ALL your financial data with natural language. **"Show me cash flow"** → instant answers from Stripe, Xero, and bank accounts!
+> ** NEW: Claude Desktop AI Integration!** Configure credentials once in our web UI, then talk to ALL your financial data with natural language. **"Show me cash flow"** → instant answers from Stripe, Xero, and bank accounts!
 
 > **Revolutionary workflow**: Download → Launch → Configure accounts → Generate Claude config → Natural language financial management. **Zero JSON editing, zero credential copying!**
 
-## 🚀 **Quick Navigation**
+##  **Quick Navigation**
 **New user?** → [Complete Setup Guide](#-get-started---complete-setup-guide) | **Already set up?** → [Daily Workflow](#daily-workflow---how-your-team-will-use-this) | **Need AI integration?** → [Claude Desktop Setup](#-claude-desktop-setup---complete-integration-guide) | **Having issues?** → [Troubleshooting](#-business-setup--troubleshooting)
 
-## 📑 **Table of Contents**
+##  **Table of Contents**
 
-### 🚀 **Quick Start**
+###  **Quick Start**
 - [Prerequisites](#-prerequisites---what-you-need-before-starting)
 - [What to Expect](#-what-to-expect---your-journey)
 - [Business Impact & ROI](#business-impact--roi)
 - [Who Should Use This?](#who-should-use-this)
 
-### 🛠️ **Setup & Installation**
+###  **Setup & Installation**
 - [Complete Setup Guide](#-get-started---complete-setup-guide)
   - [Step 1: Download the Project](#step-1-download-the-project--1-minute)
   - [Step 2: Launch Financial Command Center](#step-2-launch-financial-command-center--30-seconds)
@@ -32,7 +32,7 @@
   - [Step 4: Enable Claude Desktop AI](#step-4-enable-claude-desktop-ai--2-minutes---optional-but-game-changing)
   - [Step 5: Explore Your Financial Command Center](#step-5-explore-your-financial-command-center--2-minutes)
 
-### 💼 **Usage & Workflows**
+###  **Usage & Workflows**
 - [Daily Workflow](#daily-workflow---how-your-team-will-use-this)
 - [How to Use Each View](#how-to-use-each-view-for-your-business)
   - [Home Dashboard](#home-dashboard----your-command-center)
@@ -41,24 +41,24 @@
   - [Invoice Management](#invoice-management----financial-control)
   - [Admin Panel](#-admin-panel----system-control)
 
-### 🤖 **AI Integration**
+###  **AI Integration**
 - [Claude Desktop AI Integration](#-revolutionary-claude-desktop-ai-integration)
 - [MCP Integration](#-claude-desktop-mcp-integration---zero-configuration)
 - [Setup Guide](#-claude-desktop-setup---complete-integration-guide)
 - [Sample AI Commands](#-sample-ai-financial-commands)
 - [Enterprise Security](#-enterprise-security-without-enterprise-costs)
 
-### 💡 **Business Scenarios**
+###  **Business Scenarios**
 - [Real Business Scenarios](#-real-business-scenarios)
 - [Implementation Timeline](#-implementation-timeline)
 - [Integration Endpoints](#-integration-endpoints-for-developers)
 
-### 🔧 **Support & Troubleshooting**
+###  **Support & Troubleshooting**
 - [Business Setup & Troubleshooting](#-business-setup--troubleshooting)
 - [Windows Launcher Troubleshooting](#-windows-launcher-troubleshooting)
 - [Windows Installer Troubleshooting](#-windows-installer-troubleshooting-legacy)
 
-### 🏗️ **Technical Details**
+###  **Technical Details**
 - [Architecture](#-architecture)
 - [Development](#-development)
 - [Contributing](#-contributing)
@@ -67,31 +67,26 @@
 
 ---
 
-## ⚠️ **Prerequisites - What You Need Before Starting**
+##  **Prerequisites - What You Need Before Starting**
 
 ### **Required Accounts** (at least one, more = better experience)
-- **🏦 Bank Account** - Any bank (for Plaid connection to get real transaction data)
-- **💳 Stripe Account** - For payment processing integration ([Create free account](https://stripe.com))
-- **📊 Xero Account** - For accounting/bookkeeping integration ([Create free trial](https://xero.com))
-- **🏦 Plaid Account** - For secure bank data access ([Create developer account](https://plaid.com))
+- ** Bank Account** - Any bank (for Plaid connection to get real transaction data)
+- ** Stripe Account** - For payment processing integration ([Create free account](https://stripe.com))
+- ** Xero Account** - For accounting/bookkeeping integration ([Create free trial](https://xero.com))
+- ** Plaid Account** - For secure bank data access ([Create developer account](https://plaid.com))
 
-> **💡 Don't have all accounts?** No problem! You can skip services during setup and use demo mode to explore the interface.
+> ** Don't have all accounts?** No problem! You can skip services during setup and use demo mode to explore the interface.
 
-## **🗺️ What to Expect - Your Journey**
+## ** What to Expect - Your Journey**
 
-### **🔄 The Complete Workflow:**
+### ** The Complete Workflow:**
 1. **Download** → Get the Financial Command Center files
 2. **Launch** → Double-click launcher, system sets up automatically  
 3. **Configure** → Enter your financial account credentials (secure & encrypted)
 4. **Generate Claude Config** → One-click AI integration setup
 5. **Start Managing Finances with AI** → Natural language commands!
 
-### **⏱️ Time Investment:**
-- **First-time setup**: 5-10 minutes (one-time only)
-- **Daily use**: Instant access via desktop shortcut or Claude Desktop
-- **ROI**: Hours saved every week on manual financial tasks
-
-### **🔒 Security Promise:**
+### ** Security :**
 - All credentials **encrypted** before storage
 - **No data leaves your computer** except to YOUR chosen financial services
 - **HTTPS secured** connections throughout
@@ -163,9 +158,9 @@
 - **Solution**: Secure API-based access with individual permissions
 - **Compliance**: Meet SOC 2, GDPR, and financial regulations
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
-## **🚀 Get Started - Complete Setup Guide**
+## ** Get Started - Complete Setup Guide**
 
 ### **Step 1: Download the Project** (≈ 1 minute)
 
@@ -204,7 +199,7 @@ pip install -r requirements.txt
 python app_with_setup_wizard.py
 ```
 
-#### **🖥️ After First Run (Windows)**
+#### ** After First Run (Windows)**
 You'll get a **desktop shortcut**: "**Financial Command Center AI - Quick Start**"
 
 **For daily use:**
@@ -213,18 +208,18 @@ You'll get a **desktop shortcut**: "**Financial Command Center AI - Quick Start*
 - **Always launches on**: `https://127.0.0.1:8000` (secured HTTPS)
 
 **Perfect for:**
-- 📋 **Morning financial check-ins** 
-- 📈 **Quick invoice reviews**
-- 🤖 **Instant Claude Desktop financial queries**
+-  **Morning financial check-ins** 
+-  **Quick invoice reviews**
+-  **Instant Claude Desktop financial queries**
 
 #### **Desktop Shortcut - For Daily Use**
 After first run, you'll have a desktop shortcut: **"Financial Command Center AI - Quick Start"**
 
 **Double-click the shortcut anytime to:**
-- ✅ **Start Flask server** on `https://127.0.0.1:8000` (HTTPS secured)
-- ✅ **Auto-open browser** to your Financial Command Center
-- ✅ **Run in background** - server continues after closing window
-- ✅ **Instant access** - No setup wizard, just straight to your dashboard
+-  **Start Flask server** on `https://127.0.0.1:8000` (HTTPS secured)
+-  **Auto-open browser** to your Financial Command Center
+-  **Run in background** - server continues after closing window
+-  **Instant access** - No setup wizard, just straight to your dashboard
 
 **What you get:**
 - **Desktop shortcut** - One-click access to your financial dashboard
@@ -287,19 +282,19 @@ python app_with_setup_wizard.py
 
 #### **Setup Wizard Walkthrough:**
 
-**🎉 Step 1: Welcome**
+** Step 1: Welcome**
 - Overview of what you're setting up
 - Security and encryption information
 - Click "Start Setup" to begin
 
-**💳 Step 2: Configure Stripe (Payment Processing)**
+** Step 2: Configure Stripe (Payment Processing)**
 - **If you have Stripe**: Enter your API keys from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
   - Secret Key: `sk_test_...` or `sk_live_...`
   - Publishable Key: `pk_test_...` or `pk_live_...` (optional)
 - **Test Connection** - verifies your keys work
 - **If you don't have Stripe**: Click "Skip for Demo" to continue
 
-**🏦 Step 3: Configure Plaid (Banking Data)**
+** Step 3: Configure Plaid (Banking Data)**
 - **If you have Plaid**: Enter credentials from [Plaid Dashboard](https://dashboard.plaid.com/keys)
   - Client ID: Your Plaid client identifier
   - Secret Key: Your Plaid secret key
@@ -307,19 +302,19 @@ python app_with_setup_wizard.py
 - **Test Connection** - validates your Plaid setup
 - **If you don't have Plaid**: Click "Skip for Demo" to continue
 
-**📊 Step 4: Configure Xero (Accounting)**
+** Step 4: Configure Xero (Accounting)**
 - **If you have Xero**: Enter OAuth credentials from [Xero Developer Portal](https://developer.xero.com/myapps)
   - Client ID: Your Xero application client ID
   - Client Secret: Your Xero application secret
 - **Test Configuration** - validates format and setup
 - **If you don't have Xero**: Click "Skip for Demo" to continue
 
-**✅ Step 5: Review & Save**
+** Step 5: Review & Save**
 - See summary of what you've configured
 - All credentials are **encrypted** before saving
 - Click "Save & Complete Setup"
 
-**🎆 Step 6: Setup Complete!**
+** Step 6: Setup Complete!**
 - Your Financial Command Center is now ready
 - Credentials are securely stored and ready for Claude Desktop
 - You can access the main dashboard
@@ -346,7 +341,7 @@ macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
 
-> **⚠️ Important**: After installing the config file, verify the file paths in `claude_desktop_config.json` match your actual project directory. If you moved or renamed the project folder, update all paths from `"Stripe Playground"` to your current folder name (e.g., `"FCC"`), and ensure Python executable paths are correct.
+> ** Important**: After installing the config file, verify the file paths in `claude_desktop_config.json` match your actual project directory. If you moved or renamed the project folder, update all paths from `"Stripe Playground"` to your current folder name (e.g., `"FCC"`), and ensure Python executable paths are correct.
 
 #### **Start Using AI Financial Management:**
 1. **Restart Claude Desktop** completely
@@ -372,7 +367,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **"Give me a complete financial summary for this month"**
 - **"Check all integration statuses and any issues"**
 
-### **🚑 Quick Troubleshooting**
+### ** Quick Troubleshooting**
 
 #### **"ultimate_cert_fix.cmd won't start"**
 - **Check**: Python 3.8+ is installed on your system
@@ -394,7 +389,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ---
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
 ## **Daily Workflow - How Your Team Will Use This**
 
@@ -475,7 +470,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ---
 
-### 🎛️ **Admin Panel** (`/admin/dashboard`) - **System Control**
+###  **Admin Panel** (`/admin/dashboard`) - **System Control**
 **Best for**: System configuration, API management, troubleshooting
 **Who uses it**: IT administrators, system integrators
 
@@ -489,7 +484,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ---
 
-### 🔍 **Quick Navigation Guide**
+###  **Quick Navigation Guide**
 
 | **I need to...** | **Go to** | **Best Time** |
 |-------------------|-----------|---------------|
@@ -500,25 +495,25 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 | Configure new integration | `/admin/dashboard` | During setup/changes |
 | Generate API key for developer | `/admin/dashboard` | When building integrations |
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
-## **🤖 REVOLUTIONARY: Claude Desktop AI Integration**
+## ** REVOLUTIONARY: Claude Desktop AI Integration**
 
 > **GAME CHANGER**: Talk to your financial data with natural language! Configure once in web UI, then use Claude Desktop to manage your entire financial ecosystem with voice commands.
 
-### 🚀 **Claude Desktop MCP Integration - Zero Configuration**
+###  **Claude Desktop MCP Integration - Zero Configuration**
 
 **The Problem**: Setting up AI integrations usually requires complex JSON files, API keys, and technical knowledge.
 
 **Our Solution**: **Configure credentials ONCE in the web UI → Generate complete Claude Desktop config → Download & install → Start talking to your finances!**
 
-#### **🎯 How It Works:**
+#### ** How It Works:**
 1. **Web UI Setup** (3 minutes): Configure Stripe, Xero, Plaid in our professional setup wizard
 2. **Generate Config** (5 seconds): Visit `/claude/setup` → Click "Generate Complete Config"
 3. **Download & Install** (30 seconds): Download `claude_desktop_config.json` → Place in Claude Desktop folder
 4. **Start Talking** (immediately): Ask Claude anything about your finances!
 
-#### **💬 What You Can Ask Claude Desktop:**
+#### ** What You Can Ask Claude Desktop:**
 ```
 "Show me our current cash flow and financial health"
 "List all unpaid invoices over $1000"
@@ -529,12 +524,12 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "What customers have invoices over $5000?"
 ```
 
-#### **🏆 All 5 MCP Servers Automatically Configured:**
-- **🏢 Financial Command Center** - Core operations & health monitoring
-- **💳 Stripe Payments** - Payment processing & transaction management  
-- **📊 Xero Accounting** - Invoice management & accounting integration
-- **🏦 Plaid Banking** - Bank account data & transaction analysis
-- **🛡️ Compliance Suite** - Transaction monitoring & regulatory compliance
+#### ** All 5 MCP Servers Automatically Configured:**
+- ** Financial Command Center** - Core operations & health monitoring
+- ** Stripe Payments** - Payment processing & transaction management  
+- ** Xero Accounting** - Invoice management & accounting integration
+- ** Plaid Banking** - Bank account data & transaction analysis
+- ** Compliance Suite** - Transaction monitoring & regulatory compliance
 
 **Business Impact:**
 - **10x Faster** financial queries - ask questions instead of clicking through dashboards
@@ -542,7 +537,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **Professional AI Access** - natural language interface to ALL your financial data
 - **Real-Time Insights** - AI works with live data from all connected systems
 
-### 📈 **Claude Desktop Setup - Complete Integration Guide**
+###  **Claude Desktop Setup - Complete Integration Guide**
 
 #### **Step 1: Setup Financial Command Center** (3 minutes)
 1. **Run our launcher**: `ultimate_cert_fix.cmd`
@@ -561,7 +556,7 @@ macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
 
-> **🔧 Troubleshooting**: If MCP servers won't connect, check that all file paths in the config match your actual directory structure. Common fix: Update paths from old folder names to current location.
+> ** Troubleshooting**: If MCP servers won't connect, check that all file paths in the config match your actual directory structure. Common fix: Update paths from old folder names to current location.
 
 #### **Step 4: Start Using AI Financial Management** (immediately)
 1. **Restart Claude Desktop** completely
@@ -570,7 +565,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ### 💬 **Sample AI Financial Commands**
 
-#### **💰 Business Health Monitoring**
+#### ** Business Health Monitoring**
 ```
 "What's our overall financial health right now?"
 "Show me cash flow trends for this quarter"
@@ -578,7 +573,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Give me a complete financial dashboard summary"
 ```
 
-#### **📧 Invoice & Customer Management**  
+#### ** Invoice & Customer Management**  
 ```
 "List all overdue invoices and their amounts"
 "Find invoices for Global Systems Ltd"
@@ -586,7 +581,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Who are our top 10 customers by invoice value?"
 ```
 
-#### **🏦 Banking & Transaction Analysis**
+#### ** Banking & Transaction Analysis**
 ```
 "Scan recent bank transactions for any compliance issues"
 "Show me all transactions over $2000 from last month"
@@ -594,7 +589,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Check account balances across all connected banks"
 ```
 
-#### **📈 Advanced Financial Intelligence**
+#### ** Advanced Financial Intelligence**
 ```
 "Compare this month's revenue vs last month"
 "Create a summary for our board meeting next week"
@@ -602,9 +597,9 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Forecast our cash flow based on current trends"
 ```
 
-### 🧪 **Enterprise Security Without Enterprise Costs**
+###  **Enterprise Security Without Enterprise Costs**
 
-#### **🔐 Bank-Level Security**
+#### ** Bank-Level Security**
 - **Encrypted API Connections** - All data transmission protected
 - **Zero Credential Sharing** - No more shared logins
 - **Audit Trails** - Complete activity logging
@@ -619,26 +614,26 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 | **Staff Training** | 40+ hours | **None needed** |
 | **Maintenance** | Dedicated IT team | **Self-maintaining** |
 
-### 🛑 **Productivity Multiplier Effects**
+###  **Productivity Multiplier Effects**
 
 **Week 1 After Implementation:**
-- ✅ 90% reduction in manual data entry
-- ✅ Real-time financial visibility
-- ✅ Elimination of reconciliation errors
+-  90% reduction in manual data entry
+-  Real-time financial visibility
+-  Elimination of reconciliation errors
 
 **Month 1:**
-- ✅ Same-day month-end close (vs. 3-5 days)
-- ✅ Automated compliance reporting
-- ✅ AI-powered cash flow insights
+-  Same-day month-end close (vs. 3-5 days)
+-  Automated compliance reporting
+-  AI-powered cash flow insights
 
 **Month 3:**
-- ✅ Predictive analytics for business decisions
-- ✅ Automated customer payment follow-ups
-- ✅ Integration with other business tools via API
+-  Predictive analytics for business decisions
+-  Automated customer payment follow-ups
+-  Integration with other business tools via API
 
 ---
 
-### 🏢 **Enterprise Deployment with Windows Installer**
+###  **Enterprise Deployment with Windows Installer**
 
 #### **For Accounting Firms & Multi-User Businesses**
 
@@ -676,11 +671,11 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 - **Monitoring**: Each user can check `/health` dashboard
 - **Support**: Logs automatically generated in user folders
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
-## 🎢 **Real Business Scenarios**
+##  **Real Business Scenarios**
 
-### 🚪 **Scenario 1: E-commerce Store Owner**
+###  **Scenario 1: E-commerce Store Owner**
 **Challenge**: "I spend 3 hours every Friday manually entering Stripe payments into Xero"
 
 **Solution with Financial Command Center:**
@@ -689,13 +684,13 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 3. **Savings**: 3 hours/week = **$7,800/year** (at $50/hour)
 
 **Monthly Workflow:**
-- ✅ Payments sync automatically
-- ✅ Month-end reports generated instantly
-- ✅ Tax preparation data always ready
+-  Payments sync automatically
+-  Month-end reports generated instantly
+-  Tax preparation data always ready
 
 ---
 
-### 🏢 **Scenario 2: Accounting Firm with 50 Clients**
+###  **Scenario 2: Accounting Firm with 50 Clients**
 **Challenge**: "Managing client financial data across multiple systems is chaos"
 
 **Solution with Financial Command Center:**
@@ -704,13 +699,13 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 3. **Savings**: 40 hours/month = **$62,400/year**
 
 **Client Management:**
-- ✅ Real-time client financial health monitoring
-- ✅ Automated compliance reporting
-- ✅ Instant access to any client's financial data
+-  Real-time client financial health monitoring
+-  Automated compliance reporting
+-  Instant access to any client's financial data
 
 ---
 
-### 🚀 **Scenario 3: Growing SaaS Startup**
+###  **Scenario 3: Growing SaaS Startup**
 **Challenge**: "Our finance team can't keep up with subscription payments and refunds"
 
 **Solution with Financial Command Center:**
@@ -719,40 +714,40 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 3. **Savings**: Avoid hiring additional finance staff = **$120,000/year**
 
 **Growth Support:**
-- ✅ Scale financial operations without hiring
-- ✅ Investor-ready financial reports
-- ✅ Automated compliance for audits
+-  Scale financial operations without hiring
+-  Investor-ready financial reports
+-  Automated compliance for audits
 
 ---
 
-## 📅 **Implementation Timeline**
+##  **Implementation Timeline**
 
 ### **Day 1: Quick Setup**
-- ⏱️ **0-5 minutes**: Download and install
-- ⏱️ **5-10 minutes**: Run setup wizard
-- ⏱️ **10-15 minutes**: Connect first integration (Stripe or Xero)
-- ✅ **Result**: Basic automation working
+-  **0-5 minutes**: Download and install
+-  **5-10 minutes**: Run setup wizard
+-  **10-15 minutes**: Connect first integration (Stripe or Xero)
+-  **Result**: Basic automation working
 
 ### **Week 1: Full Implementation**
 - **Day 2**: Connect remaining integrations
 - **Day 3**: Test data sync and verify accuracy
 - **Day 4**: Train team on new dashboards
 - **Day 5**: Go live with automated processes
-- ✅ **Result**: 90% reduction in manual work
+- **Result**: 90% reduction in manual work
 
 ### **Month 1: Optimization**
 - **Week 2**: Set up automated reports
 - **Week 3**: Configure alerts and monitoring
 - **Week 4**: Integrate with additional business tools
-- ✅ **Result**: Full financial automation suite
+- **Result**: Full financial automation suite
 
 ---
 
-## 🔧 **Integration Endpoints for Developers**
+##  **Integration Endpoints for Developers**
 
 > **For Business Users**: You don't need to know these technical details. The web interface handles everything automatically.
 
-### 📋 **What Your Team Will Use Daily**
+###  **What Your Team Will Use Daily**
 | **Business Need** | **Web Page** | **What It Does** |
 |-------------------|--------------|------------------|
 | Morning system check | `/` | Overall business health dashboard |
@@ -760,7 +755,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 | Look up customer info | `/xero/contacts` | Customer contact details |
 | Troubleshoot issues | `/health` | System status and diagnostics |
 
-### 💻 **For Developers & Integrators**
+###  **For Developers & Integrators**
 If you're building custom integrations or connecting other business tools:
 
 **Key API Endpoints:**
@@ -774,11 +769,11 @@ If you're building custom integrations or connecting other business tools:
 - `POST /api/create-key` - Generate API keys for integrations
 - `GET /admin/dashboard` - System administration
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
-## ⚙️ **Business Setup & Troubleshooting**
+##  **Business Setup & Troubleshooting**
 
-### 🔄 **Common Business Scenarios**
+### **Common Business Scenarios**
 
 #### **"Payments aren't syncing to my accounting system"**
 1. **Check** `/health` - Is Stripe/Xero connection green?
@@ -800,21 +795,21 @@ If you're building custom integrations or connecting other business tools:
    - API rate limits → Wait 1-2 minutes
 3. **When to worry**: Only if issues persist >15 minutes
 
-### 🔒 **Security Best Practices for Business**
+###  **Security Best Practices for Business**
 
 #### **What We Handle Automatically:**
-- ✅ **Encrypted storage** of all API keys and credentials
-- ✅ **Secure connections** (HTTPS) to all financial services
-- ✅ **Automatic session management** - no password sharing needed
-- ✅ **Audit logging** - track who accessed what and when
+-  **Encrypted storage** of all API keys and credentials
+-  **Secure connections** (HTTPS) to all financial services
+-  **Automatic session management** - no password sharing needed
+-  **Audit logging** - track who accessed what and when
 
 #### **What You Should Do:**
-- 🔑 **Use strong passwords** for your Stripe/Xero accounts
-- 🚫 **Don't share** the server URL outside your organization
-- 🔄 **Regular backups** of your financial data (in Xero/Stripe)
-- 📞 **Monitor access** - check `/admin/dashboard` monthly
+-  **Use strong passwords** for your Stripe/Xero accounts
+-  **Don't share** the server URL outside your organization
+-  **Regular backups** of your financial data (in Xero/Stripe)
+-  **Monitor access** - check `/admin/dashboard` monthly
 
-### 🚑 **Getting Help Fast**
+###  **Getting Help Fast**
 
 **For Immediate Issues:**
 1. **Check** `/health` dashboard first
@@ -828,7 +823,7 @@ If you're building custom integrations or connecting other business tools:
 
 ---
 
-### 💾 **Windows Launcher Troubleshooting**
+###  **Windows Launcher Troubleshooting**
 
 #### **"ultimate_cert_fix.cmd won't start"**
 1. **Check Python installation**: Ensure Python 3.8+ is installed
@@ -858,12 +853,12 @@ If you're building custom integrations or connecting other business tools:
 2. **Install certificate**: Check `/admin/ssl-help` for certificate installation
 3. **Use the app normally**: The connection is still encrypted despite the warning
 
-**🔧 Debug Tools:**
+** Debug Tools:**
 - **`Test-Quick-Launch.cmd`** - Simple test launcher
 - **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation
 - **Check logs in terminal** - launcher shows detailed error messages
 
-### 💾 **Windows Installer Troubleshooting** (Legacy)
+###  **Windows Installer Troubleshooting** (Legacy)
 
 #### **"Installer won't start or shows security warning"**
 1. **Right-click** installer → **"Run as administrator"**
@@ -887,33 +882,33 @@ If you're building custom integrations or connecting other business tools:
 2. **Notification settings**: Ensure "Financial Command Center" is enabled
 3. **Restart application**: Exit and relaunch installer
 
-**📞 Need Help?** Check `launcher.log` file in installation folder for detailed error information.
+** Need Help?** Check `launcher.log` file in installation folder for detailed error information.
 
-[⬆️ Back to Top](#-table-of-contents)
+[ Back to Top](#-table-of-contents)
 
-## 🏗️ Architecture
+##  Architecture
 
-### 🔧 **Core Components**
+### **Core Components**
 - **`app_with_setup_wizard.py`** - Main application with setup wizard
 - **`session_config.py`** - Enhanced session management
 - **`setup_wizard.py`** - Secure credential configuration
 - **`cert_manager.py`** - SSL certificate management
 - **`auth/security.py`** - API authentication system
 
-### 📊 **Integration Modules**
+###  **Integration Modules**
 - **`xero_oauth.py`** - Xero OAuth2 implementation
 - **`stripe_mcp.py`** - Stripe payment processing
 - **`plaid_mcp.py`** - Banking data integration
 
-### 🎨 **Frontend Features**
+###  **Frontend Features**
 - **Responsive Design** - Works on all screen sizes
 - **Modern UI/UX** - Professional gradients and animations
 - **Real-time Search** - Client-side filtering
 - **Auto-refresh** - Live system monitoring
 
-## 🔍 Development
+##  Development
 
-### 🛠️ **Debug Mode**
+###  **Debug Mode**
 Enable debug mode for additional features:
 ```python
 app.config['DEBUG'] = True
@@ -924,7 +919,7 @@ app.config['DEBUG'] = True
 - `/api/session/test-persistence` - Test session persistence  
 - `/api/oauth/test-flow` - OAuth configuration status
 
-### 🧪 **Testing**
+###  **Testing**
 ```bash
 # Test session persistence
 python test_session_persistence.py
@@ -936,15 +931,15 @@ python test_ssl_trust.py
 python debug_xero_contacts.py
 ```
 
-### 📝 **Logging**
+###  **Logging**
 - **Application logs** - Comprehensive request/response logging
 - **Security events** - Authentication and authorization logs
 - **Session debugging** - Token storage and retrieval logs
 - **Health monitoring** - System status and performance logs
 
-## 🚨 Troubleshooting
+##  Troubleshooting
 
-### 🔧 **Common Issues**
+###  **Common Issues**
 
 **1. Certificate Warnings in Browser**
 ```bash
@@ -971,32 +966,32 @@ curl -X POST https://localhost:8000/api/create-key \
   -d '{"client_name": "test_client"}'
 ```
 
-### 📊 **Health Monitoring**
+###  **Health Monitoring**
 Visit `/health` for real-time system monitoring:
 - **System Overview** - Overall health status
 - **Integration Status** - Stripe/Xero configuration
 - **Session Management** - Authentication status  
 - **Performance Metrics** - Health score and checks
 
-## 🎯 Use Cases
+##  Use Cases
 
-### 💼 **Business Applications**
+###  **Business Applications**
 - **Accounting Firms** - Client financial data management
 - **E-commerce** - Payment processing with accounting sync
 - **SaaS Platforms** - Financial integration services
 - **Freelancers** - Invoice and payment management
 
-### 🔧 **Development**
+###  **Development**
 - **Financial API Integration** - Pre-built OAuth flows
 - **Payment Processing** - Secure Stripe implementation  
 - **Session Management** - Production-ready authentication
 - **Security Features** - Enterprise-grade API protection
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-### 📋 **Development Setup**
+###  **Development Setup**
 ```bash
 # Clone and setup
 git clone https://github.com/KhanSayeem/Financial-Command-Center-AI.git
@@ -1015,7 +1010,7 @@ python app_with_setup_wizard.py
 
 ---
 
-## 🤝 **Contributing**
+##  **Contributing**
 
 ### **Development Setup**
 
@@ -1043,22 +1038,22 @@ python app_with_setup_wizard.py
 
 ---
 
-## 📄 **License**
+##  **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📞 **Support**
+##  **Support**
 
-- **📧 Email**: khansayeem03@gmail.com
-- **🐛 GitHub Issues**: [Report bugs or request features](https://github.com/KhanSayeem/Financial-Command-Center-AI/issues)
-- **📖 Documentation**: Check the repository for additional guides
-- **💬 Community**: Join our discussions in GitHub Discussions
+- ** Email**: khansayeem03@gmail.com
+- ** GitHub Issues**: [Report bugs or request features](https://github.com/KhanSayeem/Financial-Command-Center-AI/issues)
+- ** Documentation**: Check the repository for additional guides
+- ** Community**: Join our discussions in GitHub Discussions
 
 ---
 
-## 🙏 **Acknowledgments**
+##  **Acknowledgments**
 
 - **Flask** - Robust web framework
 - **mkcert** - Local certificate authority for trusted SSL
@@ -1068,16 +1063,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📊 **Project Status**
+## **Project Status**
 
-- ✅ **Modern Glassmorphism UI** - Complete with stunning visual design
-- ✅ **SSL Certificate Management** - Browser-trusted HTTPS
-- ✅ **Multi-Platform Support** - Windows, macOS, Linux
-- ✅ **Financial Integrations** - Stripe, Xero, Plaid
-- ✅ **Security Features** - Encryption, HTTPS, secure storage
-- ✅ **Mobile Responsive** - Perfect on all screen sizes
-- ✅ **Real-time Monitoring** - Live health dashboard
-- 🔄 **Active Development** - Regular updates and improvements
+-  **Modern Glassmorphism UI** - Complete with stunning visual design
+-  **SSL Certificate Management** - Browser-trusted HTTPS
+-  **Multi-Platform Support** - Windows, macOS, Linux
+-  **Financial Integrations** - Stripe, Xero, Plaid
+-  **Security Features** - Encryption, HTTPS, secure storage
+-  **Mobile Responsive** - Perfect on all screen sizes
+-  **Real-time Monitoring** - Live health dashboard
+-  **Active Development** - Regular updates and improvements
 
 **Current Version**: 4.0.0  
 **Last Updated**: September 2025  
@@ -1087,7 +1082,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**🎉 Ready to revolutionize your financial operations with a stunning modern interface?**
+** Ready to revolutionize your financial operations with a stunning modern interface?**
 
 **Get started with the Financial Command Center AI today!**
 
@@ -1097,13 +1092,13 @@ Made with ❤️ and ✨ by [KhanSayeem](https://github.com/KhanSayeem)
 
 </div>
 
-## 📄 **License**
+##  **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📞 **Support**
+##  **Support**
 
 - **Email**: khansayeem03@gmail.com
 - **GitHub Issues**: [Report bugs or request features](https://github.com/KhanSayeem/Financial-Command-Center-AI/issues)
@@ -1112,7 +1107,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 **Acknowledgments**
+## **Acknowledgments**
 
 - **Flask** - Web framework
 - **mkcert** - Local certificate authority
@@ -1122,19 +1117,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📊 **Project Status**
+##  **Project Status**
 
-- ✅ **SSL Certificate Management** - Complete with browser trust
-- ✅ **Multi-Platform Support** - Windows, macOS, Linux
-- ✅ **Financial Integrations** - Stripe, Xero, Plaid
-- ✅ **Security Features** - Encryption, HTTPS, secure storage
-- ✅ **Testing Infrastructure** - Comprehensive test suite
-- ✅ **Documentation** - Complete setup and usage guides
-- 🔄 **Active Development** - Regular updates and improvements
+-  **SSL Certificate Management** - Complete with browser trust
+-  **Multi-Platform Support** - Windows, macOS, Linux
+-  **Financial Integrations** - Stripe, Xero, Plaid
+-  **Security Features** - Encryption, HTTPS, secure storage
+-  **Testing Infrastructure** - Comprehensive test suite
+-  **Documentation** - Complete setup and usage guides
+-  **Active Development** - Regular updates and improvements
 
 **Current Version**: 1.0.1  
 **Last Updated**: September 2025
 
 ---
 
-**🎉 Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today!**
+** Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today!**
