@@ -79,14 +79,14 @@
 
 ## **What to Expect - Your Journey**
 
-### ** The Complete Workflow:**
+### **The Complete Workflow:**
 1. **Download** → Get the Financial Command Center files
 2. **Launch** → Double-click launcher, system sets up automatically  
 3. **Configure** → Enter your financial account credentials (secure & encrypted)
 4. **Generate Claude Config** → One-click AI integration setup
 5. **Start Managing Finances with AI** → Natural language commands!
 
-### ** Security :**
+### **Security :**
 - All credentials **encrypted** before storage
 - **No data leaves your computer** except to YOUR chosen financial services
 - **HTTPS secured** connections throughout
@@ -160,7 +160,7 @@
 
 [ Back to Top](#-table-of-contents)
 
-## ** Get Started - Complete Setup Guide**
+## **Get Started - Complete Setup Guide**
 
 ### **Step 1: Download the Project** (≈ 1 minute)
 
@@ -199,7 +199,7 @@ pip install -r requirements.txt
 python app_with_setup_wizard.py
 ```
 
-#### ** After First Run (Windows)**
+#### **After First Run (Windows)**
 You'll get a **desktop shortcut**: "**Financial Command Center AI - Quick Start**"
 
 **For daily use:**
@@ -389,7 +389,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 ---
 
-[ Back to Top](#-table-of-contents)
+[Back to Top](#-table-of-contents)
 
 ## **Daily Workflow - How Your Team Will Use This**
 
@@ -497,7 +497,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 [ Back to Top](#-table-of-contents)
 
-## ** REVOLUTIONARY: Claude Desktop AI Integration**
+## **REVOLUTIONARY: Claude Desktop AI Integration**
 
 > **GAME CHANGER**: Talk to your financial data with natural language! Configure once in web UI, then use Claude Desktop to manage your entire financial ecosystem with voice commands.
 
@@ -507,13 +507,13 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 **Our Solution**: **Configure credentials ONCE in the web UI → Generate complete Claude Desktop config → Download & install → Start talking to your finances!**
 
-#### ** How It Works:**
+#### **How It Works:**
 1. **Web UI Setup** (3 minutes): Configure Stripe, Xero, Plaid in our professional setup wizard
 2. **Generate Config** (5 seconds): Visit `/claude/setup` → Click "Generate Complete Config"
 3. **Download & Install** (30 seconds): Download `claude_desktop_config.json` → Place in Claude Desktop folder
 4. **Start Talking** (immediately): Ask Claude anything about your finances!
 
-#### ** What You Can Ask Claude Desktop:**
+#### **What You Can Ask Claude Desktop:**
 ```
 "Show me our current cash flow and financial health"
 "List all unpaid invoices over $1000"
@@ -524,7 +524,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "What customers have invoices over $5000?"
 ```
 
-#### ** All 5 MCP Servers Automatically Configured:**
+#### **All 5 MCP Servers Automatically Configured:**
 - ** Financial Command Center** - Core operations & health monitoring
 - ** Stripe Payments** - Payment processing & transaction management  
 - ** Xero Accounting** - Invoice management & accounting integration
@@ -556,7 +556,7 @@ macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
 Linux: ~/.config/Claude/claude_desktop_config.json
 ```
 
-> ** Troubleshooting**: If MCP servers won't connect, check that all file paths in the config match your actual directory structure. Common fix: Update paths from old folder names to current location.
+> **Troubleshooting**: If MCP servers won't connect, check that all file paths in the config match your actual directory structure. Common fix: Update paths from old folder names to current location.
 
 #### **Step 4: Start Using AI Financial Management** (immediately)
 1. **Restart Claude Desktop** completely
@@ -581,7 +581,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 "Who are our top 10 customers by invoice value?"
 ```
 
-#### ** Banking & Transaction Analysis**
+#### **Banking & Transaction Analysis**
 ```
 "Scan recent bank transactions for any compliance issues"
 "Show me all transactions over $2000 from last month"
@@ -853,7 +853,7 @@ If you're building custom integrations or connecting other business tools:
 2. **Install certificate**: Check `/admin/ssl-help` for certificate installation
 3. **Use the app normally**: The connection is still encrypted despite the warning
 
-** Debug Tools:**
+**Debug Tools:**
 - **`Test-Quick-Launch.cmd`** - Simple test launcher
 - **`Create-Desktop-Shortcut.cmd`** - Manual shortcut creation
 - **Check logs in terminal** - launcher shows detailed error messages
@@ -1132,4 +1132,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today!**
+**Ready to revolutionize your financial operations? Get started with the Financial Command Center AI today**
