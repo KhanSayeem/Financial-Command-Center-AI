@@ -127,6 +127,13 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
         compliance_env,
     )
 
+    automation_env = dict(compliance_env)
+    _add_server(
+        'automation-workflows',
+        'automation_mcp.py',
+        automation_env,
+    )
+
     config_json = json.dumps({'mcpServers': mcp_servers}, indent=2)
 
     included_servers = list(mcp_servers.keys())
