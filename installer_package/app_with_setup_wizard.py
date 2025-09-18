@@ -103,6 +103,16 @@ except ImportError as e:
 except Exception as e:
     print(f"WARNING: Claude integration setup failed: {e}")
 
+# Import and setup ChatGPT integration
+try:
+    from chatgpt_integration import setup_chatgpt_routes
+    chatgpt_setup_result = setup_chatgpt_routes(app, logger)
+    print("ChatGPT integration loaded")
+except ImportError as e:
+    print(f"WARNING: ChatGPT integration not available: {e}")
+except Exception as e:
+    print(f"WARNING: ChatGPT integration setup failed: {e}")
+
 def get_credentials_or_redirect():
     """Get credentials from setup wizard or redirect to setup if not configured"""
     credentials = get_configured_credentials()
@@ -490,25 +500,25 @@ def test_oauth_flow():
         'session_config_available': session_config is not None,
     }
     
-    # Test session token handling
-    token_meta = session.get('token_meta')
-    current_tenant = session.get('tenant_id')
-    store_error = None
-    stored_token = {}
-    try:
-        from xero_client import get_stored_token
-        stored_token = get_stored_token()
-    except Exception as err:
-        store_error = str(err)
-
-    token_info = {
-        'session_has_metadata': token_meta is not None,
-        'stored_token_keys': list(stored_token.keys()) if isinstance(stored_token, dict) else [],
-        'has_stored_token': bool(stored_token.get('access_token')) if isinstance(stored_token, dict) else False,
-        'has_tenant_id': current_tenant is not None,
-        'tenant_id': current_tenant,
-        'store_error': store_error
-    }
+    # Test session token handling
+    token_meta = session.get('token_meta')
+    current_tenant = session.get('tenant_id')
+    store_error = None
+    stored_token = {}
+    try:
+        from xero_client import get_stored_token
+        stored_token = get_stored_token()
+    except Exception as err:
+        store_error = str(err)
+
+    token_info = {
+        'session_has_metadata': token_meta is not None,
+        'stored_token_keys': list(stored_token.keys()) if isinstance(stored_token, dict) else [],
+        'has_stored_token': bool(stored_token.get('access_token')) if isinstance(stored_token, dict) else False,
+        'has_tenant_id': current_tenant is not None,
+        'tenant_id': current_tenant,
+        'store_error': store_error
+    }
     return jsonify({
         'oauth_config': oauth_config,
         'token_info': token_info,
