@@ -33,6 +33,9 @@ from xero_client import save_token_and_tenant
 # Import enhanced session configuration
 from session_config import configure_flask_sessions
 
+# Import assistant integration
+from fcc_assistant_integration import setup_assistant_routes
+
 # Add our security layer
 sys.path.append('.')
 try:
@@ -106,6 +109,9 @@ if not demo.is_demo:
     # Configure enhanced session management with OAuth token handlers
     session_config = configure_flask_sessions(app, api_client)
     oauth, xero = init_oauth(app)
+
+# Setup assistant routes
+setup_assistant_routes(app)
 
 # NEW: Health check endpoint (no auth required)
 
