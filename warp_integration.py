@@ -130,6 +130,13 @@ def _build_warp_config(app) -> Tuple[str, Dict[str, object], str]:
         compliance_env,
     )
 
+    automation_env = dict(compliance_env)
+    _add_server(
+        'automation-workflows-warp',
+        'automation_mcp_warp.py',
+        automation_env,
+    )
+
     config_json = json.dumps({'mcpServers': mcp_servers}, indent=2)
 
     included_servers = list(mcp_servers.keys())
