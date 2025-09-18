@@ -77,6 +77,24 @@ def build_admin_dashboard_context(security_enabled: bool, security_manager: Opti
 
     quick_links = [
         {
+            'label': 'Configure Claude Desktop',
+            'description': 'Connect Claude to your financial cockpit.',
+            'href': '/claude/setup',
+            'icon': 'bot',
+        },
+        {
+            'label': 'Configure Warp Terminal',
+            'description': 'Drive compliance MCP commands from Warp.',
+            'href': '/warp/setup',
+            'icon': 'terminal',
+        },
+        {
+            'label': 'Connect with ChatGPT',
+            'description': 'Enable natural language financial commands.',
+            'href': '/chatgpt/setup',
+            'icon': 'bot',
+        },
+        {
             'label': 'Mode settings',
             'description': 'Switch between demo and live data.',
             'href': '/admin/mode',

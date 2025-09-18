@@ -133,6 +133,16 @@ except ImportError as e:
 except Exception as e:
     print(f"WARNING: Warp integration setup failed: {e}")
 
+# Import and setup ChatGPT integration
+try:
+    from chatgpt_integration import setup_chatgpt_routes
+    chatgpt_setup_result = setup_chatgpt_routes(app, logger)
+    print("ChatGPT integration loaded")
+except ImportError as e:
+    print(f"WARNING: ChatGPT integration not available: {e}")
+except Exception as e:
+    print(f"WARNING: ChatGPT integration setup failed: {e}")
+
 def get_credentials_or_redirect():
     """Get credentials from setup wizard or redirect to setup if not configured"""
     credentials = get_configured_credentials()
@@ -387,6 +397,15 @@ def index():
                 'description': 'Connect Warp to trigger compliance MCP commands hands-free.',
                 'actions': [{'label': 'Setup Warp', 'href': '/warp/setup', 'icon': 'terminal'}],
             },
+            {
+                'category': 'AI',
+                'title': 'ChatGPT',
+                'status_label': 'Available',
+                'status_icon': 'message-circle',
+                'status_tone': 'success',
+                'description': 'Enable natural language financial commands through ChatGPT Desktop.',
+                'actions': [{'label': 'Connect ChatGPT', 'href': '/chatgpt/setup', 'icon': 'message-circle'}],
+            },
         ]
     )
 
@@ -399,8 +418,8 @@ def index():
         },
         {
             'label': 'AI copilots standing by',
-            'value': '2',
-            'description': 'Claude Desktop and Warp Terminal integrations ship with guides.',
+            'value': '3',
+            'description': 'Claude Desktop, Warp Terminal, and ChatGPT integrations ship with guides.',
             'icon': 'bot',
             'tone': 'info',
         },
@@ -429,15 +448,16 @@ def index():
 
     ai_callout = {
         'badge': 'AI copilots',
-        'title': 'Bring Claude and Warp into your financial workflow',
+        'title': 'Bring Claude, Warp, and ChatGPT into your financial workflow',
         'description': 'Preview natural-language commands for compliance, reporting, and client updates backed by your live connectors.',
         'actions': [
             {'label': 'Setup Claude Desktop', 'href': '/claude/setup', 'icon': 'bot'},
             {'label': 'Setup Warp Terminal', 'href': '/warp/setup', 'icon': 'terminal'},
+            {'label': 'Connect to ChatGPT', 'href': '/chatgpt/setup', 'icon': 'message-circle'},
         ],
         'tips': [
-            '“Summarize today\'s Stripe payments”',
-            '“Show overdue invoices for ACME”',
+            '"Summarize today\'s Stripe payments"',
+            '"Show overdue invoices for ACME"',
         ],
     }
 

@@ -1,0 +1,330 @@
+{% extends "layout.html" %}
+
+{% block title %}ChatGPT Integration · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <div class="card border border-border/70 p-7 shadow-card">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-emerald-700">
+                    <i data-lucide="message-circle" class="h-3.5 w-3.5"></i>
+                    ChatGPT
+                </span>
+                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Connect ChatGPT to your financial cockpit</h1>
+                <p class="text-sm text-muted-foreground">Enable natural language financial commands through ChatGPT Desktop with secure access to your Xero, Stripe, and Plaid data.</p>
+            </div>
+            <a href="/admin/dashboard" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80">
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                Back to admin
+            </a>
+        </div>
+    </div>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-1">
+                <h2 class="text-lg font-semibold text-foreground">Connect with your OpenAI API key</h2>
+                <p class="text-sm text-muted-foreground">Enter your OpenAI API key to enable ChatGPT integration with your financial systems.</p>
+            </div>
+        </div>
+        
+        <form id="chatgpt-config-form" class="space-y-4">
+            <div class="space-y-2">
+                <label for="openai-api-key" class="text-sm font-medium text-foreground">OpenAI API Key</label>
+                <input 
+                    type="password" 
+                    id="openai-api-key" 
+                    name="openai_api_key" 
+                    placeholder="sk-..." 
+                    class="w-full rounded-lg border border-border/70 bg-background px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    required
+                >
+                <p class="text-xs text-muted-foreground">Your API key is stored locally and never sent to any external servers except OpenAI.</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button type="submit" id="chatgpt-connect-btn" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                    <i data-lucide="link" class="h-4 w-4"></i>
+                    <span>Connect ChatGPT</span>
+                </button>
+                <button type="button" id="chatgpt-test-btn" class="hidden inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-background/80">
+                    <i data-lucide="test-tube" class="h-4 w-4"></i>
+                    <span>Test Connection</span>
+                </button>
+                <button type="button" id="chatgpt-disconnect-btn" class="hidden inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-background/80">
+                    <i data-lucide="unlink" class="h-4 w-4"></i>
+                    <span>Disconnect</span>
+                </button>
+            </div>
+        </form>
+        
+        <div id="chatgpt-config-summary" data-base-class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground" class="hidden rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground"></div>
+    </section>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Prerequisites</h2>
+            <ul class="space-y-3 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> ChatGPT Desktop installed (latest version).</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Financial Command Center running over HTTPS (see SSL help in admin).</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Valid OpenAI API key with GPT-4o access.</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="h-4 w-4 text-emerald-600"></i> Demo API key generated from the admin dashboard.</li>
+            </ul>
+        </section>
+
+        <section class="card border border-border/70 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-foreground">Connection details</h2>
+            <dl class="grid gap-3 text-sm">
+                <div>
+                    <dt class="text-muted-foreground">Local endpoint</dt>
+                    <dd class="font-medium text-foreground">{{ server_url }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">API key header</dt>
+                    <dd class="font-medium text-foreground">X-API-Key</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">Recommended scope</dt>
+                    <dd class="font-medium text-foreground">read, write</dd>
+                </div>
+            </dl>
+        </section>
+    </div>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">How it works</h2>
+        <ol class="space-y-4 text-sm text-muted-foreground">
+            <li>
+                <span class="font-medium text-foreground">1. Enter your OpenAI API key</span>
+                <p>Provide your OpenAI API key above to enable secure communication between ChatGPT and your financial systems.</p>
+            </li>
+            <li>
+                <span class="font-medium text-foreground">2. ChatGPT routes natural language to financial actions</span>
+                <p>When you ask ChatGPT questions like "Show me overdue invoices", it automatically calls the appropriate MCP servers.</p>
+            </li>
+            <li>
+                <span class="font-medium text-foreground">3. Financial data flows back to ChatGPT</span>
+                <p>The results from Xero, Stripe, and other systems are formatted and presented in natural language.</p>
+            </li>
+        </ol>
+    </section>
+
+    <section class="card border border-border/70 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-foreground">Example prompts</h2>
+        <div class="grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                "What's our current cash position across all accounts?"
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                "Show me invoices over $1,000 that are more than 30 days overdue"
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                "Generate a profit and loss statement for last quarter"
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+                "Process a $500 payment from customer ABC Corporation"
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+
+{% block body_scripts %}
+    {{ super() }}
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('chatgpt-config-form');
+        const connectBtn = document.getElementById('chatgpt-connect-btn');
+        const testBtn = document.getElementById('chatgpt-test-btn');
+        const disconnectBtn = document.getElementById('chatgpt-disconnect-btn');
+        const summaryEl = document.getElementById('chatgpt-config-summary');
+        const summaryBase = summaryEl ? summaryEl.dataset.baseClass || '' : '';
+        let configData = null;
+
+        function setLoading(isLoading) {
+          if (!connectBtn) return;
+          const label = connectBtn.querySelector('span');
+          connectBtn.disabled = isLoading;
+          connectBtn.classList.toggle('opacity-70', isLoading);
+          connectBtn.classList.toggle('cursor-not-allowed', isLoading);
+          connectBtn.setAttribute('aria-busy', String(isLoading));
+          if (label) {
+            if (isLoading) {
+              connectBtn.dataset.originalLabel = label.textContent.trim();
+              label.textContent = 'Connecting…';
+            } else if (connectBtn.dataset.originalLabel) {
+              label.textContent = connectBtn.dataset.originalLabel;
+              delete connectBtn.dataset.originalLabel;
+            }
+          }
+        }
+
+        function showMessage(html, tone = 'info') {
+          if (!summaryEl) return;
+          const toneClasses = {
+            success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            error: 'border-rose-200 bg-rose-50 text-rose-700',
+            info: 'border-border/60 bg-muted/60 text-muted-foreground',
+            warning: 'border-amber-200 bg-amber-50 text-amber-700',
+          };
+          summaryEl.className = `${summaryBase} ${toneClasses[tone] || toneClasses.info}`.trim();
+          summaryEl.innerHTML = html;
+          summaryEl.classList.remove('hidden');
+        }
+
+        // Check if we already have a configuration
+        fetch('/api/chatgpt/config')
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.configured) {
+              document.getElementById('openai-api-key').value = 'sk-****************************************';
+              testBtn.classList.remove('hidden');
+              disconnectBtn.classList.remove('hidden');
+              showMessage(`
+                <div class="space-y-2">
+                  <p class="font-medium text-foreground">ChatGPT is already connected.</p>
+                  <p class="text-muted-foreground">You can test the connection or disconnect if needed.</p>
+                </div>
+              `, 'success');
+            }
+          })
+          .catch(() => {
+            // Ignore errors when checking initial state
+          });
+
+        form?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const apiKey = document.getElementById('openai-api-key').value.trim();
+          if (!apiKey) {
+            showMessage('<p class="font-medium">Please enter your OpenAI API key.</p>', 'error');
+            return;
+          }
+
+          setLoading(true);
+          showMessage('<p class="font-medium">Connecting to ChatGPT…</p>', 'info');
+          
+          try {
+            const response = await fetch('/api/chatgpt/connect', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ openai_api_key: apiKey }),
+            });
+            
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to connect to ChatGPT');
+            }
+            
+            configData = data.config;
+            const servers = (data.summary?.servers || []).map((name) => `<code>${name}</code>`).join(', ');
+            const credentials = data.summary?.credentials_used || {};
+            const credentialSummary = Object.entries(credentials)
+              .filter(([, used]) => used)
+              .map(([key]) => key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()))
+              .join(', ') || 'Demo credentials';
+            const pythonInfo = data.summary?.python_executable || 'python';
+            
+            const content = `
+              <div class="space-y-2">
+                <p class="font-medium text-foreground">ChatGPT connected successfully!</p>
+                <ul class="space-y-1">
+                  <li>Servers included: ${servers || 'None'}</li>
+                  <li>Credentials used: ${credentialSummary}</li>
+                  <li>Python executable: <code>${pythonInfo}</code></li>
+                </ul>
+                <p class="pt-2 text-muted-foreground">You can now use natural language commands in ChatGPT Desktop to control your financial systems.</p>
+              </div>
+            `;
+            
+            showMessage(content, 'success');
+            document.getElementById('openai-api-key').value = 'sk-****************************************';
+            testBtn.classList.remove('hidden');
+            disconnectBtn.classList.remove('hidden');
+          } catch (error) {
+            showMessage(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not connect to ChatGPT.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          } finally {
+            setLoading(false);
+          }
+        });
+
+        testBtn?.addEventListener('click', async () => {
+          testBtn.disabled = true;
+          testBtn.classList.add('opacity-70', 'cursor-not-allowed');
+          const originalLabel = testBtn.querySelector('span').textContent;
+          testBtn.querySelector('span').textContent = 'Testing…';
+          
+          try {
+            const response = await fetch('/api/chatgpt/test', {
+              method: 'POST',
+            });
+            
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to test connection');
+            }
+            
+            showMessage(`
+              <div class="space-y-2">
+                <p class="font-medium text-foreground">Connection test successful!</p>
+                <p class="text-muted-foreground">${data.message}</p>
+              </div>
+            `, 'success');
+          } catch (error) {
+            showMessage(`
+              <div class="space-y-1">
+                <p class="font-medium">Connection test failed.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          } finally {
+            testBtn.disabled = false;
+            testBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            testBtn.querySelector('span').textContent = originalLabel;
+          }
+        });
+
+        disconnectBtn?.addEventListener('click', async () => {
+          if (!confirm('Are you sure you want to disconnect ChatGPT?')) {
+            return;
+          }
+          
+          try {
+            const response = await fetch('/api/chatgpt/disconnect', {
+              method: 'POST',
+            });
+            
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to disconnect ChatGPT');
+            }
+            
+            document.getElementById('openai-api-key').value = '';
+            testBtn.classList.add('hidden');
+            disconnectBtn.classList.add('hidden');
+            showMessage(`
+              <div class="space-y-2">
+                <p class="font-medium text-foreground">ChatGPT disconnected successfully.</p>
+                <p class="text-muted-foreground">You can reconnect at any time by entering your API key.</p>
+              </div>
+            `, 'info');
+          } catch (error) {
+            showMessage(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not disconnect ChatGPT.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          }
+        });
+      });
+    </script>
+{% endblock %}
