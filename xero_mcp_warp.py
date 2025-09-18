@@ -156,7 +156,7 @@ def xero_get_invoice_pdf(invoice_number: str = "", invoice_id: str = "") -> dict
     if not inv_id:
         if not invoice_number:
             return {"ok": False, "error": "Provide invoice_number or invoice_id"}
-        q = invoice_number.replace('"', '\\"')
+        q = invoice_number.replace('"', '"')
         invs = api.get_invoices(xero_tenant_id=tid, where=f'InvoiceNumber=="{q}"')
         if not invs.invoices:
             return {"ok": False, "error": f"No invoice found with number {invoice_number}"}
@@ -841,10 +841,11 @@ def xero_bulk_create_invoices(invoice_list: List[Dict]) -> Dict[str, Any]:
                 )
                 invoice_line_items.append(line_item)
 
-            # Create invoice object
+            # Create invoice object - Fix: Properly create Contact object
+            contact = Contact(contact_id=invoice_data["contact_id"])
             invoice = Invoice(
                 type="ACCREC",
-                contact={"contact_id": invoice_data["contact_id"]},
+                contact=contact,
                 line_items=invoice_line_items,
                 status="DRAFT",
                 currency_code=invoice_data.get("currency_code"),
@@ -1156,32 +1157,42 @@ def xero_auto_categorize_transactions(
 
         # Create a mapping of accounting categories to Xero accounts
         for account in accounts.accounts or []:
-            account_name_lower = account.name.lower()
-            account_type = account.type.lower()
+            # Fix: Handle None values and properly access account attributes
+            account_name = getattr(account, "name", "") or ""
+            account_name_lower = account_name.lower()
+            
+            # Fix: Safely access account type
+            account_type = getattr(account, "type", "") or ""
+            if account_type:
+                account_type = account_type.lower()
+            else:
+                account_type = ""
 
+            account_code = getattr(account, "code", "") or ""
+            
             # Map common accounting categories to Xero accounts
             if "office" in account_name_lower or "supplies" in account_name_lower:
-                account_mapping["office_expenses"] = account.code
+                account_mapping["office_expenses"] = account_code
             elif "travel" in account_name_lower or "transport" in account_name_lower:
-                account_mapping["travel"] = account.code
+                account_mapping["travel"] = account_code
             elif "meal" in account_name_lower or "entertainment" in account_name_lower:
-                account_mapping["meals"] = account.code
+                account_mapping["meals"] = account_code
             elif "utility" in account_name_lower or "utilities" in account_name_lower:
-                account_mapping["utilities"] = account.code
+                account_mapping["utilities"] = account_code
             elif "professional" in account_name_lower or "legal" in account_name_lower:
-                account_mapping["professional_services"] = account.code
+                account_mapping["professional_services"] = account_code
             elif "marketing" in account_name_lower or "advertising" in account_name_lower:
-                account_mapping["marketing"] = account.code
+                account_mapping["marketing"] = account_code
             elif "equipment" in account_name_lower or "computer" in account_name_lower:
-                account_mapping["equipment"] = account.code
+                account_mapping["equipment"] = account_code
             elif "rent" in account_name_lower:
-                account_mapping["rent"] = account.code
+                account_mapping["rent"] = account_code
             elif "insurance" in account_name_lower:
-                account_mapping["insurance"] = account.code
+                account_mapping["insurance"] = account_code
             elif "bank" in account_name_lower and "fee" in account_name_lower:
-                account_mapping["bank_fees"] = account.code
+                account_mapping["bank_fees"] = account_code
             elif account_type == "revenue" or "income" in account_name_lower:
-                account_mapping["revenue"] = account.code
+                account_mapping["revenue"] = account_code
 
         # Process categorized transactions
         mapped_transactions = []
