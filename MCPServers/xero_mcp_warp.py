@@ -7,7 +7,7 @@ import csv, io
 import os, shutil, base64, re
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 from mcp.server.fastmcp import FastMCP
 from xero_client import load_api_client, get_tenant_id
@@ -15,8 +15,10 @@ from xero_client import set_tenant_id
 from xero_python.accounting import Contacts, Contact, Phone, Address
 from xero_python.accounting import AccountingApi, Invoices, Invoice, LineItem
 from xero_python.accounting import Invoice as _Invoice, Invoices as _Invoices
+from xero_python.accounting import Payment, Payments, Allocation
 
 from xero_client import set_tenant_id
+from xero_python.exceptions import ApiException
 
 app = FastMCP("xero-mcp-warp")
 
@@ -302,6 +304,258 @@ def xero_list_invoices(
         }
     items = [brief(i) for i in (invs.invoices or [])[:max(1,int(limit))]]
     return {"total": len(invs.invoices or []), "first": items, "where": where}
+
+@app.tool()
+def xero_authorise_invoice(
+    invoice_id: str = '',
+    invoice_number: str = '',
+    approval_date: str = '',
+    due_date: str = ''
+) -> Dict[str, Any]:
+    """Authorize a draft invoice so it can be emailed or have payments applied."""
+    if not invoice_id and not invoice_number:
+        return {"ok": False, "error": "Provide invoice_id or invoice_number"}
+
+    api = _api()
+    tid = _tenant()
+
+    def _parse_date(value):
+        if isinstance(value, date):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        value = (value or '').strip()
+        if not value:
+            raise ValueError
+        try:
+            return datetime.fromisoformat(value).date()
+        except ValueError:
+            pass
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+        raise ValueError
+
+    try:
+        invoice = None
+        if invoice_id:
+            fetched = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+            if hasattr(fetched, 'invoices'):
+                invoices = getattr(fetched, "invoices", []) or []
+                invoice = invoices[0] if invoices else None
+            else:
+                invoice = fetched
+        else:
+            safe_number = invoice_number.replace('"', '\"')
+            fetched = api.get_invoices(xero_tenant_id=tid, where=f"InvoiceNumber==\"{safe_number}\"")
+            invoices = getattr(fetched, "invoices", []) or []
+            invoice = invoices[0] if invoices else None
+
+        if not invoice:
+            return {"ok": False, "error": "Invoice not found"}
+
+        current_status = str(getattr(invoice, "status", ""))
+        normalized_status = current_status.upper()
+        if normalized_status == "AUTHORISED":
+            return {
+                "ok": True,
+                "invoice_id": str(getattr(invoice, "invoice_id", invoice_id)),
+                "invoice_number": getattr(invoice, "invoice_number", invoice_number),
+                "status": normalized_status,
+                "message": "Invoice already authorised"
+            }
+        if normalized_status not in {"DRAFT", "SUBMITTED"}:
+            return {
+                "ok": False,
+                "error": f"Invoice status must be DRAFT or SUBMITTED to authorise (current: {current_status})"
+            }
+
+        payload_kwargs = {"status": "AUTHORISED"}
+        try:
+            if approval_date:
+                payload_kwargs["date"] = _parse_date(approval_date)
+        except ValueError:
+            return {"ok": False, "error": f"Invalid approval_date format: {approval_date}"}
+        try:
+            if due_date:
+                payload_kwargs["due_date"] = _parse_date(due_date)
+        except ValueError:
+            return {"ok": False, "error": f"Invalid due_date format: {due_date}"}
+
+        payload = _Invoice(**payload_kwargs)
+        target_id = getattr(invoice, "invoice_id", invoice_id)
+        try:
+            updated = api.update_invoice(tid, target_id, payload)
+        except TypeError:
+            try:
+                updated = api.update_invoice(tid, target_id, _Invoices(invoices=[payload]))
+            except TypeError:
+                updated = api.update_invoice(
+                    xero_tenant_id=tid,
+                    invoice_id=target_id,
+                    invoices=_Invoices(invoices=[payload])
+                )
+
+        updated_invoice = updated.invoices[0] if hasattr(updated, "invoices") else updated
+
+        return {
+            "ok": True,
+            "invoice_id": str(getattr(updated_invoice, "invoice_id", target_id)),
+            "invoice_number": getattr(updated_invoice, "invoice_number", invoice_number or getattr(invoice, "invoice_number", None)),
+            "previous_status": current_status,
+            "status": str(getattr(updated_invoice, "status", "AUTHORISED"))
+        }
+
+    except ApiException as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to authorise invoice: {str(e)}"}
+
+
+@app.tool()
+def xero_create_payment(
+    invoice_id: str,
+    account_id: str,
+    amount: float,
+    payment_date: str = "",
+    reference: str = "",
+    currency_rate: float | None = None,
+    is_reconciled: bool | None = None
+) -> Dict[str, Any]:
+    """Create a payment against an invoice in Xero and return its identifier."""
+    invoice_id = (invoice_id or '').strip()
+    account_id = (account_id or '').strip()
+    if not invoice_id:
+        return {"ok": False, "error": "Provide invoice_id"}
+    if not account_id:
+        return {"ok": False, "error": "Provide account_id for the bank account receiving the payment"}
+    try:
+        amount_value = float(amount)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "amount must be a number"}
+    if amount_value <= 0:
+        return {"ok": False, "error": "amount must be greater than zero"}
+
+    api = _api()
+    tid = _tenant()
+
+    def _parse_payment_date(value: str):
+        value = (value or '').strip()
+        if not value:
+            return date.today()
+        try:
+            return datetime.fromisoformat(value).date()
+        except ValueError:
+            pass
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+        return date.today()
+
+    try:
+        parsed_date = _parse_payment_date(payment_date)
+        payment_payload = Payment(
+            invoice={"invoice_id": invoice_id},
+            account={"account_id": account_id},
+            amount=amount_value,
+            date=parsed_date,
+            reference=reference or None,
+            currency_rate=currency_rate,
+            is_reconciled=is_reconciled
+        )
+        created = api.create_payments(
+            xero_tenant_id=tid,
+            payments=Payments(payments=[payment_payload])
+        )
+        payment = created.payments[0] if getattr(created, "payments", None) else created
+        return {
+            "ok": True,
+            "payment_id": str(getattr(payment, "payment_id", "")),
+            "invoice_id": invoice_id,
+            "amount": float(getattr(payment, "amount", amount_value) or amount_value),
+            "date": str(getattr(payment, "date", parsed_date)),
+            "status": getattr(payment, "status", None)
+        }
+    except ApiException as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to create payment: {str(e)}"}
+
+
+@app.tool()
+def xero_apply_payment_to_invoice(invoice_id: str, payment_id: str) -> Dict[str, Any]:
+    """Allocate an existing Xero payment to a specific invoice."""
+    invoice_id = (invoice_id or '').strip()
+    payment_id = (payment_id or '').strip()
+    if not invoice_id or not payment_id:
+        return {"ok": False, "error": "Provide both invoice_id and payment_id"}
+
+    api = _api()
+    tid = _tenant()
+
+    try:
+        payment_response = api.get_payment(xero_tenant_id=tid, payment_id=payment_id)
+        if hasattr(payment_response, 'payments'):
+            payments_list = payment_response.payments or []
+            payment = payments_list[0] if payments_list else None
+        else:
+            payment = payment_response
+
+        invoice_response = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        if hasattr(invoice_response, 'invoices'):
+            invoices_list = invoice_response.invoices or []
+            invoice = invoices_list[0] if invoices_list else None
+        else:
+            invoice = invoice_response
+
+        if not payment:
+            return {"ok": False, "error": f"Payment {payment_id} not found"}
+        if not invoice:
+            return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+
+        if float(getattr(invoice, "amount_due", 0) or 0) <= 0:
+            return {"ok": False, "error": "Invoice has no outstanding balance"}
+
+        existing_allocations = getattr(payment, "allocations", []) or []
+        allocated_total = sum(float(getattr(a, "amount", 0) or 0) for a in existing_allocations)
+        available_amount = float(getattr(payment, "amount", 0) or 0) - allocated_total
+        if available_amount <= 0:
+            return {"ok": False, "error": "Payment has no unallocated balance available"}
+
+        allocation_amount = min(available_amount, float(getattr(invoice, "amount_due", 0) or 0))
+        allocation = Allocation(
+            invoice={"invoice_id": invoice_id},
+            amount=allocation_amount
+        )
+
+        updated_payment = Payment(
+            payment_id=payment_id,
+            allocations=[*existing_allocations, allocation]
+        )
+
+        result = api.update_payment(
+            xero_tenant_id=tid,
+            payment_id=payment_id,
+            payments=Payments(payments=[updated_payment])
+        )
+
+        return {
+            "ok": True,
+            "invoice_id": invoice_id,
+            "payment_id": payment_id,
+            "allocated_amount": allocation_amount,
+            "remaining_payment_balance": max(available_amount - allocation_amount, 0),
+            "invoice_remaining": float(getattr(invoice, "amount_due", 0) or 0) - allocation_amount,
+            "payment_status": getattr(result, "status", None)
+        }
+    except ApiException as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to apply payment: {str(e)}"}
 
 @app.tool()
 def xero_delete_draft_invoice(invoice_number: str) -> dict:
