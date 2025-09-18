@@ -12,11 +12,12 @@ from typing import Optional, List, Dict, Any
 from mcp.server.fastmcp import FastMCP
 from xero_client import load_api_client, get_tenant_id
 from xero_client import set_tenant_id
-from xero_python.accounting import Contacts, Contact, Phone, Address
+from xero_python.accounting import Contacts, Contact, Phone, Address, RequestEmpty
 from xero_python.accounting import AccountingApi, Invoices, Invoice, LineItem
 from xero_python.accounting import Invoice as _Invoice, Invoices as _Invoices
 
 from xero_client import set_tenant_id
+from xero_python.exceptions import ApiException
 
 app = FastMCP("xero-mcp-warp")
 
@@ -57,6 +58,26 @@ def _tenant_or_die(explicit_tenant_id: str | None) -> str:
             "No tenant_id found. Log in via the Flask app (/login) or call xero_set_tenant first."
         )
     return tid
+
+def _extract_api_error(exc: ApiException) -> str:
+    """Return a human readable message from a Xero ApiException."""
+    message = getattr(exc, 'reason', None) or str(exc)
+    body = getattr(exc, 'body', None)
+    if body:
+        try:
+            payload = json.loads(body)
+            if isinstance(payload, dict):
+                message = payload.get('Message') or payload.get('message') or payload.get('Detail') or message
+                elements = payload.get('Elements')
+                if not message and isinstance(elements, list) and elements:
+                    errors = elements[0].get('ValidationErrors') or []
+                    if errors:
+                        message = errors[0].get('Message') or message
+        except Exception:
+            pass
+    return message
+
+
 
 @app.tool()
 def xero_whoami() -> Dict[str, Any]:
@@ -456,100 +477,148 @@ def xero_create_invoice(
 
 @app.tool()
 def xero_duplicate_invoice(invoice_id: str) -> Dict[str, Any]:
-    """
-    Copy an existing invoice to create a new draft invoice.
-
-    Args:
-        invoice_id: The ID of the invoice to duplicate
-
-    Returns:
-        Dict with new invoice details or error
-    """
+    """Copy an existing invoice to create a new draft invoice."""
     api = _api()
     tid = _tenant()
 
     try:
-        # Get the original invoice
         original = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
-        if not original:
-            return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+        if hasattr(original, 'invoices'):
+            invoices = original.invoices or []
+            if not invoices:
+                return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+            orig_invoice = invoices[0]
+        else:
+            orig_invoice = original
 
-        orig_invoice = original
+        contact = getattr(orig_invoice, 'contact', None)
+        contact_id = getattr(contact, 'contact_id', None)
+        if not contact_id:
+            return {"ok": False, "error": "Original invoice is missing a contact reference."}
 
-        # Create new invoice with same details but as DRAFT
-        new_invoice = Invoice(
-            type=orig_invoice.type,
-            contact=orig_invoice.contact,
-            line_items=orig_invoice.line_items,
-            currency_code=orig_invoice.currency_code,
-            reference=f"Copy of {orig_invoice.reference}" if orig_invoice.reference else None,
-            status="DRAFT"
-        )
+        line_items: List[LineItem] = []
+        for item in (getattr(orig_invoice, 'line_items', []) or []):
+            line_item_data: Dict[str, Any] = {
+                'description': getattr(item, 'description', ''),
+                'quantity': getattr(item, 'quantity', 1),
+                'unit_amount': getattr(item, 'unit_amount', 0),
+            }
+            account_code = getattr(item, 'account_code', None)
+            tax_type = getattr(item, 'tax_type', None)
+            item_code = getattr(item, 'item_code', None)
+            if account_code:
+                line_item_data['account_code'] = account_code
+            if tax_type:
+                line_item_data['tax_type'] = tax_type
+            if item_code:
+                line_item_data['item_code'] = item_code
+            line_items.append(LineItem(**line_item_data))
 
-        invoices = Invoices(invoices=[new_invoice])
-        result = api.create_invoices(xero_tenant_id=tid, invoices=invoices)
-        created = result.invoices[0]
+        if not line_items:
+            return {"ok": False, "error": "Original invoice has no line items to duplicate."}
 
-        return {
-            "ok": True,
-            "original_invoice_id": invoice_id,
-            "new_invoice_id": str(created.invoice_id),
-            "new_invoice_number": created.invoice_number,
-            "status": created.status,
-            "total": float(created.total or 0)
+        invoice_kwargs: Dict[str, Any] = {
+            'type': getattr(orig_invoice, 'type', 'ACCREC'),
+            'contact': Contact(contact_id=str(contact_id)),
+            'line_items': line_items,
+            'status': 'DRAFT',
         }
 
+        currency_code = getattr(orig_invoice, 'currency_code', None)
+        if currency_code:
+            invoice_kwargs['currency_code'] = currency_code
+        due_date = getattr(orig_invoice, 'due_date', None)
+        if due_date:
+            invoice_kwargs['due_date'] = due_date
+        reference = getattr(orig_invoice, 'reference', None)
+        if reference:
+            invoice_kwargs['reference'] = f"Copy of {reference}"
+        line_amount_types = getattr(orig_invoice, 'line_amount_types', None)
+        if line_amount_types:
+            invoice_kwargs['line_amount_types'] = line_amount_types
+
+        new_invoice = Invoice(**invoice_kwargs)
+        response = api.create_invoices(xero_tenant_id=tid, invoices=Invoices(invoices=[new_invoice]))
+        created = response.invoices[0]
+
+        return {
+            'ok': True,
+            'original_invoice_id': invoice_id,
+            'new_invoice_id': str(created.invoice_id),
+            'new_invoice_number': created.invoice_number,
+            'status': created.status,
+            'total': float(created.total or 0),
+        }
+    except ApiException as exc:
+        message = _extract_api_error(exc)
+        return {"ok": False, "error": f"Failed to duplicate invoice: {message}", "details": {"status_code": getattr(exc, 'status', None)}}
     except Exception as e:
         return {"ok": False, "error": f"Failed to duplicate invoice: {str(e)}"}
 
 @app.tool()
 def xero_send_invoice_email(invoice_id: str, email: str) -> Dict[str, Any]:
-    """
-    Email an invoice to a client.
+    """Email an invoice to a client, ensuring Xero receives the required request payload."""
+    email = (email or '').strip()
+    if not email:
+        return {"ok": False, "error": "Provide the destination email address."}
 
-    Args:
-        invoice_id: The ID of the invoice to email
-        email: The email address to send to
-
-    Returns:
-        Dict with success status or error
-    """
     api = _api()
     tid = _tenant()
 
+    contact_email_updated = False
+    previous_email = None
+
     try:
-        # Xero's email invoice functionality varies by SDK version
-        # Try the most common method
-        if hasattr(api, 'email_invoice'):
-            result = api.email_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
-        elif hasattr(api, 'send_invoice'):
-            result = api.send_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        invoice_response = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        if hasattr(invoice_response, 'invoices'):
+            invoices = invoice_response.invoices or []
+            if not invoices:
+                return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+            invoice = invoices[0]
         else:
-            # If direct email methods don't exist, we can update the invoice status
-            # and note that it was sent manually
-            invoice = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
-            if invoice.status == "DRAFT":
-                # Update to SUBMITTED status
-                updated_invoice = Invoice(status="SUBMITTED")
-                invoices = Invoices(invoices=[updated_invoice])
-                api.update_invoice(xero_tenant_id=tid, invoice_id=invoice_id, invoices=invoices)
+            invoice = invoice_response
 
-            return {
-                "ok": True,
-                "invoice_id": invoice_id,
-                "email": email,
-                "message": "Invoice status updated. Email manually from Xero dashboard.",
-                "method": "status_update"
-            }
+        contact = getattr(invoice, 'contact', None)
+        contact_id = getattr(contact, 'contact_id', None)
+        if not contact_id:
+            return {"ok": False, "error": "Invoice does not have an associated contact."}
 
-        return {
-            "ok": True,
-            "invoice_id": invoice_id,
-            "email": email,
-            "message": "Invoice emailed successfully",
-            "method": "api_email"
+        current_email = getattr(contact, 'email_address', '') or ''
+        previous_email = current_email
+        if email.lower() != current_email.lower():
+            update_payload = Contacts(contacts=[Contact(contact_id=str(contact_id), email_address=email)])
+            api.update_contact(xero_tenant_id=tid, contact_id=str(contact_id), contacts=update_payload)
+            contact_email_updated = True
+
+        if hasattr(api, 'email_invoice'):
+            api.email_invoice(xero_tenant_id=tid, invoice_id=invoice_id, request_empty=RequestEmpty())
+            method = 'api_email'
+        else:
+            updated_invoice = Invoice(status="SUBMITTED")
+            api.update_invoice(xero_tenant_id=tid, invoice_id=invoice_id, invoices=Invoices(invoices=[updated_invoice]))
+            method = 'status_update'
+
+        response = {
+            'ok': True,
+            'invoice_id': invoice_id,
+            'email': email,
+            'method': method,
+            'message': 'Invoice emailed successfully' if method == 'api_email' else 'Invoice status updated. Email manually from Xero.',
         }
+        if contact_email_updated:
+            response['contact_email_updated'] = True
+            response['previous_email'] = previous_email
+        return response
 
+    except ApiException as exc:
+        message = _extract_api_error(exc)
+        if contact_email_updated and previous_email is not None and previous_email.lower() != email.lower():
+            try:
+                revert_payload = Contacts(contacts=[Contact(contact_id=str(contact_id), email_address=previous_email or None)])
+                api.update_contact(xero_tenant_id=tid, contact_id=str(contact_id), contacts=revert_payload)
+            except Exception:
+                pass
+        return {"ok": False, "error": f"Failed to email invoice: {message}", "details": {"status_code": getattr(exc, 'status', None)}}
     except Exception as e:
         return {"ok": False, "error": f"Failed to email invoice: {str(e)}"}
 
@@ -711,27 +780,36 @@ def xero_get_aged_receivables() -> Dict[str, Any]:
         return {"ok": False, "error": f"Failed to get aged receivables: {str(e)}"}
 
 @app.tool()
-def xero_get_cash_flow_statement() -> Dict[str, Any]:
-    """
-    Get cash flow statement analysis.
-
-    Returns:
-        Dict with cash flow data or error
-    """
+def xero_get_cash_flow_statement(start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+    """Get cash flow insights using Xero's bank summary report."""
     api = _api()
     tid = _tenant()
 
+    from datetime import datetime
+
+    report_args: Dict[str, Any] = {}
+    if start_date or end_date:
+        if not (start_date and end_date):
+            return {"ok": False, "error": "Provide both start_date and end_date when requesting a cash flow range."}
+        try:
+            report_args['from_date'] = datetime.strptime(start_date, "%Y-%m-%d").date()
+            report_args['to_date'] = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            return {"ok": False, "error": "Invalid date format. Use YYYY-MM-DD."}
+
     try:
-        # Xero API call for cash flow statement
-        report = api.get_report_cash_flow(xero_tenant_id=tid)
+        report = api.get_report_bank_summary(xero_tenant_id=tid, **report_args)
 
         return {
-            "ok": True,
-            "report_id": getattr(report, "report_id", None),
-            "report_name": getattr(report, "report_name", "Cash Flow Statement"),
-            "report_data": getattr(report, "reports", None)
+            'ok': True,
+            'report_id': getattr(report, 'report_id', None),
+            'report_name': 'Cash Flow (Bank Summary)',
+            'report_parameters': report_args,
+            'report_data': getattr(report, 'reports', None),
         }
-
+    except ApiException as exc:
+        message = _extract_api_error(exc)
+        return {"ok": False, "error": f"Failed to get cash flow statement: {message}", "details": {"status_code": getattr(exc, 'status', None)}}
     except Exception as e:
         return {"ok": False, "error": f"Failed to get cash flow statement: {str(e)}"}
 
