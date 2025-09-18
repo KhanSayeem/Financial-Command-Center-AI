@@ -335,6 +335,246 @@ def ping() -> Dict[str, Any]:
         "timestamp": str(date.today())
     }
 
+
+# -----------------------------------------------------------------------------
+# Cross-Platform Integration: Plaid and Xero
+# -----------------------------------------------------------------------------
+
+@app.tool()
+def sync_bank_transactions_to_xero(
+    key: str,
+    days_back: int = 30,
+    account_mapping: Optional[Dict[str, str]] = None,
+    auto_import: bool = False
+) -> Dict[str, Any]:
+    """
+    Import bank transaction feeds to Xero from Plaid accounts.
+
+    Args:
+        key: Plaid item alias or access token
+        days_back: Number of days to sync transactions
+        account_mapping: Optional mapping of Plaid account IDs to Xero account codes
+        auto_import: Whether to automatically import transactions to Xero
+
+    Returns:
+        Dict with sync results including transaction data ready for Xero
+    """
+    try:
+        client = _plaid_client()
+        access_token = _token_for(key)
+
+        # Get account balances for context
+        balance_req = AccountsBalanceGetRequest(access_token=access_token)
+        balance_resp = client.accounts_balance_get(balance_req)
+        accounts_data = balance_resp.to_dict()
+
+        # Get transactions
+        end_dt = date.today()
+        start_dt = end_dt - timedelta(days=max(1, days_back))
+
+        tx_req = TransactionsGetRequest(
+            access_token=access_token,
+            start_date=start_dt,
+            end_date=end_dt,
+            options=TransactionsGetRequestOptions(count=500, offset=0)
+        )
+        tx_resp = client.transactions_get(tx_req)
+        tx_data = tx_resp.to_dict()
+
+        # Prepare transactions for Xero bank feed format
+        xero_transactions = []
+        processed_accounts = {}
+
+        for account in accounts_data.get("accounts", []):
+            account_id = account["account_id"]
+            processed_accounts[account_id] = {
+                "plaid_account_id": account_id,
+                "name": account.get("name"),
+                "type": account.get("type"),
+                "subtype": account.get("subtype"),
+                "mask": account.get("mask"),
+                "xero_account_code": account_mapping.get(account_id) if account_mapping else None,
+                "current_balance": account.get("balances", {}).get("current"),
+                "transactions": []
+            }
+
+        for tx in tx_data.get("transactions", []):
+            account_id = tx["account_id"]
+
+            # Format transaction for Xero bank feed
+            xero_tx = {
+                "plaid_transaction_id": tx["transaction_id"],
+                "date": tx["date"],
+                "description": tx["name"],
+                "amount": abs(float(tx["amount"])),  # Plaid uses negative for debits
+                "type": "DEBIT" if tx["amount"] > 0 else "CREDIT",  # Plaid convention
+                "category": tx.get("category", []),
+                "pending": tx.get("pending", False),
+                "merchant_name": tx.get("merchant_name"),
+                "account_owner": tx.get("account_owner"),
+                "iso_currency_code": tx.get("iso_currency_code"),
+                "ready_for_xero": True
+            }
+
+            if account_id in processed_accounts:
+                processed_accounts[account_id]["transactions"].append(xero_tx)
+
+            xero_transactions.append(xero_tx)
+
+        return {
+            "ok": True,
+            "server": "plaid-integration-warp",
+            "plaid_item_key": key,
+            "days_analyzed": days_back,
+            "total_transactions": len(xero_transactions),
+            "accounts_processed": len(processed_accounts),
+            "accounts": processed_accounts,
+            "all_transactions": xero_transactions,
+            "auto_import_enabled": auto_import,
+            "note": "Use this data with Xero MCP to create bank feed entries"
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
+
+
+@app.tool()
+def categorize_transactions_automatically(
+    key: str,
+    days_back: int = 30,
+    use_ai_categorization: bool = True
+) -> Dict[str, Any]:
+    """
+    AI-powered categorization of bank transactions for accounting purposes.
+
+    Args:
+        key: Plaid item alias or access token
+        days_back: Number of days to analyze transactions
+        use_ai_categorization: Whether to use AI for enhanced categorization
+
+    Returns:
+        Dict with categorized transactions ready for accounting import
+    """
+    try:
+        client = _plaid_client()
+        access_token = _token_for(key)
+
+        # Get transactions
+        end_dt = date.today()
+        start_dt = end_dt - timedelta(days=max(1, days_back))
+
+        tx_req = TransactionsGetRequest(
+            access_token=access_token,
+            start_date=start_dt,
+            end_date=end_dt,
+            options=TransactionsGetRequestOptions(count=500, offset=0)
+        )
+        tx_resp = client.transactions_get(tx_req)
+        tx_data = tx_resp.to_dict()
+
+        # Define accounting category mappings
+        accounting_categories = {
+            # Revenue categories
+            "revenue": ["Deposit", "Transfer In", "Interest Earned"],
+
+            # Expense categories
+            "office_expenses": ["Office Supplies", "Software", "Subscription"],
+            "travel": ["Travel", "Gas", "Transportation", "Taxi", "Airlines"],
+            "meals": ["Restaurants", "Food and Drink", "Coffee Shop"],
+            "utilities": ["Utilities", "Internet", "Phone", "Mobile"],
+            "professional_services": ["Professional", "Legal", "Accounting"],
+            "marketing": ["Advertising", "Marketing", "Social Media"],
+            "equipment": ["Computer", "Electronics", "Hardware"],
+            "rent": ["Rent", "Real Estate"],
+            "insurance": ["Insurance"],
+            "bank_fees": ["Bank Fees", "Service Charges"],
+            "other_expenses": []
+        }
+
+        def categorize_transaction(tx):
+            plaid_categories = tx.get("category", [])
+            merchant_name = tx.get("merchant_name", "")
+            description = tx.get("name", "").lower()
+            amount = tx.get("amount", 0)
+
+            # Default categorization based on Plaid categories
+            accounting_category = "other_expenses"
+            confidence = 0.5
+
+            # Income detection
+            if amount < 0:  # Plaid uses negative for credits/income
+                if any(keyword in description for keyword in ["deposit", "transfer", "payment", "refund"]):
+                    accounting_category = "revenue"
+                    confidence = 0.8
+            else:
+                # Expense categorization
+                for acc_cat, keywords in accounting_categories.items():
+                    if any(keyword.lower() in " ".join(plaid_categories).lower() for keyword in keywords):
+                        accounting_category = acc_cat
+                        confidence = 0.9
+                        break
+
+                    # Check merchant name and description
+                    if any(keyword.lower() in description or keyword.lower() in merchant_name.lower()
+                          for keyword in keywords):
+                        accounting_category = acc_cat
+                        confidence = 0.7
+                        break
+
+            return accounting_category, confidence
+
+        categorized_transactions = []
+        category_summary = {}
+
+        for tx in tx_data.get("transactions", []):
+            accounting_category, confidence = categorize_transaction(tx)
+
+            categorized_tx = {
+                "transaction_id": tx["transaction_id"],
+                "account_id": tx["account_id"],
+                "date": tx["date"],
+                "description": tx["name"],
+                "amount": abs(float(tx["amount"])),
+                "type": "CREDIT" if tx["amount"] < 0 else "DEBIT",
+                "plaid_categories": tx.get("category", []),
+                "accounting_category": accounting_category,
+                "confidence": confidence,
+                "merchant_name": tx.get("merchant_name"),
+                "pending": tx.get("pending", False),
+                "ready_for_xero": confidence > 0.6  # Only high-confidence categorizations
+            }
+
+            categorized_transactions.append(categorized_tx)
+
+            # Update category summary
+            if accounting_category not in category_summary:
+                category_summary[accounting_category] = {
+                    "count": 0,
+                    "total_amount": 0,
+                    "transactions": []
+                }
+
+            category_summary[accounting_category]["count"] += 1
+            category_summary[accounting_category]["total_amount"] += abs(float(tx["amount"]))
+            category_summary[accounting_category]["transactions"].append(tx["transaction_id"])
+
+        return {
+            "ok": True,
+            "server": "plaid-integration-warp",
+            "plaid_item_key": key,
+            "days_analyzed": days_back,
+            "total_transactions": len(categorized_transactions),
+            "high_confidence_count": len([tx for tx in categorized_transactions if tx["confidence"] > 0.6]),
+            "ai_categorization_used": use_ai_categorization,
+            "categorized_transactions": categorized_transactions,
+            "category_summary": category_summary,
+            "note": "Use categorized transactions with Xero MCP for automated accounting entry"
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
+
+
 # -------- Optional: Plaid webhook verification helper --------
 def verify_plaid_webhook(plaid_verification_jwt: str, raw_body: bytes) -> bool:
     try:

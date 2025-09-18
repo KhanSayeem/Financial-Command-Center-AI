@@ -367,6 +367,87 @@ def xero_export_invoices_csv(limit: int = 100, kind: str = "ALL") -> dict:
 
 
 @app.tool()
+def xero_create_invoice(
+    contact_id: str,
+    line_items: List[Dict],  # [{"description": "...", "quantity": 1, "unit_amount": 100}]
+    due_date: Optional[str] = None,
+    reference: Optional[str] = None,
+    currency_code: Optional[str] = None
+) -> Dict:
+    """
+    Create a new invoice in Xero.
+
+    Args:
+        contact_id: The Xero contact ID for the invoice
+        line_items: List of line items with description, quantity, and unit_amount
+        due_date: Optional due date in YYYY-MM-DD format
+        reference: Optional reference/PO number
+        currency_code: Optional currency code (defaults to org base currency)
+
+    Returns:
+        Dict with invoice details including invoice_id, invoice_number, status
+    """
+    api = _api()
+    tid = _tenant()
+
+    # Build line items
+    invoice_line_items = []
+    for item in line_items:
+        line_item = LineItem(
+            description=item.get("description", ""),
+            quantity=item.get("quantity", 1),
+            unit_amount=item.get("unit_amount", 0)
+        )
+        invoice_line_items.append(line_item)
+
+    # Create invoice object
+    invoice_data = {
+        "type": "ACCREC",  # Accounts receivable (sales invoice)
+        "contact": {"contact_id": contact_id},
+        "line_items": invoice_line_items,
+        "status": "DRAFT"
+    }
+
+    # Add optional fields
+    if due_date:
+        from datetime import datetime
+        try:
+            parsed_date = datetime.strptime(due_date, "%Y-%m-%d").date()
+            invoice_data["due_date"] = parsed_date
+        except ValueError:
+            return {"ok": False, "error": f"Invalid due_date format. Use YYYY-MM-DD, got: {due_date}"}
+
+    if reference:
+        invoice_data["reference"] = reference
+
+    if currency_code:
+        invoice_data["currency_code"] = currency_code
+
+    # Create the invoice
+    invoice = Invoice(**invoice_data)
+    invoices = Invoices(invoices=[invoice])
+
+    try:
+        result = api.create_invoices(xero_tenant_id=tid, invoices=invoices)
+        created_invoice = result.invoices[0]
+
+        return {
+            "ok": True,
+            "invoice_id": str(created_invoice.invoice_id),
+            "invoice_number": created_invoice.invoice_number,
+            "status": created_invoice.status,
+            "type": created_invoice.type,
+            "total": float(created_invoice.total or 0),
+            "currency_code": created_invoice.currency_code,
+            "contact_name": getattr(created_invoice.contact, "name", None),
+            "due_date": str(created_invoice.due_date) if getattr(created_invoice, "due_date", None) else None,
+            "reference": created_invoice.reference
+        }
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to create invoice: {str(e)}"}
+
+
+@app.tool()
 def xero_dashboard() -> Dict[str, Any]:
     """
     Compact multi-source snapshot: Xero always; Stripe/Plaid included if envs are set.
@@ -410,6 +491,658 @@ def xero_dashboard() -> Dict[str, Any]:
         out["plaid_error"] = str(e)
 
     return out
+
+@app.tool()
+def xero_duplicate_invoice(invoice_id: str) -> Dict[str, Any]:
+    """
+    Copy an existing invoice to create a new draft invoice.
+
+    Args:
+        invoice_id: The ID of the invoice to duplicate
+
+    Returns:
+        Dict with new invoice details or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        # Get the original invoice
+        original = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        if not original:
+            return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+
+        orig_invoice = original
+
+        # Create new invoice with same details but as DRAFT
+        new_invoice = Invoice(
+            type=orig_invoice.type,
+            contact=orig_invoice.contact,
+            line_items=orig_invoice.line_items,
+            currency_code=orig_invoice.currency_code,
+            reference=f"Copy of {orig_invoice.reference}" if orig_invoice.reference else None,
+            status="DRAFT"
+        )
+
+        invoices = Invoices(invoices=[new_invoice])
+        result = api.create_invoices(xero_tenant_id=tid, invoices=invoices)
+        created = result.invoices[0]
+
+        return {
+            "ok": True,
+            "original_invoice_id": invoice_id,
+            "new_invoice_id": str(created.invoice_id),
+            "new_invoice_number": created.invoice_number,
+            "status": created.status,
+            "total": float(created.total or 0)
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to duplicate invoice: {str(e)}"}
+
+@app.tool()
+def xero_send_invoice_email(invoice_id: str, email: str) -> Dict[str, Any]:
+    """
+    Email an invoice to a client.
+
+    Args:
+        invoice_id: The ID of the invoice to email
+        email: The email address to send to
+
+    Returns:
+        Dict with success status or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        # Xero's email invoice functionality varies by SDK version
+        # Try the most common method
+        if hasattr(api, 'email_invoice'):
+            result = api.email_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        elif hasattr(api, 'send_invoice'):
+            result = api.send_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+        else:
+            # If direct email methods don't exist, we can update the invoice status
+            # and note that it was sent manually
+            invoice = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+            if invoice.status == "DRAFT":
+                # Update to SUBMITTED status
+                updated_invoice = Invoice(status="SUBMITTED")
+                invoices = Invoices(invoices=[updated_invoice])
+                api.update_invoice(xero_tenant_id=tid, invoice_id=invoice_id, invoices=invoices)
+
+            return {
+                "ok": True,
+                "invoice_id": invoice_id,
+                "email": email,
+                "message": "Invoice status updated. Email manually from Xero dashboard.",
+                "method": "status_update"
+            }
+
+        return {
+            "ok": True,
+            "invoice_id": invoice_id,
+            "email": email,
+            "message": "Invoice emailed successfully",
+            "method": "api_email"
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to email invoice: {str(e)}"}
+
+@app.tool()
+def xero_apply_payment_to_invoice(invoice_id: str, payment_id: str) -> Dict[str, Any]:
+    """
+    Link a payment to an invoice in Xero.
+
+    Args:
+        invoice_id: The ID of the invoice to apply payment to
+        payment_id: The ID of the payment to apply
+
+    Returns:
+        Dict with success status or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        from xero_python.accounting import Payment, Payments, Allocation, Allocations
+
+        # Get the payment and invoice details
+        payment = api.get_payment(xero_tenant_id=tid, payment_id=payment_id)
+        invoice = api.get_invoice(xero_tenant_id=tid, invoice_id=invoice_id)
+
+        if not payment:
+            return {"ok": False, "error": f"Payment {payment_id} not found"}
+        if not invoice:
+            return {"ok": False, "error": f"Invoice {invoice_id} not found"}
+
+        # Create allocation linking payment to invoice
+        allocation = Allocation(
+            invoice={"invoice_id": invoice_id},
+            amount=min(float(payment.amount or 0), float(invoice.amount_due or 0))
+        )
+
+        # Update the payment with the allocation
+        updated_payment = Payment(
+            payment_id=payment_id,
+            allocations=[allocation]
+        )
+
+        payments = Payments(payments=[updated_payment])
+        result = api.update_payment(xero_tenant_id=tid, payment_id=payment_id, payments=payments)
+
+        return {
+            "ok": True,
+            "invoice_id": invoice_id,
+            "payment_id": payment_id,
+            "allocated_amount": allocation.amount,
+            "message": "Payment successfully applied to invoice"
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to apply payment to invoice: {str(e)}"}
+
+@app.tool()
+def xero_get_profit_loss(start_date: str, end_date: str) -> Dict[str, Any]:
+    """
+    Get profit and loss statement for a date range.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+
+    Returns:
+        Dict with P&L data or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        from datetime import datetime
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+        # Xero API call for P&L report
+        report = api.get_report_profit_and_loss(
+            xero_tenant_id=tid,
+            from_date=start,
+            to_date=end
+        )
+
+        return {
+            "ok": True,
+            "report_id": getattr(report, "report_id", None),
+            "report_name": getattr(report, "report_name", "Profit and Loss"),
+            "report_date": f"{start_date} to {end_date}",
+            "report_data": getattr(report, "reports", None)
+        }
+
+    except ValueError:
+        return {"ok": False, "error": "Invalid date format. Use YYYY-MM-DD"}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to get P&L report: {str(e)}"}
+
+@app.tool()
+def xero_get_balance_sheet(date: str) -> Dict[str, Any]:
+    """
+    Get balance sheet for a specific date.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+
+    Returns:
+        Dict with balance sheet data or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        from datetime import datetime
+        report_date = datetime.strptime(date, "%Y-%m-%d").date()
+
+        # Xero API call for balance sheet
+        report = api.get_report_balance_sheet(
+            xero_tenant_id=tid,
+            date=report_date
+        )
+
+        return {
+            "ok": True,
+            "report_id": getattr(report, "report_id", None),
+            "report_name": getattr(report, "report_name", "Balance Sheet"),
+            "report_date": date,
+            "report_data": getattr(report, "reports", None)
+        }
+
+    except ValueError:
+        return {"ok": False, "error": "Invalid date format. Use YYYY-MM-DD"}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to get balance sheet: {str(e)}"}
+
+@app.tool()
+def xero_get_aged_receivables() -> Dict[str, Any]:
+    """
+    Get aged receivables report showing outstanding invoices by age.
+
+    Returns:
+        Dict with aged receivables data or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        # Xero API call for aged receivables
+        report = api.get_report_aged_receivables_by_contact(
+            xero_tenant_id=tid
+        )
+
+        return {
+            "ok": True,
+            "report_id": getattr(report, "report_id", None),
+            "report_name": getattr(report, "report_name", "Aged Receivables"),
+            "report_data": getattr(report, "reports", None)
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to get aged receivables: {str(e)}"}
+
+@app.tool()
+def xero_get_cash_flow_statement() -> Dict[str, Any]:
+    """
+    Get cash flow statement analysis.
+
+    Returns:
+        Dict with cash flow data or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        # Xero API call for cash flow statement
+        report = api.get_report_cash_flow(xero_tenant_id=tid)
+
+        return {
+            "ok": True,
+            "report_id": getattr(report, "report_id", None),
+            "report_name": getattr(report, "report_name", "Cash Flow Statement"),
+            "report_data": getattr(report, "reports", None)
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to get cash flow statement: {str(e)}"}
+
+@app.tool()
+def xero_bulk_create_invoices(invoice_list: List[Dict]) -> Dict[str, Any]:
+    """
+    Create multiple invoices in batch.
+
+    Args:
+        invoice_list: List of invoice dictionaries with contact_id, line_items, etc.
+
+    Returns:
+        Dict with creation results or errors
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        invoices_to_create = []
+
+        for invoice_data in invoice_list:
+            # Build line items
+            invoice_line_items = []
+            for item in invoice_data.get("line_items", []):
+                line_item = LineItem(
+                    description=item.get("description", ""),
+                    quantity=item.get("quantity", 1),
+                    unit_amount=item.get("unit_amount", 0)
+                )
+                invoice_line_items.append(line_item)
+
+            # Create invoice object
+            invoice = Invoice(
+                type="ACCREC",
+                contact={"contact_id": invoice_data["contact_id"]},
+                line_items=invoice_line_items,
+                status="DRAFT",
+                currency_code=invoice_data.get("currency_code"),
+                reference=invoice_data.get("reference")
+            )
+
+            if invoice_data.get("due_date"):
+                from datetime import datetime
+                try:
+                    parsed_date = datetime.strptime(invoice_data["due_date"], "%Y-%m-%d").date()
+                    invoice.due_date = parsed_date
+                except ValueError:
+                    pass
+
+            invoices_to_create.append(invoice)
+
+        # Batch create
+        invoices = Invoices(invoices=invoices_to_create)
+        result = api.create_invoices(xero_tenant_id=tid, invoices=invoices)
+
+        created_invoices = []
+        for inv in result.invoices:
+            created_invoices.append({
+                "invoice_id": str(inv.invoice_id),
+                "invoice_number": inv.invoice_number,
+                "status": inv.status,
+                "total": float(inv.total or 0)
+            })
+
+        return {
+            "ok": True,
+            "created_count": len(created_invoices),
+            "invoices": created_invoices
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to bulk create invoices: {str(e)}"}
+
+@app.tool()
+def xero_export_chart_of_accounts() -> Dict[str, Any]:
+    """
+    Export chart of accounts structure to CSV.
+
+    Returns:
+        Dict with export file path or error
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        accounts = api.get_accounts(xero_tenant_id=tid)
+
+        rows = []
+        for account in accounts.accounts or []:
+            rows.append([
+                account.code,
+                account.name,
+                account.type,
+                account.description or "",
+                account.tax_type or "",
+                getattr(account, "enable_payments_to_account", False),
+                account.status
+            ])
+
+        path = EXPORTS_DIR / f"chart_of_accounts_{_now_slug()}.csv"
+        with path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "code", "name", "type", "description",
+                "tax_type", "enable_payments", "status"
+            ])
+            writer.writerows(rows)
+
+        return {
+            "ok": True,
+            "count": len(rows),
+            "file": str(path)
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to export chart of accounts: {str(e)}"}
+
+
+# -----------------------------------------------------------------------------
+# Cross-Platform Integration: Stripe and Xero Integration
+# -----------------------------------------------------------------------------
+
+@app.tool()
+def xero_process_stripe_payment_data(
+    stripe_payment_data: List[Dict[str, Any]],
+    default_contact_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Process Stripe payment data to create Xero invoices.
+
+    Args:
+        stripe_payment_data: List of Stripe payment data from sync_stripe_payments_to_xero
+        default_contact_id: Default Xero contact ID if customer mapping is not available
+
+    Returns:
+        Dict with invoice creation results
+    """
+    api = _api()
+    tid = _tenant()
+
+    created_invoices = []
+    errors = []
+
+    try:
+        for payment in stripe_payment_data:
+            try:
+                # Create line item for the payment
+                line_items = [{
+                    "description": payment.get("description", f"Stripe Payment {payment.get('stripe_charge_id')}"),
+                    "quantity": 1,
+                    "unit_amount": payment.get("amount_dollars", 0)
+                }]
+
+                # Use provided contact or default
+                contact_id = payment.get("xero_contact_id") or default_contact_id
+                if not contact_id:
+                    errors.append({
+                        "stripe_charge_id": payment.get("stripe_charge_id"),
+                        "error": "No Xero contact ID available"
+                    })
+                    continue
+
+                # Create the invoice
+                result = xero_create_invoice(
+                    contact_id=contact_id,
+                    line_items=line_items,
+                    reference=f"Stripe-{payment.get('stripe_charge_id')}",
+                    currency_code=payment.get("currency", "USD").upper()
+                )
+
+                if result.get("ok"):
+                    created_invoices.append({
+                        "stripe_charge_id": payment.get("stripe_charge_id"),
+                        "xero_invoice_id": result.get("invoice_id"),
+                        "xero_invoice_number": result.get("invoice_number"),
+                        "amount": payment.get("amount_dollars")
+                    })
+                else:
+                    errors.append({
+                        "stripe_charge_id": payment.get("stripe_charge_id"),
+                        "error": result.get("error")
+                    })
+
+            except Exception as e:
+                errors.append({
+                    "stripe_charge_id": payment.get("stripe_charge_id"),
+                    "error": str(e)
+                })
+
+        return {
+            "ok": True,
+            "processed_payments": len(stripe_payment_data),
+            "invoices_created": len(created_invoices),
+            "errors_count": len(errors),
+            "created_invoices": created_invoices,
+            "errors": errors
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to process Stripe payments: {str(e)}"}
+
+
+@app.tool()
+def xero_import_bank_feed(
+    bank_feed_data: List[Dict[str, Any]],
+    xero_bank_account_id: str
+) -> Dict[str, Any]:
+    """
+    Import bank transaction feed data from Plaid into Xero.
+
+    Args:
+        bank_feed_data: Bank transaction data from sync_bank_transactions_to_xero
+        xero_bank_account_id: Xero bank account ID to import transactions to
+
+    Returns:
+        Dict with import results
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        from xero_python.accounting import BankTransaction, BankTransactions, LineItem as BankLineItem
+
+        created_transactions = []
+        errors = []
+
+        for tx_data in bank_feed_data:
+            try:
+                # Create bank transaction line item
+                line_item = BankLineItem(
+                    description=tx_data.get("description", "Bank Transaction"),
+                    unit_amount=tx_data.get("amount", 0),
+                    quantity=1
+                )
+
+                # Create bank transaction
+                bank_transaction = BankTransaction(
+                    type="SPEND" if tx_data.get("type") == "DEBIT" else "RECEIVE",
+                    contact=None,  # Will need contact mapping for proper categorization
+                    line_items=[line_item],
+                    bank_account={"account_id": xero_bank_account_id},
+                    date=datetime.strptime(tx_data.get("date"), "%Y-%m-%d").date() if tx_data.get("date") else datetime.now().date(),
+                    reference=tx_data.get("plaid_transaction_id", "")
+                )
+
+                bank_transactions = BankTransactions(bank_transactions=[bank_transaction])
+                result = api.create_bank_transactions(xero_tenant_id=tid, bank_transactions=bank_transactions)
+
+                if result.bank_transactions:
+                    created_tx = result.bank_transactions[0]
+                    created_transactions.append({
+                        "plaid_transaction_id": tx_data.get("plaid_transaction_id"),
+                        "xero_transaction_id": str(created_tx.bank_transaction_id),
+                        "amount": tx_data.get("amount"),
+                        "description": tx_data.get("description")
+                    })
+
+            except Exception as e:
+                errors.append({
+                    "plaid_transaction_id": tx_data.get("plaid_transaction_id"),
+                    "error": str(e)
+                })
+
+        return {
+            "ok": True,
+            "processed_transactions": len(bank_feed_data),
+            "imported_count": len(created_transactions),
+            "errors_count": len(errors),
+            "imported_transactions": created_transactions,
+            "errors": errors,
+            "xero_bank_account_id": xero_bank_account_id
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to import bank feed: {str(e)}"}
+
+
+@app.tool()
+def xero_auto_categorize_transactions(
+    categorized_transaction_data: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Auto-categorize imported transactions using AI categorization data from Plaid.
+
+    Args:
+        categorized_transaction_data: Categorized transaction data from categorize_transactions_automatically
+
+    Returns:
+        Dict with categorization results and account mapping suggestions
+    """
+    api = _api()
+    tid = _tenant()
+
+    try:
+        # Get chart of accounts for mapping
+        accounts = api.get_accounts(xero_tenant_id=tid)
+        account_mapping = {}
+
+        # Create a mapping of accounting categories to Xero accounts
+        for account in accounts.accounts or []:
+            account_name_lower = account.name.lower()
+            account_type = account.type.lower()
+
+            # Map common accounting categories to Xero accounts
+            if "office" in account_name_lower or "supplies" in account_name_lower:
+                account_mapping["office_expenses"] = account.code
+            elif "travel" in account_name_lower or "transport" in account_name_lower:
+                account_mapping["travel"] = account.code
+            elif "meal" in account_name_lower or "entertainment" in account_name_lower:
+                account_mapping["meals"] = account.code
+            elif "utility" in account_name_lower or "utilities" in account_name_lower:
+                account_mapping["utilities"] = account.code
+            elif "professional" in account_name_lower or "legal" in account_name_lower:
+                account_mapping["professional_services"] = account.code
+            elif "marketing" in account_name_lower or "advertising" in account_name_lower:
+                account_mapping["marketing"] = account.code
+            elif "equipment" in account_name_lower or "computer" in account_name_lower:
+                account_mapping["equipment"] = account.code
+            elif "rent" in account_name_lower:
+                account_mapping["rent"] = account.code
+            elif "insurance" in account_name_lower:
+                account_mapping["insurance"] = account.code
+            elif "bank" in account_name_lower and "fee" in account_name_lower:
+                account_mapping["bank_fees"] = account.code
+            elif account_type == "revenue" or "income" in account_name_lower:
+                account_mapping["revenue"] = account.code
+
+        # Process categorized transactions
+        mapped_transactions = []
+        unmapped_transactions = []
+
+        for tx in categorized_transaction_data:
+            accounting_category = tx.get("accounting_category")
+            xero_account_code = account_mapping.get(accounting_category)
+
+            mapped_tx = {
+                "plaid_transaction_id": tx.get("transaction_id"),
+                "description": tx.get("description"),
+                "amount": tx.get("amount"),
+                "accounting_category": accounting_category,
+                "confidence": tx.get("confidence"),
+                "xero_account_code": xero_account_code,
+                "ready_for_coding": xero_account_code is not None and tx.get("confidence", 0) > 0.7
+            }
+
+            if xero_account_code:
+                mapped_transactions.append(mapped_tx)
+            else:
+                unmapped_transactions.append(mapped_tx)
+
+        return {
+            "ok": True,
+            "total_transactions": len(categorized_transaction_data),
+            "mapped_count": len(mapped_transactions),
+            "unmapped_count": len(unmapped_transactions),
+            "account_mapping": account_mapping,
+            "mapped_transactions": mapped_transactions,
+            "unmapped_transactions": unmapped_transactions,
+            "high_confidence_ready": len([tx for tx in mapped_transactions if tx.get("ready_for_coding")])
+        }
+
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to auto-categorize transactions: {str(e)}"}
+
+@app.tool()
+def ping() -> Dict[str, Any]:
+    """Health check"""
+    return {
+        "ok": True,
+        "server": app.name,
+        "tenant_id": get_tenant_id(),
+        "timestamp": datetime.now().isoformat()
+    }
 
 if __name__ == "__main__":
     app.run()

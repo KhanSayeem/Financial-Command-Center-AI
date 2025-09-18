@@ -36,7 +36,7 @@
                 <p class="text-sm text-muted-foreground">Select a status to refocus the invoice list.</p>
             </div>
             <div class="flex items-center gap-3">
-                <select name="status" class="rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <select name="status" class="rounded-lg border border-border/70 bg-background px-3 pr-9 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                     {% for option, label in [('DRAFT,SUBMITTED,AUTHORISED', 'Open statuses'), ('PAID', 'Paid'), ('DRAFT', 'Draft'), ('AUTHORISED', 'Authorised'), ('SUBMITTED', 'Submitted'), ('VOIDED', 'Voided')] %}
                         <option value="{{ option }}" {% if status_filter == option %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -95,3 +95,4 @@
     </div>
 </div>
 {% endblock %}
+
