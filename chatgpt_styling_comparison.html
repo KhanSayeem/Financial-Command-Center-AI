@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatGPT Success Message Styling Comparison</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .message-container {
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        /* Claude-like success styling */
+        .claude-success {
+            border: 1px solid #86efac;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+        /* ChatGPT success styling (should be identical) */
+        .chatgpt-success {
+            border: 1px solid #86efac;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+        .error-message {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        .font-medium {
+            font-weight: 500;
+        }
+        .text-muted {
+            color: #64748b;
+        }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.5rem;
+        }
+        .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ChatGPT Success Message Styling Comparison</h1>
+        
+        <div class="card">
+            <h2>Claude Success Message (Reference)</h2>
+            <div class="message-container claude-success">
+                <div class="space-y-2">
+                    <p class="font-medium">Configuration generated successfully.</p>
+                    <ul class="space-y-1">
+                        <li>Servers included: xero, stripe, plaid</li>
+                        <li>Credentials used: xero_client_id, stripe_api_key</li>
+                        <li>Python executable: python</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>ChatGPT Success Messages (Updated)</h2>
+            
+            <!-- Connect Success Message -->
+            <div class="section-title">1. Connect Success</div>
+            <div class="message-container chatgpt-success">
+                <div class="space-y-2">
+                    <p class="font-medium">ChatGPT connected successfully!</p>
+                    <ul class="space-y-1">
+                        <li>Servers included: xero, stripe, plaid, compliance</li>
+                        <li>Credentials used: xero_client_id, stripe_api_key, plaid_client_id</li>
+                        <li>Python executable: python</li>
+                    </ul>
+                    <p class="pt-2 text-muted">You can now use natural language commands in ChatGPT Desktop to control your financial systems.</p>
+                </div>
+            </div>
+            
+            <!-- Test Connection Success Message -->
+            <div class="section-title">2. Test Connection Success</div>
+            <div class="message-container chatgpt-success">
+                <div class="space-y-2">
+                    <p class="font-medium">Connection test successful!</p>
+                    <p class="text-muted">ChatGPT connection test successful! API key is valid.</p>
+                </div>
+            </div>
+            
+            <!-- Disconnect Success Message -->
+            <div class="section-title">3. Disconnect Success</div>
+            <div class="message-container chatgpt-success">
+                <div class="space-y-2">
+                    <p class="font-medium">ChatGPT disconnected successfully.</p>
+                    <p class="text-muted">You can reconnect at any time by entering your API key.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Error Message (For Comparison)</h2>
+            <div class="message-container error-message">
+                <div class="space-y-1">
+                    <p class="font-medium">Could not connect to ChatGPT.</p>
+                    <p>Invalid OpenAI API key or insufficient permissions</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Styling Verification</h2>
+            <ul>
+                <li><strong>Success Background:</strong> <code>#f0fdf4</code> (bg-emerald-50)</li>
+                <li><strong>Success Border:</strong> <code>#86efac</code> (border-emerald-200)</li>
+                <li><strong>Success Text:</strong> <code>#15803d</code> (text-emerald-700)</li>
+                <li><strong>Error Background:</strong> <code>#fef2f2</code> (bg-rose-50)</li>
+                <li><strong>Error Border:</strong> <code>#fecaca</code> (border-rose-200)</li>
+                <li><strong>Error Text:</strong> <code>#b91c1c</code> (text-rose-700)</li>
+            </ul>
+            <p><strong>Result:</strong> ChatGPT success messages use identical styling to Claude success messages!</p>
+        </div>
+    </div>
+</body>
+</html>
