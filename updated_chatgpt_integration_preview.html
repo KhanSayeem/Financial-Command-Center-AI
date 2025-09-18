@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Updated ChatGPT Integration Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .integration-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .integration-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        .integration-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .integration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .integration-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1e293b;
+        }
+        .integration-category {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        .integration-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .integration-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .status-success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #1e293b;
+            text-decoration: none;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        .action-button:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+        }
+        .stat-description {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Command Center AI - Updated ChatGPT Integration</h1>
+        
+        <div class="card">
+            <h2>Overview Page Integration Cards</h2>
+            <div class="integration-grid">
+                <!-- Claude Card -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div>
+                            <div class="integration-category">AI</div>
+                            <div class="integration-title">Claude Desktop</div>
+                        </div>
+                        <span class="integration-status">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            Available
+                        </span>
+                    </div>
+                    <div class="integration-description">
+                        Pair Claude Desktop with the Command Center for natural-language workflows.
+                    </div>
+                    <a href="/claude/setup" class="action-button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Setup Claude
+                    </a>
+                </div>
+                
+                <!-- Warp Card -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div>
+                            <div class="integration-category">AI</div>
+                            <div class="integration-title">Warp Terminal</div>
+                        </div>
+                        <span class="integration-status">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="4,17 10,11 4,5"></polyline>
+                                <line x1="12" y1="19" x2="20" y2="19"></line>
+                            </svg>
+                            Available
+                        </span>
+                    </div>
+                    <div class="integration-description">
+                        Connect Warp to trigger compliance MCP commands hands-free.
+                    </div>
+                    <a href="/warp/setup" class="action-button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4,17 10,11 4,5"></polyline>
+                            <line x1="12" y1="19" x2="20" y2="19"></line>
+                        </svg>
+                        Setup Warp
+                    </a>
+                </div>
+                
+                <!-- UPDATED: ChatGPT Card with different icon -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div>
+                            <div class="integration-category">AI</div>
+                            <div class="integration-title">ChatGPT</div>
+                        </div>
+                        <span class="integration-status status-success">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            Available
+                        </span>
+                    </div>
+                    <div class="integration-description">
+                        Enable natural language financial commands through ChatGPT Desktop.
+                    </div>
+                    <a href="/chatgpt/setup" class="action-button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Connect ChatGPT
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Updated Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">AI copilots standing by</div>
+                    <div class="stat-description">Claude Desktop, Warp Terminal, and ChatGPT integrations ship with guides.</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3/3</div>
+                    <div class="stat-label">Configured connectors</div>
+                    <div class="stat-description">Stripe, Plaid, and Xero ready for show-time demos.</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">Demo mode</div>
+                    <div class="stat-label">Environment</div>
+                    <div class="stat-description">Switch any time from the admin area to showcase real data.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

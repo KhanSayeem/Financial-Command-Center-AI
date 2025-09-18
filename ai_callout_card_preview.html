@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Updated AI Callout Card Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .ai-callout {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-callout::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .ai-callout-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            margin-bottom: 16px;
+        }
+        .ai-callout-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            max-width: 600px;
+        }
+        .ai-callout-description {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 24px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        .ai-callout-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .ai-callout-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+        .ai-callout-action:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .ai-callout-tips {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .ai-callout-tip {
+            font-size: 14px;
+            font-style: italic;
+            opacity: 0.8;
+            position: relative;
+            padding-left: 20px;
+        }
+        .ai-callout-tip::before {
+            content: """;
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 20px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Command Center AI - Updated Overview Page</h1>
+        
+        <div class="card">
+            <h2>AI Callout Card (Updated)</h2>
+            
+            <!-- UPDATED: AI Callout Card with ChatGPT -->
+            <div class="ai-callout">
+                <div class="ai-callout-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    AI copilots
+                </div>
+                <h3 class="ai-callout-title">Bring Claude, Warp, and ChatGPT into your financial workflow</h3>
+                <p class="ai-callout-description">Preview natural-language commands for compliance, reporting, and client updates backed by your live connectors.</p>
+                
+                <div class="ai-callout-actions">
+                    <a href="/claude/setup" class="ai-callout-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Setup Claude Desktop
+                    </a>
+                    <a href="/warp/setup" class="ai-callout-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4,17 10,11 4,5"></polyline>
+                            <line x1="12" y1="19" x2="20" y2="19"></line>
+                        </svg>
+                        Setup Warp Terminal
+                    </a>
+                    <a href="/chatgpt/setup" class="ai-callout-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Connect to ChatGPT
+                    </a>
+                </div>
+                
+                <div class="ai-callout-tips">
+                    <div class="ai-callout-tip">"Summarize today's Stripe payments"</div>
+                    <div class="ai-callout-tip">"Show overdue invoices for ACME"</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Key Improvements</h2>
+            <ul>
+                <li><strong>Three AI Copilots:</strong> Claude Desktop, Warp Terminal, and ChatGPT</li>
+                <li><strong>Distinct Icons:</strong> 
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Claude (Shield)
+                    </span>,
+                    <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4,17 10,11 4,5"></polyline>
+                            <line x1="12" y1="19" x2="20" y2="19"></line>
+                        </svg>
+                        Warp (Terminal)
+                    </span>,
+                    <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        ChatGPT (Message Bubble)
+                    </span>
+                </li>
+                <li><strong>Consistent Action Labels:</strong> "Setup" for Claude/Warp, "Connect" for ChatGPT</li>
+                <li><strong>Updated Title:</strong> Now includes all three AI copilots</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
