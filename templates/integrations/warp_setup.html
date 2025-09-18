@@ -21,7 +21,27 @@
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <section class="card border border-border/70 p-6 space-y-4">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-1">
+                <h2 class="text-lg font-semibold text-foreground">Generate configuration</h2>
+                <p class="text-sm text-muted-foreground">Create a Warp workflow config with the MCP servers you have configured.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" id="warp-generate-btn" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                    <i data-lucide="terminal" class="h-4 w-4"></i>
+                    <span>Generate config</span>
+                </button>
+                <button type="button" id="warp-download-btn" class="hidden inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-background/80">
+                    <i data-lucide="download" class="h-4 w-4"></i>
+                    <span>Download JSON</span>
+                </button>
+            </div>
+        </div>
+        <div id="warp-config-summary" data-base-class="rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground" class="hidden rounded-lg border border-border/60 bg-muted/60 px-4 py-3 text-sm text-muted-foreground"></div>
+    </section>
+
+    <div class="grid gap-6" lg:grid-cols-2">
         <section class="card border border-border/70 p-6 space-y-4">
             <h2 class="text-lg font-semibold text-foreground">Configuration</h2>
             <dl class="grid gap-3 text-sm">
@@ -71,4 +91,112 @@
         </div>
     </section>
 </div>
+{% endblock %}
+
+
+{% block body_scripts %}
+    {{ super() }}
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const generateBtn = document.getElementById('warp-generate-btn');
+        const downloadBtn = document.getElementById('warp-download-btn');
+        const summaryEl = document.getElementById('warp-config-summary');
+        const summaryBase = summaryEl ? summaryEl.dataset.baseClass || '' : '';
+        let configData = null;
+
+        const formatLabel = (value) => value
+          ? value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+          : '';
+
+        function setLoading(isLoading) {
+          if (!generateBtn) return;
+          const label = generateBtn.querySelector('span');
+          generateBtn.disabled = isLoading;
+          generateBtn.classList.toggle('opacity-70', isLoading);
+          generateBtn.classList.toggle('cursor-not-allowed', isLoading);
+          generateBtn.setAttribute('aria-busy', String(isLoading));
+          if (label) {
+            if (isLoading) {
+              generateBtn.dataset.originalLabel = label.textContent.trim();
+              label.textContent = 'Generating…';
+            } else if (generateBtn.dataset.originalLabel) {
+              label.textContent = generateBtn.dataset.originalLabel;
+              delete generateBtn.dataset.originalLabel;
+            }
+          }
+        }
+
+        function showMessage(html, tone = 'info') {
+          if (!summaryEl) return;
+          const toneClasses = {
+            success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            error: 'border-rose-200 bg-rose-50 text-rose-700',
+            info: 'border-border/60 bg-muted/60 text-muted-foreground',
+          };
+          summaryEl.className = `${summaryBase} ${toneClasses[tone] || toneClasses.info}`.trim();
+          summaryEl.innerHTML = html;
+          summaryEl.classList.remove('hidden');
+        }
+
+        generateBtn?.addEventListener('click', async () => {
+          setLoading(true);
+          showMessage('<p class="font-medium">Generating configuration…</p>', 'info');
+          try {
+            const response = await fetch('/api/warp/generate-config');
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to generate configuration');
+            }
+            configData = data.config;
+            const servers = (data.summary?.servers || []).map((name) => `<code>${name}</code>`).join(', ');
+            const credentials = data.summary?.credentials_used || {};
+            const credentialSummary = Object.entries(credentials)
+              .filter(([, used]) => used)
+              .map(([key]) => formatLabel(key))
+              .join(', ') || 'Demo credentials';
+            const pythonInfo = data.summary?.python_executable || 'python';
+            const content = `
+              <div class="space-y-2">
+                <p class="font-medium text-foreground">Configuration generated successfully.</p>
+                <ul class="space-y-1">
+                  <li>Servers included: ${servers || 'None'}</li>
+                  <li>Credentials used: ${credentialSummary}</li>
+                  <li>Python executable: <code>${pythonInfo}</code></li>
+                </ul>
+              </div>
+            `;
+            showMessage(content, 'success');
+            if (downloadBtn) {
+              downloadBtn.classList.remove('hidden');
+              downloadBtn.focus();
+            }
+          } catch (error) {
+            showMessage(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not generate configuration.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          } finally {
+            setLoading(false);
+          }
+        });
+
+        downloadBtn?.addEventListener('click', () => {
+          if (!configData) {
+            showMessage('<p>Please generate a configuration before downloading.</p>', 'error');
+            return;
+          }
+          const blob = new Blob([configData], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = 'warp_mcp_config.json';
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(url);
+        });
+      });
+    </script>
 {% endblock %}

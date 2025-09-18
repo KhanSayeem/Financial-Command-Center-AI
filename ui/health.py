@@ -8,14 +8,7 @@ from flask import render_template, request
 from .helpers import build_nav
 
 def render_health_dashboard(health_data: Dict[str, Any], *, security_enabled: bool, session_config: Optional[Any]) -> str:
-    nav_items = build_nav(
-        'health',
-        extras=[
-            ('contacts', 'Contacts', 'view_xero_contacts', {}),
-            ('invoices', 'Invoices', 'view_xero_invoices', {}),
-            ('setup', 'Setup', 'setup_wizard', {}),
-        ]
-    )
+    nav_items = build_nav('health')
 
     status_map = {
         'healthy': {

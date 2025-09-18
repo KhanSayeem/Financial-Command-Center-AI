@@ -1,24 +1,37 @@
+from collections import OrderedDict
 from datetime import datetime
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 from flask import url_for
 
 NavDefinition = Tuple[str, str, str, dict]
 
+PRIMARY_NAV: Tuple[NavDefinition, ...] = (
+    ('overview', 'Overview', 'index', {}),
+    ('contacts', 'Contacts', 'view_xero_contacts', {}),
+    ('invoices', 'Invoices', 'view_xero_invoices', {}),
+    ('setup', 'Setup', 'setup_wizard', {}),
+    ('health', 'Health', 'health_check', {}),
+    ('admin', 'Admin', 'admin_dashboard', {}),
+)
+
 def build_nav(active: str = 'overview', extras: Optional[Sequence[NavDefinition]] = None) -> list:
     """Return navigation items with the requested item marked as active."""
-    base: list[NavDefinition] = [
-        ('overview', 'Overview', 'index', {}),
-        ('health', 'Health', 'health_check', {}),
-        ('admin', 'Admin', 'admin_dashboard', {}),
-    ]
+    nav_definitions: OrderedDict[str, NavDefinition] = OrderedDict()
+    for identifier, label, endpoint, params in PRIMARY_NAV:
+        nav_definitions[identifier] = (identifier, label, endpoint, params)
+
     if extras:
-        base.extend(extras)
+        for definition in extras:
+            if not definition:
+                continue
+            identifier, label, endpoint, params = definition
+            nav_definitions[identifier] = (identifier, label, endpoint, params)
 
     items: list[dict] = []
-    for identifier, label, endpoint, params in base:
+    for identifier, label, endpoint, params in nav_definitions.values():
         try:
-            href = url_for(endpoint, **params)
+            href = url_for(endpoint, **(params or {}))
         except Exception:
             continue
         items.append({
