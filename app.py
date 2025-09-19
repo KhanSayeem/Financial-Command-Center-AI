@@ -520,6 +520,203 @@ def get_cash_flow():
 
     return jsonify(cash_flow_data)
 
+@app.route('/api/export/excel', methods=['GET'])
+def export_financial_data_excel():
+    """Export financial data to Excel format"""
+    try:
+        from flask import send_file
+        from financial_export import create_financial_excel_export
+
+        # Create Excel file
+        excel_data = create_financial_excel_export()
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'financial_export_{timestamp}.xlsx'
+
+        return send_file(
+            excel_data,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate Excel export',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/export/sample', methods=['GET'])
+def get_sample_financial_data():
+    """Get sample financial data for preview"""
+    try:
+        from financial_export import get_mock_financial_data
+
+        sample_data = get_mock_financial_data()
+
+        # Add summary statistics
+        summary = {
+            'total_contacts': len(sample_data['contacts']),
+            'total_invoices': len(sample_data['invoices']),
+            'total_accounts': len(sample_data['accounts']),
+            'total_revenue': sum(inv['Total'] for inv in sample_data['invoices']),
+            'outstanding_amount': sum(inv['Amount_Due'] for inv in sample_data['invoices']),
+            'export_timestamp': datetime.now().isoformat()
+        }
+
+        return jsonify({
+            'summary': summary,
+            'sample_data': {
+                'contacts': sample_data['contacts'][:3],  # First 3 contacts
+                'invoices': sample_data['invoices'][:3],  # First 3 invoices
+                'accounts': sample_data['accounts'][:3]   # First 3 accounts
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate sample data',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/dashboard/charts', methods=['GET'])
+def get_dashboard_chart_data():
+    """Get real Xero data formatted for dashboard charts"""
+    try:
+        from financial_export import fetch_xero_financial_data
+
+        # Fetch real Xero data
+        xero_data = fetch_xero_financial_data()
+
+        if "error" in xero_data:
+            return jsonify({
+                'error': xero_data["error"],
+                'chart_data': None
+            }), 400
+
+        # Process data for charts
+        chart_data = {}
+
+        # Revenue by Customer Chart Data
+        if xero_data.get('invoices'):
+            revenue_by_customer = {}
+            for invoice in xero_data['invoices']:
+                customer = invoice.get('Contact_Name', 'Unknown')
+                total = invoice.get('Total', 0)
+                if customer in revenue_by_customer:
+                    revenue_by_customer[customer] += total
+                else:
+                    revenue_by_customer[customer] = total
+
+            # Sort by revenue and take top 10
+            sorted_revenue = sorted(revenue_by_customer.items(), key=lambda x: x[1], reverse=True)[:10]
+            chart_data['revenue_by_customer'] = [
+                {'name': customer, 'value': revenue} for customer, revenue in sorted_revenue
+            ]
+
+        # Invoice Status Distribution
+        if xero_data.get('invoices'):
+            status_counts = {}
+            for invoice in xero_data['invoices']:
+                status = invoice.get('Status', 'Unknown')
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            chart_data['invoice_status'] = [
+                {'name': status, 'value': count} for status, count in status_counts.items()
+            ]
+
+        # Monthly Revenue Trend (based on invoice dates)
+        if xero_data.get('invoices'):
+            monthly_revenue = {}
+            for invoice in xero_data['invoices']:
+                date_str = invoice.get('Date', '')
+                total = invoice.get('Total', 0)
+                if date_str:
+                    try:
+                        invoice_date = datetime.strptime(date_str, '%Y-%m-%d')
+                        month_key = invoice_date.strftime('%Y-%m')
+                        monthly_revenue[month_key] = monthly_revenue.get(month_key, 0) + total
+                    except ValueError:
+                        continue
+
+            # Sort by month and prepare for chart
+            sorted_months = sorted(monthly_revenue.items())
+            chart_data['monthly_revenue'] = [
+                {'month': month, 'revenue': revenue} for month, revenue in sorted_months
+            ]
+
+        # Outstanding vs Paid Amounts
+        if xero_data.get('invoices'):
+            total_outstanding = sum(inv.get('Amount_Due', 0) for inv in xero_data['invoices'])
+            total_paid = sum(inv.get('Total', 0) - inv.get('Amount_Due', 0) for inv in xero_data['invoices'])
+
+            chart_data['payment_status'] = [
+                {'name': 'Outstanding', 'value': total_outstanding},
+                {'name': 'Paid', 'value': total_paid}
+            ]
+
+        # Account Types Distribution
+        if xero_data.get('accounts'):
+            account_types = {}
+            for account in xero_data['accounts']:
+                acc_type = account.get('Type', 'Unknown')
+                account_types[acc_type] = account_types.get(acc_type, 0) + 1
+
+            chart_data['account_types'] = [
+                {'name': acc_type, 'value': count} for acc_type, count in account_types.items()
+            ]
+
+        # Customer vs Supplier Breakdown
+        if xero_data.get('contacts'):
+            customer_count = sum(1 for contact in xero_data['contacts'] if contact.get('Is_Customer'))
+            supplier_count = sum(1 for contact in xero_data['contacts'] if contact.get('Is_Supplier'))
+
+            chart_data['contact_types'] = [
+                {'name': 'Customers', 'value': customer_count},
+                {'name': 'Suppliers', 'value': supplier_count}
+            ]
+
+        return jsonify({
+            'success': True,
+            'chart_data': chart_data,
+            'data_timestamp': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate chart data',
+            'message': str(e)
+        }), 500
+
+@app.route('/')
+def index():
+    """Home page"""
+    nav_items = build_nav('overview')
+    return render_template('home.html', nav_items=nav_items)
+
+@app.route('/contacts')
+def view_xero_contacts():
+    """View Xero contacts page"""
+    nav_items = build_nav('contacts')
+    return render_template('xero/contacts.html', nav_items=nav_items)
+
+@app.route('/invoices')
+def view_xero_invoices():
+    """View Xero invoices page"""
+    nav_items = build_nav('invoices')
+    return render_template('xero/invoices.html', nav_items=nav_items)
+
+@app.route('/setup')
+def setup_wizard():
+    """Setup wizard page"""
+    nav_items = build_nav('setup')
+    return render_template('setup_wizard.html', nav_items=nav_items)
+
+@app.route('/dashboard/charts')
+def financial_charts_dashboard():
+    """Render the financial charts dashboard page"""
+    nav_items = build_nav('dashboard')
+    return render_template('dashboard/financial_charts.html', nav_items=nav_items)
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000, debug=True, ssl_context='adhoc')
 
