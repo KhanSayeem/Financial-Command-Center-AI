@@ -1635,6 +1635,162 @@ def get_dashboard():
     }
     
     return jsonify(dashboard_data)
+
+@app.route('/api/export/excel', methods=['GET'])
+def export_financial_data_excel():
+    """Export financial data to Excel format"""
+    try:
+        from flask import send_file
+        from financial_export import create_financial_excel_export
+
+        # Create Excel file
+        excel_data = create_financial_excel_export()
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'financial_export_{timestamp}.xlsx'
+
+        return send_file(
+            excel_data,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate Excel export',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/dashboard/charts', methods=['GET'])
+def get_dashboard_chart_data():
+    """Get real Xero data formatted for dashboard charts"""
+    try:
+        from financial_export import fetch_xero_financial_data
+
+        # Fetch real Xero data
+        xero_data = fetch_xero_financial_data()
+
+        if "error" in xero_data:
+            return jsonify({
+                'error': xero_data["error"],
+                'chart_data': None
+            }), 400
+
+        # Process data for charts
+        chart_data = {}
+
+        # Revenue by Customer Chart Data
+        if xero_data.get('invoices'):
+            revenue_by_customer = {}
+            for invoice in xero_data['invoices']:
+                customer = invoice.get('Contact_Name', 'Unknown')
+                total = invoice.get('Total', 0)
+                if customer in revenue_by_customer:
+                    revenue_by_customer[customer] += total
+                else:
+                    revenue_by_customer[customer] = total
+
+            # Sort by revenue and take top 10
+            sorted_revenue = sorted(revenue_by_customer.items(), key=lambda x: x[1], reverse=True)[:10]
+            chart_data['revenue_by_customer'] = [
+                {'name': customer, 'value': revenue} for customer, revenue in sorted_revenue
+            ]
+
+        # Invoice Status Distribution
+        if xero_data.get('invoices'):
+            status_counts = {}
+            for invoice in xero_data['invoices']:
+                status = invoice.get('Status', 'Unknown')
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            chart_data['invoice_status'] = [
+                {'name': status, 'value': count} for status, count in status_counts.items()
+            ]
+
+        # Monthly Revenue Trend (based on invoice dates)
+        if xero_data.get('invoices'):
+            monthly_revenue = {}
+            for invoice in xero_data['invoices']:
+                date_str = invoice.get('Date', '')
+                total = invoice.get('Total', 0)
+                if date_str:
+                    try:
+                        invoice_date = datetime.strptime(date_str, '%Y-%m-%d')
+                        month_key = invoice_date.strftime('%Y-%m')
+                        monthly_revenue[month_key] = monthly_revenue.get(month_key, 0) + total
+                    except ValueError:
+                        continue
+
+            # Sort by month and prepare for chart
+            sorted_months = sorted(monthly_revenue.items())
+            chart_data['monthly_revenue'] = [
+                {'month': month, 'revenue': revenue} for month, revenue in sorted_months
+            ]
+
+        # Outstanding vs Paid Amounts
+        if xero_data.get('invoices'):
+            total_outstanding = sum(inv.get('Amount_Due', 0) for inv in xero_data['invoices'])
+            total_paid = sum(inv.get('Total', 0) - inv.get('Amount_Due', 0) for inv in xero_data['invoices'])
+
+            chart_data['payment_status'] = [
+                {'name': 'Outstanding', 'value': total_outstanding},
+                {'name': 'Paid', 'value': total_paid}
+            ]
+
+        # Account Types Distribution
+        if xero_data.get('accounts'):
+            account_types = {}
+            for account in xero_data['accounts']:
+                acc_type = account.get('Type', 'Unknown')
+                account_types[acc_type] = account_types.get(acc_type, 0) + 1
+
+            chart_data['account_types'] = [
+                {'name': acc_type, 'value': count} for acc_type, count in account_types.items()
+            ]
+
+        # Customer vs Supplier Breakdown
+        if xero_data.get('contacts'):
+            customer_count = sum(1 for contact in xero_data['contacts'] if contact.get('Is_Customer'))
+            supplier_count = sum(1 for contact in xero_data['contacts'] if contact.get('Is_Supplier'))
+
+            chart_data['contact_types'] = [
+                {'name': 'Customers', 'value': customer_count},
+                {'name': 'Suppliers', 'value': supplier_count}
+            ]
+
+        return jsonify({
+            'success': True,
+            'chart_data': chart_data,
+            'data_timestamp': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate chart data',
+            'message': str(e)
+        }), 500
+
+@app.route('/dashboard/charts')
+def financial_charts_dashboard():
+    """Render the financial charts dashboard page"""
+    nav_items = build_nav('dashboard')
+
+    # Check if user is connected to Xero
+    try:
+        from xero_client import has_stored_token, get_tenant_id
+
+        xero_connected = has_stored_token() and get_tenant_id()
+
+        return render_template('dashboard/financial_charts.html',
+                             nav_items=nav_items,
+                             xero_connected=xero_connected)
+    except Exception as e:
+        # If there's any error checking Xero status, assume not connected
+        return render_template('dashboard/financial_charts.html',
+                             nav_items=nav_items,
+                             xero_connected=False)
+
 if __name__ == '__main__':
     print("Starting Financial Command Center with Setup Wizard...")
     print("=" * 60)
