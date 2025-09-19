@@ -223,64 +223,69 @@ def get_contacts():
 
 @app.route('/api/dashboard', methods=['GET']) 
 def get_dashboard():
-    """Get comprehensive financial dashboard data"""
+    """Get comprehensive financial dashboard data from real sources"""
     accept_header = request.headers.get('Accept', '')
     wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
     
     if not wants_json:
         return "Dashboard endpoint - use Accept: application/json header", 400
     
-    # Comprehensive dashboard data
-    dashboard_data = {
-        'status': 'healthy',
-        'overview': {
-            'total_revenue_ytd': 245780.50,
-            'total_expenses_ytd': 189420.30,
-            'net_profit_ytd': 56360.20,
-            'profit_margin': 22.9,
-            'currency': 'USD'
-        },
-        'cash_flow': {
-            'current_balance': 45750.32,
-            'available_credit': 25000.00,
-            'monthly_burn_rate': 67200.00,
-            'runway_months': 8.5
-        },
-        'invoices': {
-            'total_outstanding': 18850.00,
-            'overdue_amount': 15750.00,
-            'paid_this_month': 28750.00,
-            'pending_count': 3,
-            'overdue_count': 1
-        },
-        'customers': {
-            'total_active': 28,
-            'new_this_month': 3,
-            'top_customer': 'Global Systems Ltd',
-            'average_invoice_value': 5456.78
-        },
-        'integrations': {
-            'stripe': {'status': 'connected', 'last_sync': '2025-09-13T15:30:00Z'},
-            'xero': {'status': 'connected', 'last_sync': '2025-09-13T15:25:00Z'},
-            'plaid': {'status': 'connected', 'last_sync': '2025-09-13T15:20:00Z'}
-        },
-        'alerts': [
-            {
-                'type': 'warning',
-                'message': 'Invoice INV-003 is overdue by 12 days',
-                'action_needed': True
-            },
-            {
-                'type': 'info', 
-                'message': '3 invoices due in the next 7 days',
-                'action_needed': False
+    # Import the Xero dashboard function
+    try:
+        from xero_mcp import xero_dashboard
+        xero_data = xero_dashboard()
+    except Exception as e:
+        xero_data = {"error": f"Failed to fetch Xero data: {str(e)}"}
+    
+    # Get real data from Stripe if available
+    stripe_data = {}
+    try:
+        import stripe
+        if os.getenv("STRIPE_API_KEY"):
+            stripe.api_key = os.getenv("STRIPE_API_KEY")
+            # Get recent charges
+            charges = stripe.Charge.list(limit=10)
+            stripe_data = {
+                "charges": [{"id": c["id"], "amount": c["amount"], "currency": c["currency"], "paid": c["paid"], "created": c["created"]} for c in charges.get("data", [])],
+                "status": "connected"
             }
-        ],
-        'recent_activity': [
-            {'date': '2025-09-13', 'type': 'payment_received', 'amount': 5500.00, 'description': 'Payment from TechStart Inc'},
-            {'date': '2025-09-12', 'type': 'expense', 'amount': -2800.00, 'description': 'Office rent payment'},
-            {'date': '2025-09-11', 'type': 'invoice_sent', 'amount': 3200.00, 'description': 'Invoice INV-005 sent to NewClient Co'}
-        ],
+        else:
+            stripe_data = {"status": "not_configured"}
+    except Exception as e:
+        stripe_data = {"status": "error", "error": str(e)}
+    
+    # Get real data from Plaid if available
+    plaid_data = {}
+    try:
+        import plaid
+        from plaid.api import plaid_api
+        if os.getenv("PLAID_CLIENT_ID") and os.getenv("PLAID_SECRET") and os.getenv("PLAID_ACCESS_TOKEN"):
+            cfg = plaid.Configuration(
+                host=plaid.Environment.Sandbox,  # Change to Production for live data
+                api_key={
+                    "clientId": os.getenv("PLAID_CLIENT_ID"), 
+                    "secret": os.getenv("PLAID_SECRET")
+                }
+            )
+            client = plaid_api.PlaidApi(plaid.ApiClient(cfg))
+            from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+            req = AccountsBalanceGetRequest(access_token=os.getenv("PLAID_ACCESS_TOKEN"))
+            balances = client.accounts_balance_get(req).to_dict()
+            plaid_data = {
+                "accounts": balances.get("accounts", []),
+                "status": "connected"
+            }
+        else:
+            plaid_data = {"status": "not_configured"}
+    except Exception as e:
+        plaid_data = {"status": "error", "error": str(e)}
+    
+    # Combine all data into a comprehensive dashboard
+    dashboard_data = {
+        'status': 'healthy' if not xero_data.get("error") else 'degraded',
+        'xero_data': xero_data,
+        'stripe_data': stripe_data,
+        'plaid_data': plaid_data,
         'timestamp': datetime.now().isoformat()
     }
     

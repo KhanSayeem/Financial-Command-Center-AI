@@ -8,6 +8,7 @@ NavDefinition = Tuple[str, str, str, dict]
 
 PRIMARY_NAV: Tuple[NavDefinition, ...] = (
     ('overview', 'Overview', 'index', {}),
+    ('assistant', 'Assistant', 'assistant.assistant_dashboard', {}),
     ('contacts', 'Contacts', 'view_xero_contacts', {}),
     ('invoices', 'Invoices', 'view_xero_invoices', {}),
     ('setup', 'Setup', 'setup_wizard', {}),

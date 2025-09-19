@@ -657,7 +657,9 @@ async function finishSetup() {
         const result = await response.json();
 
         if (result.success) {
-            nextStep(); // This will show the completion screen
+            // Redirect to health check or dashboard after successful setup
+            const redirectUrl = result.redirect_url || '/health';
+            window.location.href = redirectUrl;
         } else {
             throw new Error(result.error || 'Configuration save failed');
         }

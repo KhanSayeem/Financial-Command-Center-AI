@@ -1,0 +1,264 @@
+{% extends "layout.html" %}
+
+{% block title %}Chat with Assistant · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6 h-full">
+    <!-- Header -->
+    <div class="card border border-border/70 p-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('assistant.assistant_dashboard') }}" class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-muted/80">
+                    <i class="h-4 w-4" data-lucide="arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-xl font-semibold tracking-tight">Financial Assistant Chat</h1>
+                    <p class="text-sm text-muted-foreground">Ask questions about your financial health, cash flow, revenue, and more</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <span class="inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"></span>
+                <span class="font-medium text-emerald-600">Online</span>
+                <span class="text-muted-foreground">·</span>
+                <span class="text-muted-foreground">Connected to Xero, Stripe, Plaid</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="card border border-border/70 p-0 flex flex-1 flex-col">
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-6">
+            <!-- Welcome Message -->
+            <div class="flex items-start gap-3">
+                <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                    <i class="h-4 w-4" data-lucide="bot"></i>
+                </span>
+                <div class="max-w-3xl rounded-2xl rounded-tl-none border border-border/60 bg-muted/60 p-4 text-sm">
+                    <p class="font-medium text-foreground">Hello! I'm your Financial Command Center Assistant.</p>
+                    <p class="mt-2 text-muted-foreground">I can help you understand your company's financial position, analyze cash flow, track revenue, manage expenses, and provide actionable insights.</p>
+                    <p class="mt-2 text-muted-foreground">Ask me questions like:</p>
+                    <ul class="mt-2 space-y-1 text-muted-foreground">
+                        <li>• What's our current cash position?</li>
+                        <li>• Show me overdue invoices over $1,000</li>
+                        <li>• Generate a profit and loss statement</li>
+                        <li>• Who are our top 5 customers by revenue?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="border-t border-border/70 p-6">
+            <div class="flex flex-col gap-3">
+                <div class="relative">
+                    <textarea
+                        id="message-input"
+                        placeholder="Ask a question about your financial health, cash flow, revenue, expenses, or anything else..."
+                        class="block min-h-12 w-full resize-none rounded-lg border border-border/70 bg-background px-4 py-3 pr-12 text-sm shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        rows="1"
+                    ></textarea>
+                    <button
+                        id="send-button"
+                        class="absolute bottom-3 right-3 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-primary/90"
+                    >
+                        <i class="h-4 w-4" data-lucide="send"></i>
+                    </button>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <div class="flex items-center gap-4">
+                        <span>Press Enter to send, Shift+Enter for new line</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="h-3.5 w-3.5 text-emerald-600" data-lucide="shield-check"></i>
+                        <span>All conversations are encrypted and confidential</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let threadId = null;
+let isLoading = false;
+
+// DOM Elements
+const chatMessages = document.getElementById('chat-messages');
+const messageInput = document.getElementById('message-input');
+const sendButton = document.getElementById('send-button');
+
+// Initialize conversation
+async function initializeConversation() {
+    try {
+        const response = await fetch('/assistant/api/create-thread', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            threadId = data.thread_id;
+            console.log('Conversation initialized with thread ID:', threadId);
+        } else {
+            console.error('Failed to initialize conversation:', data.message);
+        }
+    } catch (error) {
+        console.error('Error initializing conversation:', error);
+    }
+}
+
+// Add message to chat
+function addMessageToChat(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'flex items-start gap-3 mt-6 first:mt-0';
+    
+    if (role === 'user') {
+        messageDiv.innerHTML = `
+            <div class="ml-auto max-w-3xl rounded-2xl rounded-br-none border border-border/60 bg-primary p-4 text-sm text-primary-foreground">
+                <p>${content}</p>
+            </div>
+            <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground">
+                <i class="h-4 w-4" data-lucide="user"></i>
+            </span>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                <i class="h-4 w-4" data-lucide="bot"></i>
+            </span>
+            <div class="max-w-3xl rounded-2xl rounded-tl-none border border-border/60 bg-muted/60 p-4 text-sm">
+                ${content}
+            </div>
+        `;
+    }
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send message to assistant
+async function sendMessage() {
+    const message = messageInput.value.trim();
+    
+    if (!message || isLoading) {
+        return;
+    }
+    
+    // Set loading state
+    isLoading = true;
+    const originalButtonText = sendButton.innerHTML;
+    sendButton.innerHTML = '<i class="h-4 w-4 animate-spin" data-lucide="loader"></i>';
+    sendButton.disabled = true;
+    messageInput.disabled = true;
+    
+    try {
+        // Add user message to chat
+        addMessageToChat('user', message);
+        messageInput.value = '';
+        
+        // Add thinking indicator
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.id = 'thinking-indicator';
+        thinkingDiv.className = 'flex items-start gap-3 mt-6';
+        thinkingDiv.innerHTML = `
+            <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                <i class="h-4 w-4" data-lucide="bot"></i>
+            </span>
+            <div class="max-w-3xl rounded-2xl rounded-tl-none border border-border/60 bg-muted/60 p-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
+                    <div class="h-2 w-2 animate-bounce rounded-full bg-primary delay-75"></div>
+                    <div class="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
+                    <span class="ml-2">Analyzing your financial data...</span>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(thinkingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Send message to backend
+        const response = await fetch('/assistant/api/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                thread_id: threadId,
+                message: message
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Remove thinking indicator
+        const thinkingElement = document.getElementById('thinking-indicator');
+        if (thinkingElement) {
+            thinkingElement.remove();
+        }
+        
+        if (data.success) {
+            // Add assistant response to chat
+            addMessageToChat('assistant', data.response);
+        } else {
+            // Add error message
+            addMessageToChat('assistant', `<div class="text-destructive"><strong>Error:</strong> ${data.message}</div>`);
+        }
+        
+    } catch (error) {
+        // Remove thinking indicator
+        const thinkingElement = document.getElementById('thinking-indicator');
+        if (thinkingElement) {
+            thinkingElement.remove();
+        }
+        
+        // Add error message
+        addMessageToChat('assistant', `<div class="text-destructive"><strong>Error:</strong> ${error.message}</div>`);
+    } finally {
+        // Reset loading state
+        isLoading = false;
+        sendButton.innerHTML = originalButtonText;
+        sendButton.disabled = false;
+        messageInput.disabled = false;
+        messageInput.focus();
+    }
+}
+
+// Auto-resize textarea
+function autoResizeTextarea() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+}
+
+// Event Listeners
+sendButton.addEventListener('click', sendMessage);
+
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+messageInput.addEventListener('input', autoResizeTextarea);
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeConversation();
+    
+    // Check for example query in URL hash
+    if (window.location.hash) {
+        const exampleQuery = decodeURIComponent(window.location.hash.substring(1));
+        if (exampleQuery) {
+            messageInput.value = exampleQuery;
+            autoResizeTextarea();
+        }
+    }
+    
+    messageInput.focus();
+});
+</script>
+{% endblock %}

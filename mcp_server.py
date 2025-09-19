@@ -267,7 +267,7 @@ class FinancialCommandCenterMCP:
                 
                 try:
                     request = json.loads(line.strip())
-                    logger.info(f"Received request: {request.get('method')}")
+                    logger.info(f"Received request: {request.get('method', 'unknown') if isinstance(request, dict) else 'invalid request'}")
                     
                     response = await self.handle_request(request)
                     
@@ -293,16 +293,23 @@ class FinancialCommandCenterMCP:
                                 logger.error(f"Fallback stdout method also failed: {fallback_err}")
                                 break
                     else:
-                        logger.info(f"No response needed for notification: {request.get('method')}")
+                        method_name = "unknown"
+                        if isinstance(request, dict):
+                            method_name = request.get('method', 'unknown')
+                        logger.info(f"No response needed for notification: {method_name}")
                     
                 except json.JSONDecodeError as e:
                     logger.error(f"Invalid JSON received: {e}")
                     continue
                 except Exception as e:
                     logger.error(f"Error processing request: {e}")
+                    # Ensure we have a valid request ID even if request parsing failed
+                    request_id = None
+                    if 'request' in locals() and isinstance(request, dict):
+                        request_id = request.get('id')
                     error_response = {
                         "jsonrpc": "2.0",
-                        "id": None,
+                        "id": request_id,
                         "error": {
                             "code": -32603,
                             "message": str(e)
