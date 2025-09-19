@@ -126,6 +126,11 @@
                     </nav>
                 {% endif %}
                 <div class="flex items-center gap-2">
+                    <!-- AI Assistant Button -->
+                    <a href="/assistant/" class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-600">
+                        <i data-lucide="bot" class="h-4 w-4"></i>
+                        <span>AI Assistant</span>
+                    </a>
                     {% block header_actions %}{% endblock %}
                 </div>
             </div>

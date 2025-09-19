@@ -463,7 +463,8 @@ class SetupWizardAPI:
                     'success': True,
                     'message': 'Configuration saved successfully',
                     'services_configured': len([k for k in config.keys() if not config[k].get('skipped', False)]),
-                    'services_skipped': len([k for k in config.keys() if config[k].get('skipped', False)])
+                    'services_skipped': len([k for k in config.keys() if config[k].get('skipped', False)]),
+                    'redirect_url': '/health'  # Redirect to health check after successful setup
                 }
             else:
                 return {
@@ -493,34 +494,33 @@ class SetupWizardAPI:
 
 
 # Helper functions for app integration
-def get_configured_credentials() -> Dict[str, Any]:
-    """Get decrypted credentials for use in the main app"""
-    try:
-        config_manager = ConfigurationManager()
-        config = config_manager.load_config()
-        
-        if not config:
-            return {}
-            
+def get_configured_credentials() -> Dict[str, str]:
+    """Get configured credentials from secure storage or environment variables"""
+    # Try to load from secure configuration first
+    config_manager = ConfigurationManager()
+    config = config_manager.load_config()
+    
+    if config:
         credentials = {}
-        
-        # Extract Stripe credentials
-        stripe_config = config.get('stripe', {})
-        if not stripe_config.get('skipped', False):
-            credentials['STRIPE_API_KEY'] = stripe_config.get('api_key')
-            credentials['STRIPE_PUBLISHABLE_KEY'] = stripe_config.get('publishable_key', '')
-            
-        # Extract Xero credentials
-        xero_config = config.get('xero', {})
-        if not xero_config.get('skipped', False):
-            credentials['XERO_CLIENT_ID'] = xero_config.get('client_id')
-            credentials['XERO_CLIENT_SECRET'] = xero_config.get('client_secret')
-            
+        # Copy credentials from secure config
+        if 'stripe' in config and isinstance(config['stripe'], dict) and not config['stripe'].get('skipped', False):
+            credentials['STRIPE_API_KEY'] = config['stripe'].get('api_key', '')
+        if 'xero' in config and isinstance(config['xero'], dict) and not config['xero'].get('skipped', False):
+            credentials['XERO_CLIENT_ID'] = config['xero'].get('client_id', '')
+            credentials['XERO_CLIENT_SECRET'] = config['xero'].get('client_secret', '')
+        if 'plaid' in config and isinstance(config['plaid'], dict) and not config['plaid'].get('skipped', False):
+            credentials['PLAID_CLIENT_ID'] = config['plaid'].get('client_id', '')
+            credentials['PLAID_SECRET'] = config['plaid'].get('secret', '')
         return credentials
-        
-    except Exception as e:
-        print(f"Error loading credentials: {e}")
-        return {}
+    
+    # Fall back to environment variables (for backward compatibility)
+    return {
+        'STRIPE_API_KEY': os.getenv('STRIPE_API_KEY', ''),
+        'XERO_CLIENT_ID': os.getenv('XERO_CLIENT_ID', ''),
+        'XERO_CLIENT_SECRET': os.getenv('XERO_CLIENT_SECRET', ''),
+        'PLAID_CLIENT_ID': os.getenv('PLAID_CLIENT_ID', ''),
+        'PLAID_SECRET': os.getenv('PLAID_SECRET', '')
+    }
 
 
 def is_setup_required() -> bool:

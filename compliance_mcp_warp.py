@@ -1058,6 +1058,22 @@ def generate_cash_flow_forecast(
         resp = client.transactions_get(req).to_dict()
         transactions = resp.get("transactions", [])
 
+        def _parse_tx_date(raw: str):
+            raw = (raw or '').strip()
+            if not raw:
+                raise ValueError
+            cleaned = raw.replace('Z', '').strip()
+            try:
+                return datetime.fromisoformat(cleaned).date()
+            except ValueError:
+                pass
+            for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%m/%d/%Y", "%d/%m/%Y"):
+                try:
+                    return datetime.strptime(cleaned, fmt).date()
+                except ValueError:
+                    continue
+            raise ValueError
+
         # Analyze patterns
         daily_inflow = {}
         daily_outflow = {}
@@ -1070,33 +1086,32 @@ def generate_cash_flow_forecast(
 
             if tx_date:
                 try:
-                    date_obj = datetime.strptime(tx_date, "%Y-%m-%d").date()
-                    day_of_week = date_obj.weekday()
-                    day_of_month = date_obj.day
-
-                    if amount < 0:  # Income
-                        daily_inflow[tx_date] = daily_inflow.get(tx_date, 0) + abs(amount)
-                    else:  # Expense
-                        daily_outflow[tx_date] = daily_outflow.get(tx_date, 0) + amount
-
-                    # Weekly patterns
-                    if day_of_week not in weekly_patterns:
-                        weekly_patterns[day_of_week] = {"inflow": [], "outflow": []}
-                    if amount < 0:
-                        weekly_patterns[day_of_week]["inflow"].append(abs(amount))
-                    else:
-                        weekly_patterns[day_of_week]["outflow"].append(amount)
-
-                    # Monthly patterns
-                    if day_of_month not in monthly_patterns:
-                        monthly_patterns[day_of_month] = {"inflow": [], "outflow": []}
-                    if amount < 0:
-                        monthly_patterns[day_of_month]["inflow"].append(abs(amount))
-                    else:
-                        monthly_patterns[day_of_month]["outflow"].append(amount)
-
+                    date_obj = _parse_tx_date(tx_date)
                 except ValueError:
                     continue
+                day_of_week = date_obj.weekday()
+                day_of_month = date_obj.day
+
+                if amount < 0:  # Income
+                    daily_inflow[tx_date] = daily_inflow.get(tx_date, 0) + abs(amount)
+                else:  # Expense
+                    daily_outflow[tx_date] = daily_outflow.get(tx_date, 0) + amount
+
+                # Weekly patterns
+                if day_of_week not in weekly_patterns:
+                    weekly_patterns[day_of_week] = {"inflow": [], "outflow": []}
+                if amount < 0:
+                    weekly_patterns[day_of_week]["inflow"].append(abs(amount))
+                else:
+                    weekly_patterns[day_of_week]["outflow"].append(amount)
+
+                # Monthly patterns
+                if day_of_month not in monthly_patterns:
+                    monthly_patterns[day_of_month] = {"inflow": [], "outflow": []}
+                if amount < 0:
+                    monthly_patterns[day_of_month]["inflow"].append(abs(amount))
+                else:
+                    monthly_patterns[day_of_month]["outflow"].append(amount)
 
         # Calculate averages
         avg_weekly_inflow = {}

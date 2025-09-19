@@ -27,7 +27,27 @@ class DemoModeManager:
 
     # ------------------------- Persistence -------------------------
     def _load_initial_mode(self) -> Mode:
-        # Priority: persisted file > APP_MODE env > DEMO_MODE env > default
+        # Check if we have credentials configured first
+        try:
+            from setup_wizard import get_configured_credentials
+            credentials = get_configured_credentials()
+            has_xero = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
+            has_stripe = bool(credentials.get('STRIPE_API_KEY'))
+            
+            # If we have credentials, default to live mode
+            if has_xero or has_stripe:
+                # Check if persisted file explicitly sets demo mode
+                if self.MODE_FILE.exists():
+                    data = json.loads(self.MODE_FILE.read_text(encoding="utf-8"))
+                    m = str(data.get("mode", "live")).lower()
+                    # Only honor demo mode if explicitly set
+                    if m == "demo":
+                        return "demo"
+                return "live"
+        except:
+            pass
+        
+        # If no credentials, default to demo mode
         try:
             if self.MODE_FILE.exists():
                 data = json.loads(self.MODE_FILE.read_text(encoding="utf-8"))
@@ -114,6 +134,21 @@ class DemoModeManager:
         def admin_mode():
             if request.method == "POST":
                 new_mode = request.form.get("mode", "demo").lower()
+                # If switching to live mode, check if we have credentials
+                if new_mode == "live":
+                    try:
+                        from setup_wizard import get_configured_credentials
+                        credentials = get_configured_credentials()
+                        has_xero = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
+                        has_stripe = bool(credentials.get('STRIPE_API_KEY'))
+                        
+                        # If we don't have credentials, redirect to setup page
+                        if not (has_xero or has_stripe):
+                            return redirect(url_for("setup_wizard"))
+                    except:
+                        # If there's an error checking credentials, redirect to setup
+                        return redirect(url_for("setup_wizard"))
+                
                 self.set_mode("live" if new_mode == "live" else "demo")
                 return redirect(url_for("admin_mode"))
 

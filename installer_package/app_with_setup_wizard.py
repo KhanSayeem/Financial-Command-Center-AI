@@ -541,12 +541,18 @@ def health_check():
     credentials = get_credentials_or_redirect()
     integration_status = get_integration_status()
     
+    # Get demo mode status
+    from demo_mode import DemoModeManager
+    demo_manager = DemoModeManager()
+    current_mode = demo_manager.get_mode()
+    
     health_data = {
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'version': '3.0.0',
         'security': 'enabled' if SECURITY_ENABLED else 'disabled',
         'setup_wizard': 'enabled',
+        'mode': current_mode,  # Add mode to health data
         'integrations': {
             'stripe': {
                 'available': bool(credentials.get('STRIPE_API_KEY')),
@@ -2732,23 +2738,79 @@ def get_contacts():
 
 @app.route('/api/dashboard', methods=['GET']) 
 def get_dashboard():
-    """Get comprehensive financial dashboard data"""
+    """Get comprehensive financial dashboard data from real sources"""
     accept_header = request.headers.get('Accept', '')
     wants_json = 'application/json' in accept_header or request.args.get('format') == 'json'
     
     if not wants_json:
         return "Dashboard endpoint - use Accept: application/json header", 400
     
+    # Import the Xero dashboard function
+    xero_data = {}
+    try:
+        from xero_mcp import xero_dashboard
+        xero_data = xero_dashboard()
+    except Exception as e:
+        xero_data = {"error": f"Failed to fetch Xero data: {str(e)}"}
+    
+    # Get real data from Stripe if available
+    stripe_data = {}
+    try:
+        import stripe
+        if os.getenv("STRIPE_API_KEY"):
+            stripe.api_key = os.getenv("STRIPE_API_KEY")
+            # Get recent charges
+            charges = stripe.Charge.list(limit=10)
+            stripe_data = {
+                "charges": [{"id": c["id"], "amount": c["amount"], "currency": c["currency"], "paid": c["paid"], "created": c["created"]} for c in charges.get("data", [])],
+                "status": "connected"
+            }
+        else:
+            stripe_data = {"status": "not_configured"}
+    except Exception as e:
+        stripe_data = {"status": "error", "error": str(e)}
+    
+    # Get real data from Plaid if available
+    plaid_data = {}
+    try:
+        import plaid
+        from plaid.api import plaid_api
+        if os.getenv("PLAID_CLIENT_ID") and os.getenv("PLAID_SECRET") and os.getenv("PLAID_ACCESS_TOKEN"):
+            # Determine environment based on PLAID_ENV or default to Sandbox
+            plaid_env = os.getenv("PLAID_ENV", "Sandbox")
+            env_map = {
+                "Sandbox": plaid.Environment.Sandbox,
+                "Development": plaid.Environment.Development,
+                "Production": plaid.Environment.Production
+            }
+            host = env_map.get(plaid_env, plaid.Environment.Sandbox)
+            
+            cfg = plaid.Configuration(
+                host=host,
+                api_key={
+                    "clientId": os.getenv("PLAID_CLIENT_ID"), 
+                    "secret": os.getenv("PLAID_SECRET")
+                }
+            )
+            client = plaid_api.PlaidApi(plaid.ApiClient(cfg))
+            from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+            req = AccountsBalanceGetRequest(access_token=os.getenv("PLAID_ACCESS_TOKEN"))
+            balances = client.accounts_balance_get(req).to_dict()
+            plaid_data = {
+                "accounts": balances.get("accounts", []),
+                "status": "connected"
+            }
+        else:
+            plaid_data = {"status": "not_configured"}
+    except Exception as e:
+        plaid_data = {"status": "error", "error": str(e)}
+    
+    # Combine all data into a comprehensive dashboard
     dashboard_data = {
-        'status': 'healthy',
-        'overview': {'total_revenue_ytd': 245780.50, 'net_profit_ytd': 56360.20, 'profit_margin': 22.9},
-        'cash_flow': {'current_balance': 45750.32, 'monthly_burn_rate': 67200.00},
-        'invoices': {'total_outstanding': 18850.00, 'overdue_amount': 15750.00, 'pending_count': 3},
-        'integrations': {
-            'stripe': {'status': 'connected'}, 
-            'xero': {'status': 'connected'}, 
-            'plaid': {'status': 'connected'}
-        },
+        'status': 'healthy' if not xero_data.get("error") else 'degraded',
+        'xero_data': xero_data,
+        'stripe_data': stripe_data,
+        'plaid_data': plaid_data,
         'timestamp': datetime.now().isoformat()
     }
     
