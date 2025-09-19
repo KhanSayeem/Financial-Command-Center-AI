@@ -9,13 +9,15 @@ import json
 import os
 from typing import Dict, Any, List
 
-# Set your OpenAI API key
-openai.api_key = "your_openai_api_key_here"
-
 class FinancialCommandCenterAssistant:
     def __init__(self):
         """Initialize the assistant with OpenAI client"""
-        self.client = openai.OpenAI(api_key=openai.api_key)
+        # Get OpenAI API key from environment variables
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+        
+        self.client = openai.OpenAI(api_key=api_key)
         self.assistant = None
         self.thread = None
         
