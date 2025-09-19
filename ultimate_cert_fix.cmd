@@ -146,6 +146,8 @@ set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 set "APP_MODE=demo"
 set "XERO_REDIRECT_HOST=localhost"
+set "ASSISTANT_MODEL_TYPE=llama32"
+set "USE_LLAMA32=true"
 
 if "!LAUNCH_MODE!"=="quick" (
     set "PYTHON_CMD="

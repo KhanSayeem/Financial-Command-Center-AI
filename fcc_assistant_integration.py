@@ -51,8 +51,8 @@ class FCCAssistantIntegration:
         else:
             # For Llama 3.2, we'll use the local LLM adapter
             try:
-                from fcc_local_llm_adapter.adapters.local_llm_mcp_adapter import local_llm_mcp_adapter
-                self.llm_adapter = local_llm_mcp_adapter
+                from adapters.local_llm_mcp_adapter import LocalLLMMCPAdapter
+                self.llm_adapter = LocalLLMMCPAdapter()
                 logger.info("Llama 3.2 adapter initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize Llama 3.2 adapter: {e}")
