@@ -6,6 +6,25 @@ Replaces environment variable configuration with secure setup wizard
 import os
 import sys
 
+# Ensure stdout can print Unicode on Windows consoles
+try:
+    import io as _io
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+    # Fallback hard wrap
+    if getattr(sys.stdout, 'encoding', '').lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+        sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if getattr(sys.stderr, 'encoding', '').lower() != 'utf-8' and hasattr(sys.stderr, 'buffer'):
+        sys.stderr = _io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
+import os
+import sys
+
 # Add the local LLM adapter to the path before other imports
 adapter_path = os.path.join(os.path.dirname(__file__), 'fcc-local-llm-adapter')
 if os.path.exists(adapter_path) and adapter_path not in sys.path:
@@ -159,26 +178,14 @@ except Exception as e:
     print(f"WARNING: ChatGPT integration setup failed: {e}")
 
 # Import and setup Financial Command Center Assistant integration
-# Choose integration based on ASSISTANT_MODEL_TYPE
-model_type = os.getenv('ASSISTANT_MODEL_TYPE', 'openai').lower()
-if model_type == 'llama32':
-    try:
-        from fcc_llama32_integration import setup_llama32_routes
-        assistant_setup_result = setup_llama32_routes(app)
-        print("Financial Command Center Llama 3.2 Assistant integration loaded")
-    except ImportError as e:
-        print(f"WARNING: Llama 3.2 Assistant integration not available: {e}")
-    except Exception as e:
-        print(f"WARNING: Llama 3.2 Assistant integration setup failed: {e}")
-else:
-    try:
-        from fcc_assistant_integration import setup_assistant_routes
-        assistant_setup_result = setup_assistant_routes(app)
-        print("Financial Command Center Assistant integration loaded")
-    except ImportError as e:
-        print(f"WARNING: Financial Command Center Assistant integration not available: {e}")
-    except Exception as e:
-        print(f"WARNING: Financial Command Center Assistant integration setup failed: {e}")
+try:
+    from fcc_assistant_integration import setup_assistant_routes
+    assistant_setup_result = setup_assistant_routes(app)
+    print("Financial Command Center Assistant integration loaded")
+except ImportError as e:
+    print(f"WARNING: Financial Command Center Assistant integration not available: {e}")
+except Exception as e:
+    print(f"WARNING: Financial Command Center Assistant integration setup failed: {e}")
 
 def get_credentials_or_redirect():
     """Get credentials from setup wizard or redirect to setup if not configured"""

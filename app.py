@@ -33,11 +33,6 @@ from xero_client import save_token_and_tenant
 # Import enhanced session configuration
 from session_config import configure_flask_sessions
 
-# Import assistant integration
-from fcc_assistant_integration import setup_assistant_routes
-# Import Llama 3.2 integration
-from fcc_llama32_integration import setup_llama32_routes
-
 # Add our security layer
 sys.path.append('.')
 try:
@@ -119,10 +114,21 @@ else:
 # Setup assistant routes
 # Check if we should use Llama 3.2 or OpenAI
 use_llama32 = os.getenv('USE_LLAMA32', 'false').lower() == 'true'
+assistant_model_type = os.getenv('ASSISTANT_MODEL_TYPE', 'openai').lower()
 
+# If USE_LLAMA32 is true, override ASSISTANT_MODEL_TYPE
 if use_llama32:
+    assistant_model_type = 'llama32'
+
+print(f"Assistant model type: {assistant_model_type} (USE_LLAMA32: {use_llama32})")
+
+if assistant_model_type == 'llama32':
+    # Import and setup Llama 3.2 integration
+    from fcc_llama32_integration import setup_llama32_routes
     setup_llama32_routes(app)
 else:
+    # Import and setup assistant integration
+    from fcc_assistant_integration import setup_assistant_routes
     setup_assistant_routes(app)
 
 # NEW: Health check endpoint (no auth required)

@@ -6,8 +6,10 @@ Adds assistant functionality to existing FCC web application
 import openai
 import json
 import os
-from datetime import datetime
-from typing import Dict, Any, List
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Tuple
 from flask import Blueprint, request, jsonify, render_template
 import logging
 
@@ -18,63 +20,338 @@ assistant_bp = Blueprint('assistant', __name__, url_prefix='/assistant')
 logger = logging.getLogger(__name__)
 
 class FCCAssistantIntegration:
-    def __init__(self, app, openai_api_key=None, model_type="openai"):
-        """
-        Initialize FCC Assistant Integration.
-        
-        Args:
-            app: Flask application instance
-            openai_api_key: OpenAI API key (optional, will use env var if not provided)
-            model_type: Type of model to use ("openai" or "llama32")
-        """
+    def __init__(self, app, openai_api_key=None, model_type="gemini"):
+        """Initialize FCC Assistant Integration."""
         self.app = app
-        self.model_type = model_type.lower()
-        
-        if self.model_type == "openai":
-            # Try to get API key from stored config first, then from parameter, then from env var
-            self.api_key = self._get_stored_api_key() or openai_api_key or os.getenv('OPENAI_API_KEY')
-            
-            logger.info(f"API key loaded: {bool(self.api_key)}")
-            if self.api_key:
-                logger.info("API key found, initializing OpenAI client")
-                try:
-                    self.client = openai.OpenAI(api_key=self.api_key)
-                    logger.info("OpenAI client initialized successfully")
-                except Exception as e:
-                    logger.error(f"Failed to initialize OpenAI client: {e}")
-                    self.client = None
-            else:
-                logger.warning("OpenAI API key not found. Assistant will run in mock mode.")
-                self.client = None
-            
-            self.assistant = None
+        self.client = None
+        self.assistant = None
+        self.api_key = None
+        self.gemini_client = None
+        self.gemini_model = None
+        self.gemini_model_name = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+        self.model_type = None
+        self.model_ready = False
+        self.model_status = ""
+        self.threads = {}
+        self.mcp_financial_module = None
+        self.mcp_xero_module = None
+        self.mcp_plaid_module = None
+        self.mcp_stripe_module = None
+        self.mcp_compliance_module = None
+        self.mcp_context_available = False
+        self.mcp_context_cache = {}
+        self._gemini_tools = None
+        self.mcp_router = None
+        self.mcp_env = {}
+        self.gemini_mcp_adapter = None
+
+        self._initialize_mcp_support()
+
+        requested_model = (model_type or os.getenv('ASSISTANT_MODEL_TYPE', 'gemini')).lower()
+        success, message = self.set_model_type(requested_model, openai_api_key=openai_api_key)
+        if not success and requested_model != 'gemini':
+            logger.info('Primary model configuration failed, falling back to Gemini')
+            success, message = self.set_model_type('gemini', openai_api_key=openai_api_key)
+
+        if not success:
+            logger.warning(f"Assistant initialized without active model: {message}")
+
+    def set_model_type(self, model_type: str, openai_api_key: Optional[str] = None) -> Tuple[bool, str]:
+        """Configure the assistant for the requested model type."""
+        desired_type = (model_type or 'openai').lower()
+        logger.info(f"Attempting to configure assistant for model: {desired_type}")
+
+        if desired_type == "gemini":
+            success, message = self._configure_gemini()
+        elif desired_type == "openai":
+            success, message = self._configure_openai(openai_api_key)
         else:
-            # For Llama 3.2, we'll use the local LLM adapter
+            success = False
+            message = f"Unsupported model type: {desired_type}"
+
+        if success:
+            self.model_type = desired_type
+        self.model_ready = success
+        self.model_status = message
+
+        if success:
+            logger.info(message)
+        else:
+            logger.error(message)
+
+        return success, message
+
+    def _initialize_mcp_support(self):
+        """Load MCP helpers and tool metadata for Gemini/OpenAI adapters."""
+        try:
+            adapter_root = Path(__file__).resolve().parent / 'fcc-openai-adapter'
+            if adapter_root.exists() and str(adapter_root) not in sys.path:
+                sys.path.insert(0, str(adapter_root))
+        except Exception as exc:
+            logger.debug(f"Unable to prepare MCP adapter path: {exc}")
+
+        if not os.getenv('OPENAI_API_KEY'):
+            os.environ['OPENAI_API_KEY'] = os.environ.get('OPENAI_API_KEY_PLACEHOLDER', 'placeholder-openai-key-for-mcp')
+
+        self.mcp_context_available = False
+        self.mcp_env = getattr(self, 'mcp_env', {}) or {}
+        self.mcp_router = None
+        self._gemini_tools = None
+
+        try:
+            from models.tool_schemas import all_tools as openai_tool_schemas  # type: ignore
+            from utils.mcp_router import MCPRouter as MCPRouterClass  # type: ignore
+        except Exception as exc:
+            logger.warning(f"MCP support unavailable (tool import failed): {exc}")
+            return
+
+        self._gemini_tools = self._convert_openai_tools_for_gemini(openai_tool_schemas)
+        if not self._gemini_tools:
+            logger.warning("No MCP tool declarations available; skipping Gemini tool calling support.")
+            return
+
+        try:
+            self._prepare_mcp_environment()
+        except Exception as exc:
+            logger.warning(f"Failed to prepare MCP environment: {exc}")
+            return
+
+        try:
+            self.mcp_router = MCPRouterClass()
+            self.mcp_context_available = True
+            logger.info("MCP router initialized for assistant integration.")
+        except Exception as exc:
+            logger.warning(f"Unable to initialize MCP router: {exc}")
+            self.mcp_router = None
+            self.mcp_context_available = False
+
+    def _prepare_mcp_environment(self):
+        """Apply stored credentials so MCP servers can authenticate."""
+        env_updates: Dict[str, Any] = {}
+
+        try:
+            from setup_wizard import ConfigurationManager  # type: ignore
+            config_manager = ConfigurationManager()
+            stored_config = config_manager.load_config() or {}
+        except Exception as exc:
+            logger.debug(f"Setup wizard configuration unavailable: {exc}")
+            stored_config = {}
+
+        stripe_config = stored_config.get('stripe', {}) if isinstance(stored_config.get('stripe'), dict) else {}
+        xero_config = stored_config.get('xero', {}) if isinstance(stored_config.get('xero'), dict) else {}
+        plaid_config = stored_config.get('plaid', {}) if isinstance(stored_config.get('plaid'), dict) else {}
+
+        if stripe_config and not stripe_config.get('skipped'):
+            env_updates.setdefault('STRIPE_API_KEY', stripe_config.get('api_key'))
+            env_updates.setdefault('STRIPE_API_VERSION', stripe_config.get('api_version'))
+            env_updates.setdefault('STRIPE_DEFAULT_CURRENCY', stripe_config.get('default_currency'))
+            if stripe_config.get('mode'):
+                env_updates.setdefault('MCP_STRIPE_PROD', 'true' if stripe_config.get('mode') == 'live' else 'false')
+
+        if xero_config and not xero_config.get('skipped'):
+            env_updates.setdefault('XERO_CLIENT_ID', xero_config.get('client_id'))
+            env_updates.setdefault('XERO_CLIENT_SECRET', xero_config.get('client_secret'))
+
+        if plaid_config and not plaid_config.get('skipped'):
+            env_updates.setdefault('PLAID_CLIENT_ID', plaid_config.get('client_id'))
+            env_updates.setdefault('PLAID_SECRET', plaid_config.get('secret'))
+            env_updates.setdefault('PLAID_ENV', plaid_config.get('environment'))
+
+        port = self.app.config.get('PORT', int(os.getenv('FCC_PORT', '8000'))) if self.app else int(os.getenv('FCC_PORT', '8000'))
+        default_server_url = f"https://localhost:{port}"
+        env_updates.setdefault('FCC_SERVER_URL', os.getenv('FCC_SERVER_URL', default_server_url))
+        env_updates.setdefault('MCP_SERVER_URL', os.getenv('MCP_SERVER_URL', default_server_url))
+
+        existing_api_key = os.getenv('FCC_API_KEY')
+        if existing_api_key:
+            env_updates['FCC_API_KEY'] = existing_api_key
+        else:
             try:
-                from adapters.local_llm_mcp_adapter import LocalLLMMCPAdapter
-                self.llm_adapter = LocalLLMMCPAdapter()
-                logger.info("Llama 3.2 adapter initialized successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize Llama 3.2 adapter: {e}")
-                self.llm_adapter = None
-        
-        self.threads = {}  # Store conversation threads
-    
-    def _get_stored_api_key(self):
-        """Get stored OpenAI API key from chatgpt config."""
+                from auth.security import SecurityManager  # type: ignore
+                security_manager = SecurityManager()
+                auth_entries = security_manager._load_json(security_manager.auth_file)  # type: ignore[attr-defined]
+                assistant_key = None
+                for key_value, meta in (auth_entries or {}).items():
+                    if meta.get('client_name') == 'Gemini Assistant' and meta.get('active', True):
+                        assistant_key = key_value
+                        break
+                if not assistant_key:
+                    assistant_key = security_manager.generate_api_key('Gemini Assistant', permissions=['read'])
+                env_updates['FCC_API_KEY'] = assistant_key
+            except Exception as exc:
+                logger.debug(f"Could not ensure FCC API key for MCP access: {exc}")
+
+        for key, value in env_updates.items():
+            if value and not os.environ.get(key):
+                os.environ[key] = str(value)
+
+        self.mcp_env = {k: v for k, v in env_updates.items() if v}
+
+    def _convert_openai_tools_for_gemini(self, openai_tools: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
+        """Transform OpenAI-style tool specs into Gemini function declarations."""
+        declarations: List[Dict[str, Any]] = []
+        for tool in openai_tools or []:
+            function_payload = tool.get('function') if isinstance(tool, dict) else None
+            if not function_payload:
+                continue
+            name = function_payload.get('name')
+            if not name:
+                continue
+            params = function_payload.get('parameters') or {"type": "object", "properties": {}}
+            declarations.append({
+                "name": name,
+                "description": function_payload.get('description', ''),
+                "parameters": params
+            })
+        if not declarations:
+            return None
+        return [{"function_declarations": declarations}]
+
+    def _get_gemini_thread(self, thread_id: Optional[str]) -> Tuple[str, List[Dict[str, Any]]]:
+        """Return a thread identifier and existing Gemini history."""
+        thread_id = thread_id or f"gemini_thread_{datetime.now().timestamp()}"
+        entry = self.threads.setdefault(thread_id, {"history": []})
+        history = entry.get('history', [])
+        if history is None:
+            history = []
+            entry['history'] = history
+        return thread_id, history
+
+    def _extract_gemini_text(self, response) -> str:
+        """Best-effort extraction of text from a Gemini response object."""
+        if not response:
+            return 'Gemini returned an empty response.'
+        text_value = getattr(response, 'text', '') or ''
+        if text_value:
+            return text_value.strip()
+        collected: List[str] = []
+        try:
+            for candidate in getattr(response, 'candidates', []) or []:
+                content = getattr(candidate, 'content', None)
+                if not content:
+                    continue
+                parts = getattr(content, 'parts', []) or []
+                for part in parts:
+                    part_text = getattr(part, 'text', None)
+                    if part_text:
+                        collected.append(part_text)
+        except Exception:
+            logger.debug('Unable to parse Gemini response structure for text extraction', exc_info=True)
+        return '\n'.join(collected).strip() or 'Gemini returned an empty response.'
+
+    def _configure_gemini(self) -> Tuple[bool, str]:
+        """Initialize Gemini client using stored configuration or environment variables."""
+        gemini_api_key = self._get_stored_api_key('gemini') or os.getenv('GEMINI_API_KEY')
+
+        if not gemini_api_key:
+            return False, "Gemini API key not configured. Set GEMINI_API_KEY in your environment or setup wizard."
+
+        try:
+            import google.generativeai as genai
+        except ImportError:
+            return False, "google-generativeai package not installed. Install it to enable Gemini support."
+
+        try:
+            genai.configure(api_key=gemini_api_key)
+            model_name = os.getenv('GEMINI_MODEL', self.gemini_model_name)
+            model = genai.GenerativeModel(model_name)
+        except Exception as exc:
+            logger.exception("Failed to initialize Gemini client")
+            return False, f"Failed to initialize Gemini client: {exc}"
+
+        self.gemini_client = genai
+        self.gemini_model = model
+        self.gemini_model_name = model_name
+        self.api_key = None
+        self.client = None
+        self.assistant = None
+        return True, f"Connected to Google Gemini ({self.gemini_model_name})."
+
+    def _configure_openai(self, openai_api_key: Optional[str] = None) -> Tuple[bool, str]:
+        """Initialize OpenAI client using stored configuration or environment variables."""
+        api_key = self._get_stored_api_key('openai') or openai_api_key or os.getenv('OPENAI_API_KEY')
+
+        if not api_key:
+            return False, "OpenAI API key not configured. Set OPENAI_API_KEY in your environment or setup wizard."
+
+        try:
+            client = openai.OpenAI(api_key=api_key)
+        except Exception as exc:
+            logger.exception("Failed to initialize OpenAI client")
+            return False, f"Failed to initialize OpenAI client: {exc}"
+
+        self.api_key = api_key
+        self.client = client
+        self.assistant = None
+        self.gemini_client = None
+        self.gemini_model = None
+        self.gemini_mcp_adapter = None
+        return True, "Connected to OpenAI (GPT-4o)."
+
+    def _get_stored_api_key(self, provider: str = 'openai') -> Optional[str]:
+        """Get stored API key for the requested provider from secure config."""
         try:
             from pathlib import Path
             config_path = Path(__file__).parent / 'secure_config' / 'chatgpt_config.json'
             logger.info(f"Looking for config at: {config_path}")
             if config_path.exists():
                 config_data = json.loads(config_path.read_text())
-                api_key = config_data.get('openai_api_key')
-                logger.info(f"API key found in config: {bool(api_key)}")
+                if provider == 'gemini':
+                    api_key = config_data.get('gemini_api_key')
+                else:
+                    api_key = config_data.get('openai_api_key')
+                logger.info(f"API key found in config for {provider}: {bool(api_key)}")
                 return api_key
         except Exception as e:
             logger.error(f"Failed to read stored API key: {e}")
         return None
-        
+
+    def _send_gemini_message(self, message_content: str, thread_id: str = None):
+        """Send a message using Gemini."""
+        try:
+            if not self.gemini_client or not self.gemini_model:
+                logger.error("Gemini client not available")
+                return jsonify({
+                    "success": False,
+                    "message": "Gemini client not available"
+                }), 500
+
+            response = self.gemini_model.generate_content(message_content)
+
+            reply_text = getattr(response, 'text', '') or ''
+            if not reply_text:
+                try:
+                    candidates = getattr(response, 'candidates', []) or []
+                    collected_parts = []
+                    for candidate in candidates:
+                        content = getattr(candidate, 'content', None)
+                        if content:
+                            parts = getattr(content, 'parts', []) or []
+                            for part in parts:
+                                part_text = getattr(part, 'text', '')
+                                if part_text:
+                                    collected_parts.append(part_text)
+                    if collected_parts:
+                        reply_text = '\n'.join(collected_parts)
+                except Exception:
+                    logger.debug('Unable to parse Gemini response structure', exc_info=True)
+
+            if not reply_text:
+                reply_text = 'Gemini returned an empty response.'
+
+            return jsonify({
+                "success": True,
+                "response": reply_text,
+                "thread_id": thread_id or "gemini_thread"
+            })
+
+        except Exception as e:
+            logger.error(f"Failed to send Gemini message: {e}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "message": "Failed to process message with Gemini"
+            }), 500
 
     def _send_openai_message(self, message_content: str, thread_id: str = None):
         """Send a message using OpenAI."""
@@ -205,42 +482,6 @@ class FCCAssistantIntegration:
                 }
             }), 500
 
-    def _send_llama32_message(self, message_content: str, thread_id: str = None):
-        """Send a message using Llama 3.2."""
-        try:
-            # Check if Llama 3.2 adapter is available
-            if not self.llm_adapter:
-                logger.error("Llama 3.2 adapter not available")
-                return jsonify({
-                    "success": False,
-                    "message": "Llama 3.2 adapter not available"
-                }), 500
-            
-            # Process the query through the Llama 3.2 adapter
-            result = self.llm_adapter.process_query(message_content)
-            
-            if result["success"]:
-                return jsonify({
-                    "success": True,
-                    "response": result["response"],
-                    "turns_used": result.get("turns_used", 0)
-                })
-            else:
-                logger.error(f"Llama 3.2 processing failed: {result.get('error')}")
-                return jsonify({
-                    "success": False,
-                    "message": f"Llama 3.2 processing failed: {result.get('error')}"
-                }), 500
-                
-        except Exception as e:
-            logger.error(f"Failed to send Llama 3.2 message: {e}", exc_info=True)
-            return jsonify({
-                "success": False,
-                "error": str(e),
-                "message": "Failed to process message with Llama 3.2"
-            }), 500
-        
-    
     def handle_tool_call(self, tool_call) -> Dict[str, Any]:
         """
         Handle tool calls by connecting to the FCC system.
@@ -829,6 +1070,133 @@ What specific financial information would you like to explore?"""
             ]
         }
 
+
+class GeminiMCPAdapter:
+    """Gemini helper that loops function calls through the MCP router."""
+
+    def __init__(
+        self,
+        genai_module,
+        model_name: str,
+        router,
+        tools: Optional[List[Dict[str, Any]]],
+        logger: Optional[logging.Logger] = None,
+        max_turns: int = 6,
+    ) -> None:
+        self.genai = genai_module
+        self.model_name = model_name
+        self.router = router
+        self.tools = tools or []
+        self.logger = logger or logging.getLogger(__name__)
+        self.max_turns = max_turns
+        self.tool_config = {"function_calling_config": {"mode": "AUTO"}}
+        self.model = genai_module.GenerativeModel(model_name, tools=self.tools)
+
+    def process_query(self, prompt: str, conversation_history: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        contents = self._copy_history(conversation_history)
+        contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+        for turn in range(self.max_turns):
+            response = self.model.generate_content(
+                contents,
+                tools=self.tools,
+                tool_config=self.tool_config,
+            )
+
+            candidate = (response.candidates or [None])[0]
+            if not candidate or not getattr(candidate, 'content', None):
+                return {
+                    "success": False,
+                    "error": "Gemini returned no content.",
+                    "history": contents,
+                }
+
+            parts = list(getattr(candidate.content, 'parts', []) or [])
+            contents.append({"role": "model", "parts": parts})
+
+            tool_calls = []
+            text_segments: List[str] = []
+            for part in parts:
+                function_call = getattr(part, 'function_call', None)
+                if function_call:
+                    tool_calls.append(function_call)
+                    continue
+                text_value = getattr(part, 'text', None)
+                if text_value:
+                    text_segments.append(text_value)
+
+            if tool_calls:
+                for function_call in tool_calls:
+                    name = getattr(function_call, 'name', '')
+                    if not name:
+                        continue
+                    arguments = self._coerce_arguments(function_call)
+                    self.logger.info("Gemini invoking MCP tool %s", name)
+                    try:
+                        result = self.router.route_tool_call(name, arguments)
+                    except Exception as exc:
+                        self.logger.exception("MCP tool %s raised an error", name)
+                        result = {"error": str(exc), "isError": True}
+
+                    contents.append({
+                        "role": "tool",
+                        "parts": [{
+                            "function_response": {
+                                "name": name,
+                                "response": result,
+                            }
+                        }],
+                    })
+                continue
+
+            if text_segments:
+                return {
+                    "success": True,
+                    "response": "\n".join(text_segments).strip(),
+                    "history": contents,
+                }
+
+            finish_reason = getattr(candidate, 'finish_reason', None)
+            if finish_reason and str(finish_reason).lower() == 'stop':
+                return {
+                    "success": True,
+                    "response": '',
+                    "history": contents,
+                }
+
+        return {
+            "success": False,
+            "error": "Max tool-calling iterations reached without final response.",
+            "history": contents,
+        }
+
+    def _copy_history(self, history: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+        copied: List[Dict[str, Any]] = []
+        for message in history or []:
+            role = message.get('role') if isinstance(message, dict) else None
+            parts = list(message.get('parts', [])) if isinstance(message, dict) else []
+            copied.append({"role": role, "parts": parts})
+        return copied
+
+    def _coerce_arguments(self, function_call) -> Dict[str, Any]:
+        raw_args = getattr(function_call, 'args', {}) or {}
+        try:
+            if hasattr(raw_args, 'to_dict'):
+                raw_args = raw_args.to_dict()
+            elif hasattr(raw_args, 'as_dict'):
+                raw_args = raw_args.as_dict()
+            elif isinstance(raw_args, str):
+                raw_args = json.loads(raw_args)
+            elif not isinstance(raw_args, dict):
+                raw_args = dict(raw_args)
+        except Exception:
+            try:
+                raw_args = json.loads(str(raw_args))
+            except Exception:
+                raw_args = {}
+        return raw_args if isinstance(raw_args, dict) else {}
+
+
 # Global assistant instance for routes
 assistant_instance = None
 
@@ -935,10 +1303,10 @@ def send_message():
             }), 500
 
         # Handle different model types
-        if assistant_instance.model_type == "openai":
+        if assistant_instance.model_type == "gemini":
+            return assistant_instance._send_gemini_message(message_content, thread_id)
+        elif assistant_instance.model_type == "openai":
             return assistant_instance._send_openai_message(message_content, thread_id)
-        elif assistant_instance.model_type == "llama32":
-            return assistant_instance._send_llama32_message(message_content, thread_id)
         else:
             # In mock mode, return sample responses
             logger.info("Using mock response")
@@ -995,55 +1363,84 @@ def get_examples():
 @assistant_bp.route('/api/get-model-config', methods=['GET'])
 def get_model_config():
     """Get current model configuration."""
-    model_type = os.getenv('ASSISTANT_MODEL_TYPE', 'openai').lower()
+    active_type = os.getenv('ASSISTANT_MODEL_TYPE', 'gemini').lower()
+    status_message = 'Assistant not configured yet.'
+    model_ready = False
+
+    if assistant_instance:
+        active_type = (assistant_instance.model_type or active_type or 'gemini').lower()
+        status_message = assistant_instance.model_status or status_message
+        model_ready = bool(getattr(assistant_instance, 'model_ready', False))
+
     return jsonify({
         "success": True,
-        "model_type": model_type,
-        "available_models": ["openai", "llama32"]
+        "model_type": active_type,
+        "available_models": ["gemini", "openai"],
+        "model_ready": model_ready,
+        "status_message": status_message
     })
 
 @assistant_bp.route('/api/set-model-config', methods=['POST'])
 def set_model_config():
     """Set model configuration."""
-    data = request.get_json()
-    model_type = data.get('model_type', 'openai').lower()
+    data = request.get_json() or {}
+    requested_type = data.get('model_type', 'gemini').lower()
 
-    if model_type not in ['openai', 'llama32']:
+    if requested_type not in ['gemini', 'openai']:
         return jsonify({
             "success": False,
-            "message": "Invalid model type. Must be 'openai' or 'llama32'"
+            "message": "Invalid model type. Must be 'gemini' or 'openai'"
         }), 400
 
-    # Update environment variable
-    os.environ['ASSISTANT_MODEL_TYPE'] = model_type
+    previous_type = os.getenv('ASSISTANT_MODEL_TYPE', 'gemini').lower()
+    status_message = 'Assistant not initialized on server.'
+    model_ready = False
+    success = False
+    message = status_message
 
-    # Also update the .env file to persist the setting
-    try:
-        if assistant_instance:
-            assistant_instance._update_env_file('ASSISTANT_MODEL_TYPE', model_type)
-    except Exception as e:
-        logger.warning(f"Failed to update .env file: {e}")
+    if assistant_instance:
+        success, message = assistant_instance.set_model_type(requested_type)
+        status_message = assistant_instance.model_status or message
+        model_ready = bool(getattr(assistant_instance, 'model_ready', False))
+        active_type = assistant_instance.model_type or previous_type
+    else:
+        active_type = previous_type
 
-    return jsonify({
-        "success": True,
-        "message": f"Model switched to {model_type}",
-        "model_type": model_type
-    })
+    if success:
+        os.environ['ASSISTANT_MODEL_TYPE'] = requested_type
+        try:
+            if assistant_instance:
+                assistant_instance._update_env_file('ASSISTANT_MODEL_TYPE', requested_type)
+        except Exception as exc:
+            logger.warning(f"Failed to update .env file: {exc}")
+        response_type = requested_type
+    else:
+        response_type = active_type
+
+    response_payload = {
+        "success": success,
+        "message": message,
+        "model_type": response_type,
+        "model_ready": model_ready,
+        "status_message": status_message
+    }
+
+    return jsonify(response_payload)
 
 def setup_assistant_routes(app):
     """Setup assistant routes in the Flask application."""
     global assistant_instance
     try:
-        # Determine model type from environment variable
-        model_type = os.getenv('ASSISTANT_MODEL_TYPE', 'openai').lower()
+        model_type = os.getenv('ASSISTANT_MODEL_TYPE', 'gemini').lower()
 
-        # Initialize assistant integration
+        logger.info(f"Initializing assistant with model type: {model_type}")
+
         assistant_instance = FCCAssistantIntegration(app, model_type=model_type)
 
-        # Register blueprint
         app.register_blueprint(assistant_bp)
         logger.info("FCC Assistant routes registered successfully")
         return True
     except Exception as e:
         logger.error(f"Failed to setup assistant routes: {e}")
         return False
+
