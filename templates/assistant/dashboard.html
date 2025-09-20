@@ -19,7 +19,10 @@
                 <div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                     <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="model-indicator">
                         <i class="h-4 w-4" data-lucide="cpu"></i>
-                        <span id="model-name">Loading...</span>
+                        <span class="flex flex-col leading-tight text-left">
+                            <span id="model-name">Loading...</span>
+                            <span id="model-status-label" class="text-[10px] font-medium text-muted-foreground/80 hidden">Checking...</span>
+                        </span>
                     </span>
                     <span class="inline-flex items-center gap-2 text-sm font-medium text-emerald-600"><i class="h-4 w-4" data-lucide="shield-check"></i>Secure & Confidential</span>
                 </div>
@@ -49,9 +52,9 @@
                     <i class="h-4 w-4" data-lucide="cloud"></i>
                     OpenAI
                 </button>
-                <button id="llama32-btn" class="model-btn inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium transition hover:bg-muted/60">
+                <button id="gemini-btn" class="model-btn inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium transition hover:bg-muted/60">
                     <i class="h-4 w-4" data-lucide="hard-drive"></i>
-                    Llama 3.2
+                    Gemini
                 </button>
             </div>
         </div>
@@ -60,9 +63,9 @@
                 <p class="font-medium">OpenAI Model (GPT-4o)</p>
                 <p class="text-muted-foreground mt-1">Cloud-based AI with high accuracy. Requires an API key and internet connection.</p>
             </div>
-            <div id="llama32-info" class="model-info hidden">
-                <p class="font-medium">Llama 3.2 Model (Local)</p>
-                <p class="text-muted-foreground mt-1">Local AI model that runs on your computer. No internet required. Free to use.</p>
+            <div id="gemini-info" class="model-info hidden">
+                <p class="font-medium">Google Gemini Model</p>
+                <p class="text-muted-foreground mt-1">Google's advanced AI model. Requires an API key and internet connection.</p>
             </div>
         </div>
     </div>
@@ -217,13 +220,13 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            updateModelDisplay(data.model_type);
+            updateModelDisplay(data.model_type, data.status_message, data.model_ready);
         }
     })
     .catch(error => {
         console.error('Error fetching model config:', error);
         // Default to OpenAI
-        updateModelDisplay('openai');
+        updateModelDisplay('openai', 'Unable to fetch current model configuration.', false);
     });
     
     // Add click handlers for model buttons
@@ -231,8 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setModel('openai');
     });
     
-    document.getElementById('llama32-btn').addEventListener('click', function() {
-        setModel('llama32');
+    document.getElementById('gemini-btn').addEventListener('click', function() {
+        setModel('gemini');
     });
     
     // Function to set the model
@@ -249,11 +252,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateModelDisplay(modelType);
-                // Show success message
-                showToast('Model switched to ' + (modelType === 'openai' ? 'OpenAI' : 'Llama 3.2'), 'success');
+                updateModelDisplay(data.model_type, data.status_message, data.model_ready);
+                showToast(data.message || 'Model switched successfully.', 'success');
             } else {
-                showToast('Failed to switch model: ' + data.message, 'error');
+                if (data.model_type) {
+                    updateModelDisplay(data.model_type, data.status_message, data.model_ready);
+                }
+                showToast(data.message || 'Failed to switch model', 'error');
             }
         })
         .catch(error => {
@@ -263,23 +268,65 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to update model display
-    function updateModelDisplay(modelType) {
-        // Update model indicator
-        const modelName = modelType === 'openai' ? 'OpenAI (GPT-4o)' : 'Llama 3.2 (Local)';
-        const modelIcon = modelType === 'openai' ? 'cloud' : 'hard-drive';
-        document.getElementById('model-name').textContent = modelName;
-        
+    function updateModelDisplay(modelType, statusMessage = '', modelReady = false) {
+        let modelName = 'Unknown Model';
+        let modelIcon = 'cpu';
+
+        if (modelType === 'openai') {
+            modelName = 'OpenAI (GPT-4o)';
+            modelIcon = 'cloud';
+        } else if (modelType === 'gemini') {
+            modelName = 'Google Gemini';
+            modelIcon = 'hard-drive';
+        }
+
+        const readinessLabel = modelReady ? 'Ready' : 'Needs Setup';
+        const nameElement = document.getElementById('model-name');
+        if (nameElement) {
+            nameElement.textContent = `${modelName} - ${readinessLabel}`;
+        }
+
+        const statusLabel = document.getElementById('model-status-label');
+        if (statusLabel) {
+            if (statusMessage) {
+                statusLabel.textContent = statusMessage;
+                statusLabel.classList.remove('hidden');
+            } else {
+                statusLabel.classList.add('hidden');
+            }
+        }
+
+        const indicator = document.getElementById('model-indicator');
+        if (indicator) {
+            indicator.setAttribute('data-model', modelType);
+            indicator.setAttribute('title', statusMessage || '');
+        }
+
+        const iconElement = document.querySelector('#model-indicator [data-lucide]');
+        if (iconElement) {
+            iconElement.setAttribute('data-lucide', modelIcon);
+        }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+
         // Update model info display
         document.querySelectorAll('.model-info').forEach(el => el.classList.add('hidden'));
-        document.getElementById(modelType + '-info').classList.remove('hidden');
-        
+        const infoElement = document.getElementById(modelType + '-info');
+        if (infoElement) {
+            infoElement.classList.remove('hidden');
+        }
+
         // Update button states
         document.querySelectorAll('.model-btn').forEach(btn => {
             btn.classList.remove('bg-primary', 'text-primary-foreground', 'border-primary');
             btn.classList.add('border-border/70');
         });
-        document.getElementById(modelType + '-btn').classList.remove('border-border/70');
-        document.getElementById(modelType + '-btn').classList.add('bg-primary', 'text-primary-foreground', 'border-primary');
+        const activeButton = document.getElementById(modelType + '-btn');
+        if (activeButton) {
+            activeButton.classList.remove('border-border/70');
+            activeButton.classList.add('bg-primary', 'text-primary-foreground', 'border-primary');
+        }
     }
     
     // Toast notification function

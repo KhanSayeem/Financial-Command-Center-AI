@@ -72,7 +72,7 @@ class FCCLlama32Integration:
         self.app = app
         self.base_url = llama_base_url or os.getenv('LLAMA_BASE_URL', 'http://localhost:11434/v1')
         self.model = llama_model or os.getenv('LLAMA_MODEL', 'llama3.2')
-        self.max_turns = 5  # Maximum conversation turns to prevent loops
+        self.max_turns = 3  # Reduced maximum conversation turns to prevent long processing
 
         logger.info(f"Llama 3.2 integration initialized with base_url: {self.base_url}, model: {self.model}")
 
@@ -418,11 +418,15 @@ class FCCLlama32Integration:
             Response from Llama 3.2 API
         """
         try:
+            # Limit context length for faster processing on CPU
+            if len(messages) > 6:  # Keep only the most recent messages
+                messages = [messages[0]] + messages[-5:]  # Keep system message and last 5 messages
+            
             payload = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": 0.7,
-                "max_tokens": 2048
+                "temperature": 0.5,  # Lower temperature for more focused responses
+                "max_tokens": 512    # Reduce max tokens for faster responses
             }
 
             # Add tools if provided
@@ -438,7 +442,7 @@ class FCCLlama32Integration:
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=60,  # Increased timeout for slower models
+                timeout=300,  # Increased timeout for CPU-only models
                 verify=False  # Disable SSL verification for self-signed certificates
             )
 
@@ -468,40 +472,35 @@ class FCCLlama32Integration:
 
     def _get_assistant_instructions(self) -> str:
         """Get assistant instructions."""
-        return """You are a professional financial assistant for executives with access to real-time financial data through MCP (Model Context Protocol) tools.
+        return """You are a professional financial assistant with access to real-time financial data through MCP tools.
 
-You have direct access to the following financial systems:
-- **Xero**: Accounting data, invoices, contacts, profit/loss statements, balance sheets
-- **Stripe**: Payment processing, customer data, transaction history
-- **Plaid**: Bank account information, transaction data, cash flow analysis
-- **Compliance**: Regulatory compliance tools and reporting
+Key systems you can access:
+- **Xero**: Accounting data, invoices, contacts, financial statements
+- **Stripe**: Payment processing, customer data, transactions
+- **Plaid**: Bank account information, transactions, cash flow
 
-When a user asks about financial information, you should:
-1. **Use the appropriate MCP tools** to fetch real, up-to-date data instead of making assumptions
-2. **Analyze the actual data** returned by the tools
+When users ask about financial information:
+1. **Use MCP tools** to fetch real, up-to-date data
+2. **Analyze the actual data** returned by tools
 3. **Present findings professionally** with specific numbers and currency symbols
-4. **Highlight trends and insights** based on the real data
+4. **Highlight trends and insights** based on real data
 5. **Flag concerning metrics** that require attention
-6. **Provide actionable recommendations** based on the actual financial position
+6. **Provide actionable recommendations** based on actual financial position
 
 Communication Guidelines:
 - Use precise, professional business language
-- Always include specific currency amounts with proper formatting ($1,234.56)
-- Present data in clear, actionable formats using bullet points and sections
-- Highlight trends, anomalies, and key insights from the real data
-- Flag concerning metrics with appropriate urgency levels
-- Provide context and comparisons where relevant
+- Always include specific currency amounts ($1,234.56)
+- Present data in clear, actionable formats
+- Highlight trends and key insights from real data
 - Keep responses focused and executive-friendly
-- Summarize complex data into key takeaways
 
-Example natural language commands you can process:
-- "What's our current cash position?" → Use Plaid/Xero tools to get real bank balances
-- "Show me overdue invoices over $1,000" → Use Xero tools to query actual invoice data
-- "Who are our top customers this quarter?" → Use Stripe/Xero tools for real revenue data
+Example commands:
+- "What's our current cash position?" → Use Plaid/Xero tools for real bank balances
+- "Show me overdue invoices over $1,000" → Use Xero tools for actual invoice data
+- "Who are our top customers this quarter?" → Use Stripe/Xero tools for revenue data
 - "Generate a profit and loss statement" → Use Xero tools for actual P&L data
-- "Process a payment from [customer]" → Use Stripe tools for real payment processing
 
-Always use tools when available to provide accurate, real-time financial information rather than generic responses."""
+Always use tools when available to provide accurate, real-time financial information."""
 
 
 def setup_llama32_routes(app):
