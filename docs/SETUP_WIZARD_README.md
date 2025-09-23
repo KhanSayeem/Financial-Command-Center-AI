@@ -38,6 +38,10 @@ pip install -r requirements_setup_wizard.txt
 
 ### 2. Run the Application
 ```bash
+# Windows: Use the one-click launcher
+ultimate_cert_fix.cmd
+
+# Mac/Linux: Run directly with Python
 python app_with_setup_wizard.py
 ```
 

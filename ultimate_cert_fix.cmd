@@ -104,7 +104,7 @@ if "!LAUNCH_MODE!"=="install" (
         -ShortcutPath "%DESKTOP_SHORTCUT%" ^
         -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
         -WorkingDirectory "%SCRIPT_DIR%" ^
-        -IconPath "%SCRIPT_DIR%\installer_package\assets\credit-card.ico"
+        -IconPath "%SCRIPT_DIR%\installer_package\assets\application.ico"
     if exist "%DESKTOP_SHORTCUT%" (
         echo  - Desktop shortcut created successfully
         echo  - Use the desktop shortcut for quick launches in the future
@@ -124,7 +124,7 @@ if "!LAUNCH_MODE!"=="repair" (
         -ShortcutPath "%DESKTOP_SHORTCUT%" ^
         -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
         -WorkingDirectory "%SCRIPT_DIR%" ^
-        -IconPath "%SCRIPT_DIR%\installer_package\assets\credit-card.ico"
+        -IconPath "%SCRIPT_DIR%\installer_package\assets\application.ico"
     if exist "%DESKTOP_SHORTCUT%" (
         echo  - Desktop shortcut recreated successfully
     ) else (

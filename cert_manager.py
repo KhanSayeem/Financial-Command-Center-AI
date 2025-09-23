@@ -59,7 +59,7 @@ class CertificateManager:
                 )
                 return result.returncode == 0
         except Exception as e:
-            print(f"⚠️  mkcert check failed: {e}")
+            print(f"WARNING: mkcert check failed: {e}")
         return False
     
     def install_mkcert_ca(self):
@@ -68,22 +68,22 @@ class CertificateManager:
             return False
         
         try:
-            print("🔐 Installing mkcert CA to system trust store...")
+            print("Installing mkcert CA to system trust store...")
             result = subprocess.run(
                 [str(self.mkcert_path), "-install"],
                 capture_output=True, text=True, timeout=30
             )
             
             if result.returncode == 0:
-                print("✅ mkcert CA installed to system trust store")
+                print("SUCCESS: mkcert CA installed to system trust store")
                 self.config["trust_installed"] = True
                 self._save_config()
                 return True
             else:
-                print(f"⚠️  mkcert CA installation failed: {result.stderr}")
+                print(f"WARNING: mkcert CA installation failed: {result.stderr}")
                 return False
         except Exception as e:
-            print(f"⚠️  Error installing mkcert CA: {e}")
+            print(f"WARNING: Error installing mkcert CA: {e}")
             return False
     
     def generate_mkcert_certificates(self):
@@ -92,7 +92,7 @@ class CertificateManager:
             return False
         
         try:
-            print("🔐 Generating certificates with mkcert...")
+            print("Generating certificates with mkcert...")
             
             # Install CA if not already done
             if not self.config.get("trust_installed", False):
@@ -105,7 +105,7 @@ class CertificateManager:
             result = subprocess.run(cert_args, capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:
-                print(f"✅ mkcert certificates generated successfully")
+                print(f"SUCCESS: mkcert certificates generated successfully")
                 print(f"   Certificate: {self.config['cert_file']}")
                 print(f"   Private key: {self.config['key_file']}")
                 
@@ -116,10 +116,10 @@ class CertificateManager:
                 
                 return True
             else:
-                print(f"⚠️  mkcert certificate generation failed: {result.stderr}")
+                print(f"WARNING: mkcert certificate generation failed: {result.stderr}")
                 return False
         except Exception as e:
-            print(f"⚠️  Error generating mkcert certificates: {e}")
+            print(f"WARNING: Error generating mkcert certificates: {e}")
             return False
     
     def install_certificate_to_system_store(self):
@@ -132,7 +132,7 @@ class CertificateManager:
             return False
         
         try:
-            print("🔐 Installing certificate to Windows certificate store...")
+            print("Installing certificate to Windows certificate store...")
             
             # Use PowerShell to install certificate
             powershell_cmd = f"""Import-Certificate -FilePath '{ca_cert_path.absolute()}' -CertStoreLocation 'Cert:\\LocalMachine\\Root' -ErrorAction Stop"""
@@ -143,16 +143,16 @@ class CertificateManager:
             )
             
             if result.returncode == 0:
-                print("✅ Certificate installed to Windows certificate store")
+                print("SUCCESS: Certificate installed to Windows certificate store")
                 self.config["trust_installed"] = True
                 self._save_config()
                 return True
             else:
-                print(f"⚠️  Certificate installation failed: {result.stderr}")
+                print(f"WARNING: Certificate installation failed: {result.stderr}")
                 # Try fallback method
                 return self._install_certificate_fallback()
         except Exception as e:
-            print(f"⚠️  Error installing certificate: {e}")
+            print(f"WARNING: Error installing certificate: {e}")
             return self._install_certificate_fallback()
     
     def _install_certificate_fallback(self):
@@ -171,15 +171,15 @@ class CertificateManager:
             )
             
             if result.returncode == 0:
-                print("✅ Certificate installed using certutil")
+                print("SUCCESS: Certificate installed using certutil")
                 self.config["trust_installed"] = True
                 self._save_config()
                 return True
             else:
-                print(f"⚠️  certutil installation also failed: {result.stderr}")
+                print(f"WARNING: certutil installation also failed: {result.stderr}")
                 return False
         except Exception as e:
-            print(f"⚠️  Fallback certificate installation failed: {e}")
+            print(f"WARNING: Fallback certificate installation failed: {e}")
             return False
     
     def _load_config(self):
@@ -190,7 +190,7 @@ class CertificateManager:
                     saved_config = json.load(f)
                     self.config.update(saved_config)
             except Exception as e:
-                print(f"⚠️  Warning: Could not load certificate config: {e}")
+                print(f"WARNING: Could not load certificate config: {e}")
     
     def _save_config(self):
         """Save configuration to file"""
@@ -198,11 +198,11 @@ class CertificateManager:
             with open(self.config_file, 'w') as f:
                 json.dump(self.config, f, indent=2)
         except Exception as e:
-            print(f"⚠️  Warning: Could not save certificate config: {e}")
+            print(f"WARNING: Could not save certificate config: {e}")
     
     def generate_ca_certificate(self):
         """Generate a Certificate Authority (CA) certificate"""
-        print("🔐 Generating Certificate Authority (CA)...")
+        print("Generating Certificate Authority (CA)...")
         
         # Generate private key
         ca_key = rsa.generate_private_key(
@@ -260,13 +260,13 @@ class CertificateManager:
         
         # Set restrictive permissions
         os.chmod(self.config["ca_key"], 0o600)
-        print(f"✅ CA certificate saved to: {self.config['ca_cert']}")
+        print(f"SUCCESS: CA certificate saved to: {self.config['ca_cert']}")
         
         return ca_cert, ca_key
     
     def generate_server_certificate(self):
         """Generate server certificate signed by CA"""
-        print("🔐 Generating server certificate...")
+        print("Generating server certificate...")
         
         # Load or generate CA
         if not (Path(self.config["ca_cert"]).exists() and Path(self.config["ca_key"]).exists()):
@@ -422,7 +422,7 @@ class CertificateManager:
             return "CA certificate not found. Run certificate generation first."
         
         instructions = f"""
-# 🔐 SSL Certificate Installation Instructions
+# SSL Certificate Installation Instructions
 
 ## Automatic Trust (Recommended)
 
@@ -714,9 +714,9 @@ def main():
     
     if args.mkcert:
         if cert_manager.generate_mkcert_certificates():
-            print("🎉 Browser-trusted certificates generated successfully!")
+            print("SUCCESS: Browser-trusted certificates generated successfully!")
         else:
-            print("❌ Failed to generate mkcert certificates")
+            print("ERROR: Failed to generate mkcert certificates")
     elif args.install_ca:
         if cert_manager._is_mkcert_available():
             cert_manager.install_mkcert_ca()
@@ -726,7 +726,7 @@ def main():
         cert_manager.generate_server_certificate()
     elif args.check:
         valid = cert_manager.is_certificate_valid()
-        print(f"Certificate valid: {'✅ Yes' if valid else '❌ No'}")
+        print(f"Certificate valid: {'Yes' if valid else 'No'}")
         if not valid:
             print("Run with --generate to create new certificates")
             if cert_manager._is_mkcert_available():
@@ -737,10 +737,10 @@ def main():
         cert_manager.create_client_bundle()
     elif args.health:
         status = cert_manager.health_check()
-        print("🔐 SSL Certificate Health Check:")
+        print("SSL Certificate Health Check:")
         print("=" * 40)
         for key, value in status.items():
-            icon = "✅" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key == "ssl_connection" and value == "success") or (key in ["mkcert_available", "trust_installed"] and value) else "❌" if key.endswith("_exists") or key in ["certificate_valid", "ssl_connection"] else "ℹ️"
+            icon = "[OK]" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key == "ssl_connection" and value == "success") or (key in ["mkcert_available", "trust_installed"] and value) else "[FAIL]" if key.endswith("_exists") or key in ["certificate_valid", "ssl_connection"] else "[INFO]"
             print(f"{icon} {key.replace('_', ' ').title()}: {value}")
     else:
         # Default: ensure certificates exist
