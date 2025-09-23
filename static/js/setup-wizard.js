@@ -396,6 +396,57 @@ function skipXeroConnect() {
 
 
 
+function showCompletion(result) {
+    document.querySelectorAll('.step').forEach((section) => {
+        section.classList.remove('active');
+        if (section.id !== 'completion') {
+            section.style.display = 'none';
+        }
+    });
+    const completion = document.getElementById('completion');
+    if (completion) {
+        completion.style.display = 'block';
+        completion.classList.add('active');
+    }
+    currentStep = totalSteps;
+    updateProgress();
+    requestAnimationFrame(() => scrollToStep('completion'));
+    const messageContainerId = 'completion-messages';
+    if (result) {
+        const successMessage = result.message || 'Configuration saved successfully.';
+        if (successMessage) {
+            showMessage(messageContainerId, 'success', successMessage);
+        }
+        if (Array.isArray(result.warnings) && result.warnings.length) {
+            const container = document.getElementById(messageContainerId);
+            if (container) {
+                const warningAlert = document.createElement('div');
+                warningAlert.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
+                warningAlert.setAttribute('role', 'alert');
+                const warningsHtml = result.warnings.map((warning) => `<div>${warning}</div>`).join('');
+                warningAlert.innerHTML = `
+        <div class="flex items-start gap-3">
+            <i data-lucide="alert-circle" class="h-4 w-4 flex-shrink-0"></i>
+            <div class="space-y-1 text-sm leading-relaxed">${warningsHtml}</div>
+        </div>
+    `;
+                container.appendChild(warningAlert);
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }
+        }
+    } else {
+        const container = document.getElementById(messageContainerId);
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
 async function finishSetup() {
     const messageContainer = (currentStep >= 4 && document.getElementById('connect-xero-messages')) ? 'connect-xero-messages' : 'xero-messages';
     try {
@@ -424,9 +475,8 @@ async function finishSetup() {
         const result = await response.json();
 
         if (result.success) {
-            // Redirect to health check or dashboard after successful setup
-            const redirectUrl = result.redirect_url || '/health';
-            window.location.href = redirectUrl;
+            showCompletion(result);
+            return;
         } else {
             throw new Error(result.error || 'Configuration save failed');
         }
