@@ -1,0 +1,70 @@
+from flask import Blueprint, jsonify, request
+
+
+def create_setup_blueprint(*, setup_wizard_api, logger, post_save_callback, connection_status_provider,
+                           blueprint_name: str = 'setup_api'):
+    """Return a blueprint that exposes the setup API endpoints."""
+
+    bp = Blueprint(blueprint_name, __name__)
+
+    @bp.route('/test-stripe', methods=['POST'])
+    def test_stripe_api():
+        data = request.get_json() or {}
+        result = setup_wizard_api.test_stripe_connection(data)
+        return jsonify(result)
+
+    @bp.route('/test-xero', methods=['POST'])
+    def test_xero_api():
+        data = request.get_json() or {}
+        result = setup_wizard_api.test_xero_connection(data)
+        return jsonify(result)
+
+    @bp.route('/test-plaid', methods=['POST'])
+    def test_plaid_api():
+        data = request.get_json() or {}
+        result = setup_wizard_api.test_plaid_connection(data)
+        return jsonify(result)
+
+    @bp.route('/save-config', methods=['POST'])
+    def save_setup_config():
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'error': 'No data provided'}), 400
+
+            result = setup_wizard_api.save_configuration(data)
+
+            if result.get('success'):
+                try:
+                    post_save_callback(result)
+                except Exception as callback_error:  # pragma: no cover - defensive logging
+                    logger.error(f'Post-save setup hook failed: {callback_error}')
+                    warnings = result.setdefault('warnings', [])
+                    warnings.append(f'Post-save hook error: {callback_error}')
+
+            return jsonify(result)
+        except Exception as exc:  # pragma: no cover - unexpected errors
+            logger.error(f'Error saving configuration: {exc}')
+            return jsonify({'success': False, 'error': str(exc)}), 500
+
+    @bp.route('/status', methods=['GET'])
+    def get_setup_status():
+        result = setup_wizard_api.get_configuration_status()
+        return jsonify(result)
+
+    @bp.route('/xero-connection', methods=['GET'])
+    def get_xero_connection_status():
+        try:
+            payload = connection_status_provider() or {}
+            status_code = payload.pop('status_code', 200)
+            return jsonify(payload), status_code
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(f'Failed to read Xero connection status: {exc}')
+            return jsonify({
+                'connected': False,
+                'tenant_id': '',
+                'has_token': False,
+                'error': str(exc),
+            }), 500
+
+    return bp
