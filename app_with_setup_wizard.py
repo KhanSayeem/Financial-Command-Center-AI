@@ -74,7 +74,8 @@ from xero_python.api_client.oauth2 import OAuth2Token
 from xero_python.exceptions import AccountingBadRequestException
 from xero_python.identity import IdentityApi
 from xero_python.api_client import serialize
-from xero_client import save_token_and_tenant, has_stored_token, get_stored_token, clear_token_and_tenant
+from xero_client import save_token_and_tenant, has_stored_token, get_stored_token, clear_token_and_tenant, get_tenant_id
+from setup_api_routes import create_setup_blueprint
 
 # Add our security layer
 sys.path.append('.')
@@ -142,6 +143,53 @@ setup_wizard_api = SetupWizardAPI()
 if CORS is not None:
     # Allow any origin for the narrow setup API surface only
     CORS(app, resources={r"/api/setup/*": {"origins": "*"}}, supports_credentials=False)
+
+def _apply_post_save_setup(result):
+    """Update integration state after setup wizard finishes."""
+    global XERO_AVAILABLE, api_client, oauth, xero, session_config
+
+    credentials = get_credentials_or_redirect()
+    has_xero_credentials = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
+    client = initialize_xero_client(credentials)
+
+    if has_xero_credentials and client:
+        result['xero_status'] = 'configured'
+    elif has_xero_credentials:
+        result['xero_status'] = 'saved_but_needs_restart'
+        logger.warning('Xero configuration saved but client failed to initialize - restart may be required.')
+    else:
+        result['xero_status'] = 'skipped'
+
+    has_stripe = bool(credentials.get('STRIPE_API_KEY'))
+    demo_manager = globals().get('demo')
+    if demo_manager and (has_xero_credentials or has_stripe):
+        try:
+            demo_manager.set_mode("live")
+        except Exception as demo_error:  # pragma: no cover - logging only
+            logger.debug(f'Demo mode update failed: {demo_error}')
+
+    return result
+
+
+
+def _xero_connection_payload():
+    """Return persisted Xero connection status for the setup wizard UI."""
+    tenant_id = get_tenant_id()
+    has_token = has_stored_token()
+    return {
+        'connected': bool(has_token and tenant_id),
+        'tenant_id': tenant_id or '',
+        'has_token': bool(has_token),
+    }
+
+
+setup_api_bp = create_setup_blueprint(
+    setup_wizard_api=setup_wizard_api,
+    logger=logger,
+    post_save_callback=_apply_post_save_setup,
+    connection_status_provider=_xero_connection_payload,
+)
+app.register_blueprint(setup_api_bp, url_prefix='/api/setup')
 
 # Initialize security manager if available
 if SECURITY_ENABLED:
@@ -573,69 +621,6 @@ def setup_wizard():
     """Setup wizard main page"""
     nav_items = build_nav('setup')
     return render_template('setup_wizard.html', nav_items=nav_items)
-
-@app.route('/api/setup/test-stripe', methods=['POST'])
-def test_stripe_api():
-    """Test Stripe API connection"""
-    data = request.get_json()
-    result = setup_wizard_api.test_stripe_connection(data)
-    return jsonify(result)
-
-@app.route('/api/setup/test-xero', methods=['POST'])
-def test_xero_api():
-    """Test Xero OAuth configuration"""
-    data = request.get_json()
-    result = setup_wizard_api.test_xero_connection(data)
-    return jsonify(result)
-
-@app.route('/api/setup/test-plaid', methods=['POST'])
-def test_plaid_api():
-    """Test Plaid API connection"""
-    data = request.get_json()
-    result = setup_wizard_api.test_plaid_connection(data)
-    return jsonify(result)
-
-@app.route('/api/setup/save-config', methods=['POST'])
-def save_setup_config():
-    """Save setup wizard configuration"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'success': False, 'error': 'No data provided'}), 400
-        
-        result = setup_wizard_api.save_configuration(data)
-        
-        if result['success']:
-            global XERO_AVAILABLE, api_client, oauth, xero, session_config
-
-            credentials = get_credentials_or_redirect()
-            has_xero_credentials = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
-            client = initialize_xero_client(credentials)
-
-            if has_xero_credentials and client:
-                result['xero_status'] = 'configured'
-            elif has_xero_credentials:
-                result['xero_status'] = 'saved_but_needs_restart'
-                logger.warning('Xero configuration saved but client failed to initialize - restart may be required.')
-            else:
-                result['xero_status'] = 'skipped'
-            
-            # Switch to live mode since we have credentials
-            has_stripe = bool(credentials.get('STRIPE_API_KEY'))
-            if has_xero_credentials or has_stripe:
-                demo.set_mode("live")
-                
-        return jsonify(result)
-        
-    except Exception as e:
-        logger.error(f"Error saving configuration: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/setup/status', methods=['GET'])
-def get_setup_status():
-    """Get current setup status"""
-    result = setup_wizard_api.get_configuration_status()
-    return jsonify(result)
 
 @app.route('/api/xero/debug', methods=['GET'])
 def debug_xero_status():
@@ -1939,6 +1924,7 @@ try:
         sys.stderr = _io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 except Exception:
     pass
+
 
 
 
