@@ -1025,7 +1025,7 @@ python app_with_setup_wizard.py
    ```
 4. **Run Tests**:
    ```bash
-   python run_tests.py
+   python scripts/utilities/run_tests.py
    ```
 5. **Submit Pull Request**
 

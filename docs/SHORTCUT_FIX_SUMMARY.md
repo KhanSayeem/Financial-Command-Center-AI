@@ -75,7 +75,7 @@ python financial_launcher.py       # Launch with trusted certificates
 python cert_manager.py --health
 
 # Test SSL trust
-python test_ssl_trust.py
+python tests/manual/test_ssl_trust.py
 
 # Manual launch with trusted certs
 ./Launch-With-Trusted-Certs.cmd
@@ -108,7 +108,7 @@ python test_ssl_trust.py
 
 # Test the current setup
 python cert_manager.py --health
-python test_ssl_trust.py
+python tests/manual/test_ssl_trust.py
 
 # Manual certificate regeneration
 python cert_manager.py --mkcert

@@ -4,6 +4,12 @@ Xero OAuth Debug Tool
 This script helps debug Xero OAuth 403 errors
 """
 
+from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import requests
 from setup_wizard import get_configured_credentials
 

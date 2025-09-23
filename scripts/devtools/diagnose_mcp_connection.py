@@ -2,11 +2,15 @@
 """
 Diagnostic script for Financial Command Center MCP connection
 """
-import json
+from pathlib import Path
 import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
+import json
 import subprocess
 import time
-from pathlib import Path
 
 def check_financial_server():
     """Check if Financial Command Center server is running"""

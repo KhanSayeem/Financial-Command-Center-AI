@@ -1,9 +1,13 @@
 """
 Script to update Xero credentials and exit demo mode
 """
-import os
-import json
 from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
+import json
 
 def update_xero_credentials():
     """Update Xero credentials in the config file"""

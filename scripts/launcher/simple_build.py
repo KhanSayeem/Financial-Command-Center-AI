@@ -6,6 +6,12 @@ Simple Build Script for Financial Command Center AI Launcher
 This script builds the executable without Unicode characters for Windows compatibility.
 """
 
+from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import os
 import sys
 import subprocess

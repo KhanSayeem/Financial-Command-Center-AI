@@ -1,6 +1,12 @@
 """
 Debug script to see exactly what data the assistant dashboard receives
 """
+from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import requests
 import json
 

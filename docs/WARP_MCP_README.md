@@ -26,7 +26,7 @@ This directory contains **Warp-compatible MCP (Model Context Protocol) servers**
 
 3. **Test the Servers**
    ```bash
-   python test_warp_mcp.py
+   python tests/manual/test_warp_mcp.py
    ```
 
 4. **Configure Warp**
@@ -150,7 +150,7 @@ All servers support environment-based configuration:
 ### Automated Testing
 Run the comprehensive test suite:
 ```bash
-python test_warp_mcp.py
+python tests/manual/test_warp_mcp.py
 ```
 
 This tests:
@@ -286,7 +286,7 @@ pip install --upgrade stripe plaid-python xero-python
 ## 📞 Support
 
 ### Getting Help
-1. Run diagnostic tests: `python test_warp_mcp.py`
+1. Run diagnostic tests: `python tests/manual/test_warp_mcp.py`
 2. Check server logs and error messages
 3. Verify environment configuration
 4. Review API documentation for external services
