@@ -542,7 +542,8 @@ def get_integration_status() -> Dict[str, Dict[str, Any]]:
     except:
         return {
             'stripe': {'configured': False, 'skipped': False, 'has_credentials': False},
-            'xero': {'configured': False, 'skipped': False, 'has_credentials': False}
+            'xero': {'configured': False, 'skipped': False, 'has_credentials': False},
+            'plaid': {'configured': False, 'skipped': False, 'has_credentials': False}
         }
 
 

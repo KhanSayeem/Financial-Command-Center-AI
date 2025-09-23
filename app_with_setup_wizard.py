@@ -195,6 +195,8 @@ def get_credentials_or_redirect():
     env_stripe_key = os.getenv('STRIPE_API_KEY')
     env_xero_client_id = os.getenv('XERO_CLIENT_ID')
     env_xero_client_secret = os.getenv('XERO_CLIENT_SECRET')
+    env_plaid_client_id = os.getenv('PLAID_CLIENT_ID')
+    env_plaid_secret = os.getenv('PLAID_SECRET')
     
     if env_stripe_key:
         credentials['STRIPE_API_KEY'] = env_stripe_key
@@ -202,7 +204,11 @@ def get_credentials_or_redirect():
         credentials['XERO_CLIENT_ID'] = env_xero_client_id
     if env_xero_client_secret:
         credentials['XERO_CLIENT_SECRET'] = env_xero_client_secret
-    
+    if env_plaid_client_id:
+        credentials['PLAID_CLIENT_ID'] = env_plaid_client_id
+    if env_plaid_secret:
+        credentials['PLAID_SECRET'] = env_plaid_secret
+
     return credentials
 
 def update_api_client_token(api_client, token):
@@ -411,6 +417,13 @@ def index():
             integration_status.get('stripe', {}),
             'Process demo payments and subscriptions with instant test data.',
             [{'label': 'Configure Stripe', 'href': url_for('setup_wizard'), 'icon': 'credit-card'}],
+        ),
+        integration_card(
+            'plaid',
+            'Plaid banking',
+            integration_status.get('plaid', {}),
+            'Connect bank feeds and monitor transactions in real time.',
+            [{'label': 'Configure Plaid', 'href': url_for('setup_wizard'), 'icon': 'banknote'}],
         ),
         integration_card(
             'xero',
@@ -825,6 +838,11 @@ def health_check():
                 'available': bool(credentials.get('STRIPE_API_KEY')),
                 'configured': integration_status.get('stripe', {}).get('configured', False),
                 'skipped': integration_status.get('stripe', {}).get('skipped', False)
+            },
+            'plaid': {
+                'available': bool(credentials.get('PLAID_CLIENT_ID') and credentials.get('PLAID_SECRET')),
+                'configured': integration_status.get('plaid', {}).get('configured', False),
+                'skipped': integration_status.get('plaid', {}).get('skipped', False)
             },
             'xero': {
                 'available': bool(credentials.get('XERO_CLIENT_ID')),
