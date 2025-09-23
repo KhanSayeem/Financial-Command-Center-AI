@@ -16,14 +16,14 @@ This update makes installation reliable on Windows: dependencies install into a 
 
 ## Quick Start
 
-- Oneclick: run `installer_package\Financial-Command-Center-Launcher.exe`.
-- From source: `python financial_launcher.py --setup`.
+- **Quick Start (Windows)**: Double-click `ultimate_cert_fix.cmd` in the project root folder
+- **From source**: `python app_with_setup_wizard.py`
 
 The launcher will:
-- Create a venv at `%LOCALAPPDATA%\Financial Command Center\Python\.venv`.
-- Install dependencies (with a resilient fallback for demoonly mode).
+- Create a local virtual environment (`.venv` folder).
+- Install dependencies automatically.
 - Generate SSL certificates and start the server.
-- Open your browser to `https://127.0.0.1:8000` and add systemtray shortcuts.
+- Open your browser to `https://127.0.0.1:8000` and create desktop shortcuts.
 
 ---
 

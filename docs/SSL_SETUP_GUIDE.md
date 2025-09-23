@@ -6,8 +6,11 @@
 
 ### 1. Automatic Setup (Recommended)
 ```bash
-# Start the application - certificates will be generated automatically
-python app.py
+# Windows: Start the application - certificates will be generated automatically
+ultimate_cert_fix.cmd
+
+# Mac/Linux: Start the application
+python app_with_setup_wizard.py
 ```
 
 ### 2. Manual Certificate Generation
@@ -71,20 +74,23 @@ CERT_HOSTNAMES="localhost,127.0.0.1,::1"
 
 #### 1. HTTPS Mode (Default)
 ```bash
-# Force HTTPS with automatic certificate generation
-FORCE_HTTPS=true ALLOW_HTTP=false python app.py
+# Windows: Force HTTPS with automatic certificate generation
+ultimate_cert_fix.cmd
+
+# Mac/Linux: Force HTTPS with automatic certificate generation
+FORCE_HTTPS=true ALLOW_HTTP=false python app_with_setup_wizard.py
 ```
 
 #### 2. HTTP Mode with Warnings
 ```bash
-# Allow HTTP but show security warnings
-FORCE_HTTPS=false ALLOW_HTTP=true python app.py
+# Mac/Linux: Allow HTTP but show security warnings
+FORCE_HTTPS=false ALLOW_HTTP=true python app_with_setup_wizard.py
 ```
 
 #### 3. Mixed Mode
 ```bash
-# HTTPS preferred, HTTP allowed for health checks
-FORCE_HTTPS=false ALLOW_HTTP=true python app.py
+# Mac/Linux: HTTPS preferred, HTTP allowed for health checks
+FORCE_HTTPS=false ALLOW_HTTP=true python app_with_setup_wizard.py
 ```
 
 ## 🖥️ Browser Certificate Installation
@@ -232,7 +238,7 @@ For production deployments with load balancers:
 1. **Configure SSL termination at load balancer**
 2. **Run app in HTTP mode:**
    ```bash
-   FORCE_HTTPS=false ALLOW_HTTP=true python app.py
+   FORCE_HTTPS=false ALLOW_HTTP=true python app_with_setup_wizard.py
    ```
 3. **Use provided nginx configuration:**
    ```bash

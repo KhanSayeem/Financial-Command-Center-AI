@@ -2,13 +2,13 @@
 # Financial Command Center AI - Installation Instructions
 
 ## Quick Start
-1. Run `Financial-Command-Center-Launcher.exe`
-2. Follow the setup wizard
+1. **Windows**: Double-click `ultimate_cert_fix.cmd` in the project root folder
+2. **Mac/Linux**: Run `python app_with_setup_wizard.py`
 3. The application will automatically:
    - Install Python dependencies
    - Configure SSL certificates
    - Launch the web interface
-   - Add system tray integration
+   - Create desktop shortcuts
 
 ## System Requirements
 - Windows 10/11, macOS 10.14+, or Linux
@@ -16,9 +16,10 @@
 - Internet connection for dependency installation
 
 ## Troubleshooting
-- If the launcher fails to start, check `launcher.log`
-- For permission errors, try running as administrator
+- If the launcher fails to start, try running as administrator (Windows)
+- For permission errors, ensure Python 3.8+ is installed
 - For network issues, check your firewall settings
+- Check that you're running the script from the project root directory
 
 ## Support
 - Documentation: https://github.com/YourOrg/Financial-Command-Center-AI
@@ -26,6 +27,7 @@
 - Email: support@financial-command-center.com
 
 ## Uninstalling
-1. Right-click the system tray icon and select "Exit"
-2. Delete the installation folder
+1. Close the application (close browser window and stop the server)
+2. Delete the project folder
 3. Remove the Python virtual environment (`.venv` folder)
+4. Delete desktop shortcut if created

@@ -2,12 +2,12 @@ Financial Command Center AI - Quick Start
 
 NEW: CLAUDE AI INTEGRATION AVAILABLE!
 
-1. LAUNCH: Double-click Financial-Command-Center-Launcher.exe
+1. LAUNCH: Double-click ultimate_cert_fix.cmd in the project root folder
 2. SETUP: Follow the welcome screen instructions
 3. AUTOMATIC: Python environment and dependencies install automatically
 4. BROWSER: Web interface opens automatically
 5. ENABLE AI: Visit /claude/setup to configure Claude Desktop integration
-6. ACCESS: System tray icon provides ongoing access
+6. ACCESS: Desktop shortcut provides ongoing access
 
 AI COMMANDS (after Claude setup):
 - "Show me our cash flow this month"
@@ -21,9 +21,10 @@ System Requirements:
 - Internet connection for dependency installation
 
 Troubleshooting:
-- If launcher fails to start, check launcher.log in the same directory
+- If launcher fails to start, ensure Python 3.8+ is installed
 - For permission errors, try running as administrator
 - For network issues, check firewall settings
+- Make sure you're running ultimate_cert_fix.cmd from the project root directory
 
 For detailed information, see LAUNCHER_README.md
 
