@@ -62,7 +62,7 @@ pip install -r launcher_requirements.txt
 
 #### Option 1: Python Build Script
 ```bash
-python build_launcher.py
+python scripts/launcher/build_launcher.py
 ```
 
 #### Option 2: PowerShell (Windows)
@@ -174,7 +174,7 @@ installer_package/
 
 ### Run Test Suite
 ```bash
-python test_launcher.py
+python tests/manual/test_launcher.py
 ```
 
 ### Test Coverage
@@ -196,8 +196,8 @@ python test_launcher.py
 ### For Developers
 1. Clone the repository
 2. Install development dependencies: `pip install -r launcher_requirements.txt`
-3. Test the launcher: `python test_launcher.py`
-4. Build executable: `python build_launcher.py`
+3. Test the launcher: `python tests/manual/test_launcher.py`
+4. Build executable: `python scripts/launcher/build_launcher.py`
 5. Distribute the `installer_package/` folder
 
 ## 🔍 Troubleshooting

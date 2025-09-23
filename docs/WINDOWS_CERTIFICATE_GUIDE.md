@@ -95,7 +95,7 @@
 
 3. **Check Certificate Installation:**
    ```bash
-   python test_certificate_install.py
+   python tests/manual/test_certificate_install.py
    ```
 
 4. **Verify Certificate in Windows:**
@@ -137,7 +137,7 @@ After installation, verify the certificate is working:
 
 3. **Run automated test:**
    ```bash
-   python test_certificate_install.py
+   python tests/manual/test_certificate_install.py
    ```
 
 ## 📞 Support

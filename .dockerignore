@@ -27,7 +27,7 @@ Thumbs.db
 
 # Tests
 tests/
-run_tests.py
+scripts/utilities/run_tests.py
 run_tests_fixed.ps1
 
 # Client bundles and generated artifacts

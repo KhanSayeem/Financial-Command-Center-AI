@@ -2,7 +2,12 @@
 Simple script to configure the FCC assistant model type
 """
 
+from pathlib import Path
 import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 
 def set_assistant_model(model_type):
     """Set the assistant model type in the environment file"""

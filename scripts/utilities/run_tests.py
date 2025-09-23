@@ -9,22 +9,27 @@ Financial Command Center AI - Test Runner (clean)
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
-from pathlib import Path
 import webbrowser
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
 
 
 class TestRunner:
     def __init__(self) -> None:
-        self.project_root = Path(__file__).parent
-        self.reports_dir = self.project_root / "reports"
-        self.coverage_dir = self.project_root / "htmlcov"
+        self.project_root = REPO_ROOT
+        self.reports_dir = REPO_ROOT / "reports"
+        self.coverage_dir = REPO_ROOT / "htmlcov"
         self.reports_dir.mkdir(exist_ok=True)
         self.coverage_dir.mkdir(exist_ok=True)
 
     def run(self, cmd: list[str], title: str) -> bool:
-        print("\n" + "=" * 60)
+        print("
+" + "=" * 60)
         print(title)
         print("=" * 60)
         print("Command:", " ".join(cmd))
@@ -47,7 +52,6 @@ class TestRunner:
         return self.run([sys.executable, "-m", "pytest", "tests/integration", "-v", "--tb=short"], "Run integration tests")
 
     def run_all(self) -> bool:
-        # Rely on pytest.ini for coverage thresholds and warnings handling
         return self.run([
             sys.executable,
             "-m",
@@ -102,13 +106,15 @@ class TestRunner:
         ]
         results: dict[str, bool] = {}
         for name, fn in steps:
-            print(f"\n--- {name} ---")
+            print(f"
+--- {name} ---")
             ok = fn()
             results[name] = ok
             if not ok:
                 print("CI failed at:", name)
                 return False
-        print("\nCI SUCCESS")
+        print("
+CI SUCCESS")
         for name, ok in results.items():
             print(f"  {name}: {'PASS' if ok else 'FAIL'}")
         return True

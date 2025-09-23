@@ -86,8 +86,8 @@ class LauncherTests(unittest.TestCase):
     
     def test_build_script_exists(self):
         """Test if build script exists"""
-        build_script = Path("build_launcher.py")
-        self.assertTrue(build_script.exists(), "build_launcher.py not found")
+        build_script = Path("scripts/launcher/build_launcher.py")
+        self.assertTrue(build_script.exists(), "scripts/launcher/build_launcher.py not found")
         print("✅ Build script exists")
 
 def test_system_compatibility():
@@ -211,7 +211,7 @@ def main():
     
     if overall_success:
         print("\n🎉 All tests passed! Ready to build executable.")
-        print("Run: python build_launcher.py")
+        print("Run: python scripts/launcher/build_launcher.py")
         return 0
     else:
         print("\n⚠️  Some tests failed. Please fix issues before building.")

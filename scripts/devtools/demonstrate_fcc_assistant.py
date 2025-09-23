@@ -4,7 +4,12 @@ Demonstration Script for Financial Command Center Assistant
 Shows how to use the assistant programmatically
 """
 
+from pathlib import Path
 import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import sys
 
 # Add current directory to Python path

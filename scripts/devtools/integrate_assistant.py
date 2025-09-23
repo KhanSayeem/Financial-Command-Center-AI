@@ -3,10 +3,14 @@ Financial Command Center Assistant Integration
 Adds assistant functionality to existing FCC web application
 """
 
+from pathlib import Path
 import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import json
 import sys
-from pathlib import Path
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

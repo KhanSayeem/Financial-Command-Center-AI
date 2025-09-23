@@ -4,6 +4,12 @@ Debug script to inspect Xero contact object structure
 Helps identify the exact attributes and their types
 """
 
+from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
 import requests
 import json
 import urllib3

@@ -54,7 +54,7 @@ python automation_config_manager.py --summary
 ### 4. Test the System
 ```bash
 # Run comprehensive tests
-python simple_automation_test.py
+python scripts/utilities/simple_automation_test.py
 
 # View Warp dashboard
 python automation_mcp_warp.py dashboard
@@ -171,12 +171,12 @@ Machine learning features require additional dependencies:
 
 ### Run All Tests
 ```bash
-python test_automation_workflows.py
+python tests/manual/test_automation_workflows.py
 ```
 
 ### Run Simple Tests
 ```bash
-python simple_automation_test.py
+python scripts/utilities/simple_automation_test.py
 ```
 
 ### Manual Testing

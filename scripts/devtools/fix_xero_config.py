@@ -5,9 +5,13 @@ Xero Configuration Fixer
 Helps diagnose and fix Xero OAuth configuration issues
 """
 
-import os
-import sys
 from pathlib import Path
+import os
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+os.chdir(REPO_ROOT)
+
+import sys
 
 def check_xero_config():
     """Check current Xero configuration"""
