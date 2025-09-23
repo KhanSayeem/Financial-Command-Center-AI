@@ -33,3 +33,4 @@ run_tests_fixed.ps1
 # Client bundles and generated artifacts
 certs/client_bundle/
 
+bootstrap_status.json
