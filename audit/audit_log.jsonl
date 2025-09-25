@@ -31,3 +31,41 @@
 {"event": "info", "ts": "2025-09-16T19:47:12.403512Z"}
 {"event": "info", "ts": "2025-09-18T00:26:56.557550Z"}
 {"event": "info", "ts": "2025-09-18T18:01:35.326985Z"}
+{"event": "info", "ts": "2025-09-25T05:44:33.457212Z"}
+{"event": "plaid_scan", "key": "test-bank", "start_date": "2025-08-26", "end_date": "2025-09-25", "requested_count": 10, "returned": 10, "min_amount": null, "include_pending": true, "blacklist_hits": 0, "total_in_window": 19, "rule_hits": 1, "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\plaid_scan_test-bank_2025-08-26_2025-09-25.json", "ts": "2025-09-25T05:45:24.149265Z"}
+{"event": "fraud_detection", "risk_score": 134, "patterns_found": 32, "ts": "2025-09-25T06:20:47.800669Z"}
+{"event": "info", "ts": "2025-09-25T07:34:35.602061Z"}
+{"event": "config_set", "config": {"min_amount_flag_usd": 1000.0, "include_pending": false, "risk_categories": [], "currencies": ["USD"]}, "ts": "2025-09-25T07:34:35.607133Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-073438.json", "ts": "2025-09-25T07:34:38.832264Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 39, "ts": "2025-09-25T07:34:39.267259Z"}
+{"event": "spending_limits_updated", "daily_limit": null, "monthly_limit": null, "merchant_limits_count": 0, "category_limits_count": 0, "ts": "2025-09-25T07:34:39.287764Z"}
+{"event": "info", "ts": "2025-09-25T07:41:04.641070Z"}
+{"event": "config_set", "config": {"min_amount_flag_usd": 1000.0, "include_pending": false, "risk_categories": [], "currencies": ["USD"]}, "ts": "2025-09-25T07:41:04.648146Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-074108.json", "ts": "2025-09-25T07:41:08.756393Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 44, "ts": "2025-09-25T07:41:09.225819Z"}
+{"event": "spending_limits_updated", "daily_limit": null, "monthly_limit": null, "merchant_limits_count": 0, "category_limits_count": 0, "ts": "2025-09-25T07:41:09.288567Z"}
+{"event": "info", "ts": "2025-09-25T07:46:49.255636Z"}
+{"event": "config_set", "config": {"min_amount_flag_usd": 1000.0, "include_pending": false, "risk_categories": [], "currencies": ["USD"]}, "ts": "2025-09-25T07:46:49.262671Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-074652.json", "ts": "2025-09-25T07:46:52.818399Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 49, "ts": "2025-09-25T07:46:53.236148Z"}
+{"event": "spending_limits_updated", "daily_limit": null, "monthly_limit": null, "merchant_limits_count": 0, "category_limits_count": 0, "ts": "2025-09-25T07:46:53.253179Z"}
+{"event": "info", "ts": "2025-09-25T10:03:33.991922Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-100337.json", "ts": "2025-09-25T10:03:37.707093Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 53, "ts": "2025-09-25T10:03:38.171999Z"}
+{"event": "info", "ts": "2025-09-25T10:06:12.989268Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-100616.json", "ts": "2025-09-25T10:06:16.240046Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 56, "ts": "2025-09-25T10:06:16.658225Z"}
+{"event": "info", "ts": "2025-09-25T14:44:07.418035Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 58, "ts": "2025-09-25T14:44:11.817525Z"}
+{"event": "info", "ts": "2025-09-25T14:57:48.564820Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 60, "ts": "2025-09-25T14:57:56.639767Z"}
+{"event": "info", "ts": "2025-09-25T15:07:55.616393Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 62, "ts": "2025-09-25T15:08:01.179728Z"}
+{"event": "info", "ts": "2025-09-25T15:13:17.449060Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 64, "ts": "2025-09-25T15:13:24.173421Z"}
+{"event": "info", "ts": "2025-09-25T15:18:15.823106Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 66, "ts": "2025-09-25T15:18:22.937939Z"}
+{"event": "info", "ts": "2025-09-25T15:21:25.532611Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 68, "ts": "2025-09-25T15:21:49.617236Z"}
+{"event": "info", "ts": "2025-09-25T15:39:53.445761Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 70, "ts": "2025-09-25T15:40:41.001133Z"}

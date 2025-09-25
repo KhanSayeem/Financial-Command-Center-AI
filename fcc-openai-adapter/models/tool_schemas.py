@@ -144,7 +144,7 @@ xero_tools = [
         "type": "function",
         "function": {
             "name": "xero_list_invoices",
-            "description": "List invoices with optional filters",
+            "description": "List invoices with optional filters including amount ranges",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -168,6 +168,16 @@ xero_tools = [
                     "date_to": {
                         "type": "string",
                         "description": "End date in YYYY-MM-DD format"
+                    },
+                    "amount_min": {
+                        "type": "number",
+                        "description": "Minimum invoice amount (0 = no minimum)",
+                        "default": 0.0
+                    },
+                    "amount_max": {
+                        "type": "number",
+                        "description": "Maximum invoice amount (0 = no maximum)",
+                        "default": 0.0
                     },
                     "limit": {
                         "type": "integer",
@@ -257,6 +267,31 @@ fcc_tools = [
                         "type": "string",
                         "description": "Time period: monthly, quarterly, yearly",
                         "default": "monthly"
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_invoices",
+            "description": "Retrieve invoices with optional status, amount, and customer filters.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Invoice status filter (e.g., overdue, paid, pending)."
+                    },
+                    "amount_min": {
+                        "type": "number",
+                        "description": "Minimum invoice amount to include in the results."
+                    },
+                    "customer": {
+                        "type": "string",
+                        "description": "Filter invoices by customer or company name."
                     }
                 },
                 "required": []

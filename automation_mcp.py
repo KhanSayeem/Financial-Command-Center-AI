@@ -46,6 +46,7 @@ except ImportError:
 # Plaid SDK (required for automation)
 import plaid
 from plaid.api import plaid_api
+from plaid_client_store import get_access_token as get_stored_plaid_token, store_item as store_plaid_item, get_all_items as plaid_get_all_items
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
@@ -113,12 +114,18 @@ def _append_log(log_file: Path, entry: Dict[str, Any]) -> None:
         f.write(json.dumps(entry, default=str) + "\n")
 
 def _get_automation_config() -> Dict[str, Any]:
+    # Get default email settings from environment variables if available
+    default_smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    default_smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    default_sender_email = os.getenv("SENDER_EMAIL", "")
+    default_sender_password = os.getenv("SENDER_PASSWORD", "")
+    
     default_config = {
         "email_settings": {
-            "smtp_server": "smtp.gmail.com",
-            "smtp_port": 587,
-            "sender_email": "",
-            "sender_password": "",
+            "smtp_server": default_smtp_server,
+            "smtp_port": default_smtp_port,
+            "sender_email": default_sender_email,
+            "sender_password": default_sender_password,
             "recipients": []
         },
         "payment_reminders": {
@@ -172,28 +179,17 @@ def _get_plaid_client() -> plaid_api.PlaidApi:
     return plaid_api.PlaidApi(plaid.ApiClient(cfg))
 
 def _plaid_token_for(key: str) -> str:
-    """Resolve Plaid access token from key or alias"""
-    if key.startswith("access-"):
-        return key
+    """Resolve Plaid access token from key or alias."""
+    alias = (key or "").strip()
+    if alias.startswith(("access-", "public-")):
+        return alias
+    stored = get_stored_plaid_token(alias)
+    if stored:
+        return stored
+    if alias:
+        return alias
+    raise RuntimeError("Provide a Plaid access token or item alias.")
 
-    # Try to find in store files
-    store_files = [
-        ROOT / "plaid_store.json",
-        ROOT / "compliance_store.json",
-        ROOT / "automation_store.json"
-    ]
-
-    for store_file in store_files:
-        if store_file.exists():
-            try:
-                data = json.loads(store_file.read_text())
-                items = data.get("items", {})
-                if key in items and items[key].get("access_token"):
-                    return items[key]["access_token"]
-            except Exception:
-                continue
-
-    return key
 
 def _send_email(to_emails: List[str], subject: str, body: str, html_body: str = None) -> bool:
     """Send email notification"""

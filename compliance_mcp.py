@@ -23,6 +23,7 @@ except Exception:
 # -------- Plaid SDK (required for Plaid tools) --------
 import plaid
 from plaid.api import plaid_api
+from plaid_client_store import get_access_token as get_stored_plaid_token, store_item as store_plaid_item, load_store as plaid_load_store, save_store as plaid_save_store, get_all_items as plaid_get_all_items
 
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
@@ -158,7 +159,7 @@ def _new_plaid_client() -> plaid_api.PlaidApi:
 
 _PLAID_CLIENT: Optional[plaid_api.PlaidApi] = None
 def _plaid() -> plaid_api.PlaidApi:
-    """Lazy singleton so import never explodes if env isn’t set until runtime."""
+    """Lazy singleton so import never explodes if env isnÃ¢â‚¬â„¢t set until runtime."""
     global _PLAID_CLIENT
     if _PLAID_CLIENT is None:
         _PLAID_CLIENT = _new_plaid_client()
@@ -166,48 +167,18 @@ def _plaid() -> plaid_api.PlaidApi:
 
 
 def _plaid_token_for(alias_or_token: str) -> str:
-    """
-    Accepts:
-      - a real access token (starts with 'access-')
-      - an alias saved in plaid_store.json or compliance_store.json
-      - a raw token (last resort)
-    """
-    s = str(alias_or_token).strip()
-    if s.startswith("access-"):
-        return s
+    """Resolve Plaid access token from key or alias."""
+    alias = (alias_or_token or "").strip()
+    if alias.startswith(("access-", "public-")):
+        return alias
+    stored = get_stored_plaid_token(alias)
+    if stored:
+        return stored
+    if alias:
+        return alias
+    raise RuntimeError("Provide a Plaid access token or item alias.")
 
-    # Try multiple stores
-    candidates: list[Path] = []
-    try:
-        candidates.append(Path(STORE_FILE))
-    except Exception:
-        pass
-    try:
-        candidates.append(Path(STORE_PATH))
-    except Exception:
-        pass
 
-    ROOT = Path(__file__).resolve().parent
-    candidates.extend([
-        ROOT / "plaid_store.json",
-        ROOT / "compliance_store.json",
-    ])
-
-    for p in candidates:
-        try:
-            if not p or not p.exists():
-                continue
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        items = data.get("items") or {}
-        if s in items and isinstance(items[s], dict) and items[s].get("access_token"):
-            return items[s]["access_token"]
-
-    # Fallback: treat input as access token
-    return s
-
-# ------------- Stripe helper (optional) -------------
 def _stripe_ready() -> bool:
     key = os.environ.get("STRIPE_API_KEY")
     return bool(stripe and key)

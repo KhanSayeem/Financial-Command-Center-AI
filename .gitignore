@@ -44,3 +44,13 @@ mcp-stripe-demo/
 .claude/
 .benchmarks/
 .cache/
+
+# Gemini added
+audit/audit_log.jsonl
+automation/scheduler_log.jsonl
+secure_config/config.enc
+audit_warp/
+automation/notification_log.jsonl
+exports_warp/
+nul
+plaid_client_store.py
