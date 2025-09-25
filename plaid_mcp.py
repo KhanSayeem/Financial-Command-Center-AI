@@ -191,7 +191,7 @@ def item_public_token_exchange(public_token: str, alias: Optional[str] = None) -
     item_id = resp.item_id
     key = (alias or item_id).strip() or item_id
     store_item(key, item_id, access_token)
-    return {"saved_as": key, "item_id": item_id}
+    return {"saved_as": key, "item_id": item_id, "access_token": access_token}
 
 @app.tool()
 def accounts_and_balances(key: str) -> Dict[str, Any]:

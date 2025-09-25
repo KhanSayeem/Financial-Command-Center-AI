@@ -7,9 +7,13 @@ import re
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from setup_wizard import sync_credentials_to_env
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date
-from pathlib import Path
+
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 DEFAULT_CONFIG_PATH = Path("test_claude_config.json")
@@ -33,6 +37,8 @@ def _load_plaid_defaults() -> Tuple[Optional[str], Optional[str]]:
         token = data.get("access_token")
     return alias, token
 
+
+sync_credentials_to_env()
 
 PLAID_ALIAS, PLAID_ACCESS_TOKEN = _load_plaid_defaults()
 
@@ -407,6 +413,7 @@ class MCPTester:
             return PLAID_ACCESS_TOKEN
         if name == "public_token" and PLAID_ACCESS_TOKEN:
             return PLAID_ACCESS_TOKEN
+
         return None
 
     def _sample_value(self, name: str, schema: Dict[str, Any]) -> Any:

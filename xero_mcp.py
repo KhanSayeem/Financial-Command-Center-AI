@@ -1555,7 +1555,7 @@ def xero_auto_categorize_transactions(
             account_name_lower = account_name.lower()
             
             # Fix: Safely access account type
-            account_type = getattr(account, "type", "") or ""
+            account_type = str(getattr(account, "type", "") or "")
             if account_type:
                 account_type = account_type.lower()
             else:
