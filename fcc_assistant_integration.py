@@ -29,6 +29,7 @@ class FCCAssistantIntegration:
         self.gemini_client = None
         self.gemini_model = None
         self.gemini_model_name = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+        self.gemini_system_instruction = ''
         self.model_type = None
         self.model_ready = False
         self.model_status = ""
@@ -100,7 +101,15 @@ class FCCAssistantIntegration:
 
         try:
             from models.tool_schemas import all_tools as openai_tool_schemas  # type: ignore
-            from utils.mcp_router import MCPRouter as MCPRouterClass  # type: ignore
+            # Explicitly import from fcc-openai-adapter to ensure we get the direct function call version
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "mcp_router",
+                Path(__file__).resolve().parent / 'fcc-openai-adapter' / 'utils' / 'mcp_router.py'
+            )
+            mcp_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mcp_module)
+            MCPRouterClass = mcp_module.MCPRouter
         except Exception as exc:
             logger.warning(f"MCP support unavailable (tool import failed): {exc}")
             return
@@ -198,14 +207,63 @@ class FCCAssistantIntegration:
             if not name:
                 continue
             params = function_payload.get('parameters') or {"type": "object", "properties": {}}
+
+            # Remove 'default' fields from parameters as Gemini doesn't support them
+            cleaned_params = self._remove_default_fields(params)
+
             declarations.append({
                 "name": name,
                 "description": function_payload.get('description', ''),
-                "parameters": params
+                "parameters": cleaned_params
             })
         if not declarations:
             return None
         return [{"function_declarations": declarations}]
+
+    def _remove_default_fields(self, obj: Any) -> Any:
+        """Recursively remove 'default' fields from a schema object as Gemini doesn't support them."""
+        if isinstance(obj, dict):
+            cleaned = {}
+            for key, value in obj.items():
+                if key == 'default':
+                    continue  # Skip default fields
+                cleaned[key] = self._remove_default_fields(value)
+            return cleaned
+        elif isinstance(obj, list):
+            return [self._remove_default_fields(item) for item in obj]
+        else:
+            return obj
+
+    def _build_gemini_instruction_text(self) -> str:
+        """Compose the system instruction text used for Gemini interactions."""
+        base_instruction = (self._get_assistant_instructions() or '').strip()
+        guidance_lines: List[str] = [
+            'Always call an MCP tool before responding whenever the user asks for live financial data, metrics, invoices, payments, or regulatory checks.',
+            'After you retrieve tool results, summarize them with clear financial insights and recommended next steps.'
+        ]
+
+        tool_names: List[str] = []
+        for group in self._gemini_tools or []:
+            for declaration in group.get('function_declarations', []):
+                name = declaration.get('name')
+                if name:
+                    tool_names.append(name)
+        if tool_names:
+            unique_names = sorted(set(tool_names))
+            guidance_lines.append('Available MCP tools: ' + ', '.join(unique_names))
+
+        guidance = '\n'.join(guidance_lines).strip()
+        if base_instruction and guidance:
+            return f"{base_instruction}\n\n{guidance}"
+        return guidance or base_instruction
+
+    def _ensure_gemini_system_prompt(self, history: List[Dict[str, Any]]) -> None:
+        """Remove any system role messages from history as Gemini doesn't support them.
+        System instructions are handled via system_instruction parameter when creating the model."""
+        if not history:
+            return
+        # Remove any system role messages from history since Gemini doesn't support them
+        history[:] = [msg for msg in history if msg.get('role') != 'system']
 
     def _get_gemini_thread(self, thread_id: Optional[str]) -> Tuple[str, List[Dict[str, Any]]]:
         """Return a thread identifier and existing Gemini history."""
@@ -215,6 +273,8 @@ class FCCAssistantIntegration:
         if history is None:
             history = []
             entry['history'] = history
+
+        self._ensure_gemini_system_prompt(history)
         return thread_id, history
 
     def _extract_gemini_text(self, response) -> str:
@@ -254,7 +314,11 @@ class FCCAssistantIntegration:
         try:
             genai.configure(api_key=gemini_api_key)
             model_name = os.getenv('GEMINI_MODEL', self.gemini_model_name)
-            model = genai.GenerativeModel(model_name)
+            system_instruction = self._build_gemini_instruction_text()
+            model_kwargs = {}
+            if system_instruction:
+                model_kwargs['system_instruction'] = system_instruction
+            model = genai.GenerativeModel(model_name, **model_kwargs)
         except Exception as exc:
             logger.exception("Failed to initialize Gemini client")
             return False, f"Failed to initialize Gemini client: {exc}"
@@ -262,6 +326,29 @@ class FCCAssistantIntegration:
         self.gemini_client = genai
         self.gemini_model = model
         self.gemini_model_name = model_name
+        self.gemini_system_instruction = system_instruction
+
+        if self.mcp_context_available and self.mcp_router and self._gemini_tools:
+            try:
+                self.gemini_mcp_adapter = GeminiMCPAdapter(
+                    genai,
+                    model_name,
+                    self.mcp_router,
+                    self._gemini_tools,
+                    logger=logger,
+                    system_instruction=system_instruction,
+                )
+            except Exception as exc:
+                logger.warning(f"Failed to initialize Gemini MCP adapter: {exc}")
+                self.gemini_mcp_adapter = None
+        else:
+            self.gemini_mcp_adapter = None
+
+        for thread_entry in self.threads.values():
+            history = thread_entry.get('history') if isinstance(thread_entry, dict) else None
+            if isinstance(history, list):
+                self._ensure_gemini_system_prompt(history)
+
         self.api_key = None
         self.client = None
         self.assistant = None
@@ -316,7 +403,40 @@ class FCCAssistantIntegration:
                     "message": "Gemini client not available"
                 }), 500
 
-            response = self.gemini_model.generate_content(message_content)
+            thread_id, history = self._get_gemini_thread(thread_id)
+            thread_entry = self.threads.get(thread_id, {"history": history})
+            self.threads[thread_id] = thread_entry
+
+            adapter_available = bool(self.gemini_mcp_adapter and self.mcp_router and self.mcp_context_available)
+
+            if adapter_available:
+                result = self.gemini_mcp_adapter.process_query(message_content, history)
+                updated_history = result.get("history", history)
+                thread_entry["history"] = updated_history
+
+                if result.get("success"):
+                    reply_text = (result.get("response") or '').strip() or 'Gemini returned an empty response.'
+                    return jsonify({
+                        "success": True,
+                        "response": reply_text,
+                        "thread_id": thread_id
+                    })
+
+                error_text = result.get("error") or 'Gemini MCP tool interaction failed.'
+                logger.error(f"Gemini MCP adapter failed: {error_text}")
+                return jsonify({
+                    "success": False,
+                    "message": "Gemini MCP tool interaction failed.",
+                    "error": error_text,
+                    "thread_id": thread_id
+                }), 500
+
+            history.append({
+                "role": "user",
+                "parts": [{"text": message_content}]
+            })
+
+            response = self.gemini_model.generate_content(contents=history)
 
             reply_text = getattr(response, 'text', '') or ''
             if not reply_text:
@@ -336,13 +456,17 @@ class FCCAssistantIntegration:
                 except Exception:
                     logger.debug('Unable to parse Gemini response structure', exc_info=True)
 
-            if not reply_text:
-                reply_text = 'Gemini returned an empty response.'
+            reply_text = reply_text or 'Gemini returned an empty response.'
+            history.append({
+                "role": "model",
+                "parts": [{"text": reply_text}]
+            })
+            thread_entry["history"] = history
 
             return jsonify({
                 "success": True,
                 "response": reply_text,
-                "thread_id": thread_id or "gemini_thread"
+                "thread_id": thread_id
             })
 
         except Exception as e:
@@ -579,6 +703,31 @@ class FCCAssistantIntegration:
                     "parameters": {
                         "type": "object",
                         "properties": {},
+                        "required": []
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_invoices",
+                    "description": "Retrieve invoices with optional status, amount, and customer filters.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "description": "Invoice status filter (e.g., overdue, paid, pending)."
+                            },
+                            "amount_min": {
+                                "type": "number",
+                                "description": "Minimum invoice amount to include in the results."
+                            },
+                            "customer": {
+                                "type": "string",
+                                "description": "Filter invoices by customer or company name."
+                            }
+                        },
                         "required": []
                     }
                 }
@@ -1082,6 +1231,7 @@ class GeminiMCPAdapter:
         tools: Optional[List[Dict[str, Any]]],
         logger: Optional[logging.Logger] = None,
         max_turns: int = 6,
+        system_instruction: Optional[str] = None,
     ) -> None:
         self.genai = genai_module
         self.model_name = model_name
@@ -1090,17 +1240,29 @@ class GeminiMCPAdapter:
         self.logger = logger or logging.getLogger(__name__)
         self.max_turns = max_turns
         self.tool_config = {"function_calling_config": {"mode": "AUTO"}}
-        self.model = genai_module.GenerativeModel(model_name, tools=self.tools)
+        self.system_instruction = (system_instruction or '').strip()
+        model_kwargs = {}
+        if self.tools:
+            model_kwargs['tools'] = self.tools
+        if self.system_instruction:
+            model_kwargs['system_instruction'] = self.system_instruction
+        self.model = genai_module.GenerativeModel(model_name, **model_kwargs)
 
     def process_query(self, prompt: str, conversation_history: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         contents = self._copy_history(conversation_history)
+        # Remove any system messages from contents as Gemini doesn't support them
+        # System instructions are handled via system_instruction parameter when creating the model
+        contents = [msg for msg in contents if msg.get('role') != 'system']
         contents.append({"role": "user", "parts": [{"text": prompt}]})
 
         for turn in range(self.max_turns):
+            generation_kwargs = {}
+            if self.tools:
+                generation_kwargs['tools'] = self.tools
+                generation_kwargs['tool_config'] = self.tool_config
             response = self.model.generate_content(
                 contents,
-                tools=self.tools,
-                tool_config=self.tool_config,
+                **generation_kwargs,
             )
 
             candidate = (response.candidates or [None])[0]
@@ -1124,6 +1286,7 @@ class GeminiMCPAdapter:
                 text_value = getattr(part, 'text', None)
                 if text_value:
                     text_segments.append(text_value)
+
 
             if tool_calls:
                 for function_call in tool_calls:

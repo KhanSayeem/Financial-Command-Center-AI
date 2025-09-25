@@ -35,24 +35,20 @@ from jose import jwt  # webhook verification helper
 # MCP app for Warp compatibility
 app = FastMCP("plaid-integration-warp")
 
-# ----------------- Local store (demo only) -----------------
-STORE_PATH = os.path.join(os.path.dirname(__file__), "plaid_store_warp.json")
+# ----------------- Shared Plaid store helpers -----------------
+from plaid_client_store import get_access_token, store_item, remove_item as remove_store_item, get_store_path, get_all_items, load_store, save_store
 
-def _load_store() -> Dict[str, Any]:
-    if not os.path.exists(STORE_PATH):
-        return {}
-    with open(STORE_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def _save_store(d: Dict[str, Any]) -> None:
-    with open(STORE_PATH, "w", encoding="utf-8") as f:
-        json.dump(d, f, indent=2)
 
 def _token_for(alias_or_token: str) -> str:
-    store = _load_store()
+    alias_or_token = (alias_or_token or "").strip()
     if alias_or_token.startswith(("access-", "public-")):
         return alias_or_token
-    return store.get("items", {}).get(alias_or_token, {}).get("access_token") or alias_or_token
+    stored = get_access_token(alias_or_token)
+    if stored:
+        return stored
+    if alias_or_token:
+        return alias_or_token
+    raise RuntimeError("Provide a Plaid access token or item alias.")
 
 # ----------------- Plaid client (robust across SDK/env) -----------------
 def _require_env(name: str) -> str:
@@ -197,10 +193,8 @@ def item_public_token_exchange(public_token: str, alias: Optional[str] = None) -
 
     access_token = resp.access_token
     item_id = resp.item_id
-    store = _load_store()
-    key = alias or item_id
-    store.setdefault("items", {})[key] = {"item_id": item_id, "access_token": access_token}
-    _save_store(store)
+    key = (alias or item_id).strip() or item_id
+    store_item(key, item_id, access_token)
     return {"saved_as": key, "item_id": item_id}
 
 @app.tool()
@@ -226,10 +220,9 @@ def accounts_and_balances(key: str) -> Dict[str, Any]:
 @app.tool()
 def list_items() -> Dict[str, Any]:
     """
-    Show saved Plaid item aliases and basic info from plaid_store_warp.json.
+    Show saved Plaid item aliases and basic info from the shared Plaid store.
     """
-    store = _load_store()
-    items = store.get("items", {})
+    items = get_all_items()
     return {"count": len(items), "aliases": list(items.keys())}
 
 
@@ -306,11 +299,8 @@ def remove_item(key: str) -> Dict[str, Any]:
     access_token = _token_for(key)
     client.item_remove(ItemRemoveRequest(access_token=access_token))
 
-    store = _load_store()
-    if "items" in store:
-        store["items"].pop(key, None)
-        _save_store(store)
-    return {"removed": key}
+    removed = remove_store_item(key)
+    return {"removed": key, "ok": removed}
 
 @app.tool()
 def whoami() -> Dict[str, Any]:
@@ -322,7 +312,7 @@ def whoami() -> Dict[str, Any]:
         "env": os.environ.get("PLAID_ENV", "sandbox"),
         "PLAID_CLIENT_ID_set": bool(os.environ.get("PLAID_CLIENT_ID")),
         "PLAID_SECRET_set": bool(os.environ.get("PLAID_SECRET")),
-        "store_path": STORE_PATH,
+        "store_path": str(get_store_path()),
     }
 
 @app.tool()
@@ -509,7 +499,9 @@ def categorize_transactions_automatically(
             else:
                 # Expense categorization
                 for acc_cat, keywords in accounting_categories.items():
-                    if any(keyword.lower() in " ".join(plaid_categories).lower() for keyword in keywords):
+                    # Filter plaid_categories to only include string values before joining
+                    filtered_categories = [cat for cat in (plaid_categories or []) if isinstance(cat, str)]
+                    if any(keyword.lower() in " ".join(filtered_categories).lower() for keyword in keywords):
                         accounting_category = acc_cat
                         confidence = 0.9
                         break
@@ -571,6 +563,104 @@ def categorize_transactions_automatically(
             "note": "Use categorized transactions with Xero MCP for automated accounting entry"
         }
 
+    except Exception as e:
+        return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
+
+
+@app.tool()
+def get_plaid_to_xero_account_mapping() -> Dict[str, Any]:
+    """
+    Retrieve the current mapping of Plaid account IDs to Xero account codes.
+    This mapping is used when synchronizing transactions from Plaid to Xero.
+    
+    Returns:
+        Dict with account mappings and related information
+    """
+    try:
+        # Load existing store
+        store = load_store()
+        account_mappings = store.get("account_mappings", {})
+        
+        return {
+            "ok": True,
+            "mappings": account_mappings,
+            "count": len(account_mappings),
+            "server": "plaid-integration-warp",
+            "note": "Use set_plaid_to_xero_account_mapping to update mappings"
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
+
+
+@app.tool()
+def set_plaid_to_xero_account_mapping(plaid_account_id: str, xero_account_code: str) -> Dict[str, Any]:
+    """
+    Set a mapping between a Plaid account ID and a Xero account code.
+    
+    Args:
+        plaid_account_id: The Plaid account ID to map
+        xero_account_code: The Xero account code to map to
+    
+    Returns:
+        Dict with success status or error
+    """
+    try:
+        # Load existing store
+        store = load_store()
+        if "account_mappings" not in store:
+            store["account_mappings"] = {}
+        
+        store["account_mappings"][plaid_account_id] = xero_account_code
+        
+        # Save updated store
+        save_store(store)
+        
+        return {
+            "ok": True,
+            "message": f"Successfully mapped Plaid account {plaid_account_id} to Xero account code {xero_account_code}",
+            "plaid_account_id": plaid_account_id,
+            "xero_account_code": xero_account_code,
+            "server": "plaid-integration-warp"
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
+
+
+@app.tool()
+def remove_plaid_to_xero_account_mapping(plaid_account_id: str) -> Dict[str, Any]:
+    """
+    Remove a mapping between a Plaid account ID and a Xero account code.
+    
+    Args:
+        plaid_account_id: The Plaid account ID to remove mapping for
+    
+    Returns:
+        Dict with success status or error
+    """
+    try:
+        # Load existing store
+        store = load_store()
+        if "account_mappings" not in store:
+            store["account_mappings"] = {}
+        
+        if plaid_account_id in store["account_mappings"]:
+            removed_code = store["account_mappings"].pop(plaid_account_id)
+            # Save updated store
+            save_store(store)
+            
+            return {
+                "ok": True,
+                "message": f"Successfully removed mapping for Plaid account {plaid_account_id} (was mapped to {removed_code})",
+                "plaid_account_id": plaid_account_id,
+                "server": "plaid-integration-warp"
+            }
+        else:
+            return {
+                "ok": True,
+                "message": f"No existing mapping found for Plaid account {plaid_account_id}",
+                "plaid_account_id": plaid_account_id,
+                "server": "plaid-integration-warp"
+            }
     except Exception as e:
         return {"ok": False, "error": str(e), "server": "plaid-integration-warp"}
 

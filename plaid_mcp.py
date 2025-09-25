@@ -13,6 +13,7 @@ from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid_client_store import get_access_token, store_item, remove_item as remove_store_item, get_store_path, get_all_items, load_store as plaid_load_store, save_store as plaid_save_store
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 
 from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
@@ -32,24 +33,18 @@ from jose import jwt  # webhook verification helper
 # MCP app (exported name should be one of: app / mcp / server)
 app = FastMCP("plaid-integration")
 
-# ----------------- Local store (demo only) -----------------
-STORE_PATH = os.path.join(os.path.dirname(__file__), "plaid_store.json")
-
-def _load_store() -> Dict[str, Any]:
-    if not os.path.exists(STORE_PATH):
-        return {}
-    with open(STORE_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def _save_store(d: Dict[str, Any]) -> None:
-    with open(STORE_PATH, "w", encoding="utf-8") as f:
-        json.dump(d, f, indent=2)
+from plaid_client_store import get_access_token, store_item, remove_item as remove_store_item, get_store_path, get_all_items
 
 def _token_for(alias_or_token: str) -> str:
-    store = _load_store()
+    alias_or_token = (alias_or_token or "").strip()
     if alias_or_token.startswith(("access-", "public-")):
         return alias_or_token
-    return store.get("items", {}).get(alias_or_token, {}).get("access_token") or alias_or_token
+    stored = get_access_token(alias_or_token)
+    if stored:
+        return stored
+    if alias_or_token:
+        return alias_or_token
+    raise RuntimeError("Provide a Plaid access token or item alias.")
 
 # ----------------- Plaid client (robust across SDK/env) -----------------
 def _require_env(name: str) -> str:
@@ -98,7 +93,7 @@ def _new_client() -> plaid_api.PlaidApi:
     )
     return plaid_api.PlaidApi(plaid.ApiClient(cfg))
 
-# Lazy singleton so import never crashes if env isn’t set yet
+# Lazy singleton so import never crashes if env isnÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢t set yet
 _PLAID_CLIENT: Optional[plaid_api.PlaidApi] = None
 def _client() -> plaid_api.PlaidApi:
     global _PLAID_CLIENT
@@ -159,7 +154,7 @@ def sandbox_public_token_create(
     override_username: str | None = None,
     override_password: str | None = None,
 ) -> dict:
-    # Plaid’s model requires a string, not None
+    # PlaidÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s model requires a string, not None
     if webhook is None:
         webhook = "https://example.com/webhook"
 
@@ -194,10 +189,8 @@ def item_public_token_exchange(public_token: str, alias: Optional[str] = None) -
 
     access_token = resp.access_token
     item_id = resp.item_id
-    store = _load_store()
-    key = alias or item_id
-    store.setdefault("items", {})[key] = {"item_id": item_id, "access_token": access_token}
-    _save_store(store)
+    key = (alias or item_id).strip() or item_id
+    store_item(key, item_id, access_token)
     return {"saved_as": key, "item_id": item_id}
 
 @app.tool()
@@ -225,8 +218,7 @@ def list_items() -> Dict[str, Any]:
     """
     Show saved Plaid item aliases and basic info from plaid_store.json.
     """
-    store = _load_store()
-    items = store.get("items", {})
+    items = get_all_items()
     return {"count": len(items), "aliases": list(items.keys())}
 
 
@@ -303,11 +295,8 @@ def remove_item(key: str) -> Dict[str, Any]:
     access_token = _token_for(key)
     client.item_remove(ItemRemoveRequest(access_token=access_token))
 
-    store = _load_store()
-    if "items" in store:
-        store["items"].pop(key, None)
-        _save_store(store)
-    return {"removed": key}
+    removed = remove_store_item(key)
+    return {"removed": key, "ok": removed}
 
 @app.tool()
 def whoami() -> Dict[str, Any]:
@@ -318,7 +307,7 @@ def whoami() -> Dict[str, Any]:
         "env": os.environ.get("PLAID_ENV", "sandbox"),
         "PLAID_CLIENT_ID_set": bool(os.environ.get("PLAID_CLIENT_ID")),
         "PLAID_SECRET_set": bool(os.environ.get("PLAID_SECRET")),
-        "store_path": STORE_PATH,
+        "store_path": str(get_store_path()),
     }
 
 
@@ -494,7 +483,9 @@ def categorize_transactions_automatically(
             else:
                 # Expense categorization
                 for acc_cat, keywords in accounting_categories.items():
-                    if any(keyword.lower() in " ".join(plaid_categories).lower() for keyword in keywords):
+                    # Filter plaid_categories to only include string values before joining
+                    filtered_categories = [cat for cat in (plaid_categories or []) if isinstance(cat, str)]
+                    if any(keyword.lower() in " ".join(filtered_categories).lower() for keyword in keywords):
                         accounting_category = acc_cat
                         confidence = 0.9
                         break
