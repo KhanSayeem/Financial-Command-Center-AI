@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import secrets
 import hashlib
+import logging
 
 
 class ConfigurationManager:
@@ -494,6 +495,56 @@ class SetupWizardAPI:
 
 
 # Helper functions for app integration
+
+
+# -----------------------------------------------------------------------------
+# Environment helpers
+# -----------------------------------------------------------------------------
+
+def sync_credentials_to_env(env: Dict[str, str] | None = None) -> Dict[str, str]:
+    """Load stored Stripe/Xero/Plaid credentials and apply them to *env*."""
+    logger = logging.getLogger(__name__)
+    target_env = env if env is not None else os.environ
+    try:
+        config_manager = ConfigurationManager()
+        config = config_manager.load_config() or {}
+    except Exception as exc:
+        logger.warning(f"Unable to sync setup credentials to environment: {exc}")
+        return {}
+
+    env_updates: Dict[str, str] = {}
+
+    def _store(key: str, value: Any) -> None:
+        if value is None:
+            return
+        env_updates[key] = str(value)
+
+    stripe_cfg = config.get('stripe')
+    if isinstance(stripe_cfg, dict) and not stripe_cfg.get('skipped'):
+        _store('STRIPE_API_KEY', stripe_cfg.get('api_key'))
+        if stripe_cfg.get('publishable_key'):
+            _store('STRIPE_PUBLISHABLE_KEY', stripe_cfg.get('publishable_key'))
+
+    xero_cfg = config.get('xero')
+    if isinstance(xero_cfg, dict) and not xero_cfg.get('skipped'):
+        _store('XERO_CLIENT_ID', xero_cfg.get('client_id'))
+        _store('XERO_CLIENT_SECRET', xero_cfg.get('client_secret'))
+
+    plaid_cfg = config.get('plaid')
+    if isinstance(plaid_cfg, dict) and not plaid_cfg.get('skipped'):
+        _store('PLAID_CLIENT_ID', plaid_cfg.get('client_id'))
+        _store('PLAID_SECRET', plaid_cfg.get('secret'))
+        _store('PLAID_ENV', plaid_cfg.get('environment', 'sandbox'))
+
+    for key, value in env_updates.items():
+        target_env[key] = value
+
+    if env_updates:
+        logger.info("Setup credentials synced for keys: %s", ", ".join(sorted(env_updates)))
+
+    return env_updates
+
+
 def get_configured_credentials() -> Dict[str, str]:
     """Get configured credentials from secure storage or environment variables"""
     # Try to load from secure configuration first

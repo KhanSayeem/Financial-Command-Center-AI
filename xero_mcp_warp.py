@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Any
 from mcp.server.fastmcp import FastMCP
 from xero_client import load_api_client, get_tenant_id, set_tenant_id, ensure_valid_token
 from xero_python.accounting import Contacts, Contact, Phone, Address, RequestEmpty
-from xero_python.accounting import AccountingApi, Invoices, Invoice, LineItem, Account
+from xero_python.accounting import AccountingApi, Invoices, Invoice, LineItem, Account, Allocation, Payment, Payments
 from xero_python.accounting import Invoice as _Invoice, Invoices as _Invoices
 
 from xero_client import set_tenant_id

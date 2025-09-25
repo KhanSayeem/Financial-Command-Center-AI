@@ -69,3 +69,37 @@
 {"event": "audit_export", "days": 30, "format": "json", "total_events": 68, "ts": "2025-09-25T15:21:49.617236Z"}
 {"event": "info", "ts": "2025-09-25T15:39:53.445761Z"}
 {"event": "audit_export", "days": 30, "format": "json", "total_events": 70, "ts": "2025-09-25T15:40:41.001133Z"}
+{"event": "info", "ts": "2025-09-25T16:18:51.623615Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 72, "ts": "2025-09-25T16:18:58.051518Z"}
+{"event": "info", "ts": "2025-09-25T16:24:10.828361Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 74, "ts": "2025-09-25T16:24:18.155084Z"}
+{"event": "info", "ts": "2025-09-25T16:30:37.070768Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 76, "ts": "2025-09-25T16:30:44.632363Z"}
+{"event": "info", "ts": "2025-09-25T16:34:40.598125Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 78, "ts": "2025-09-25T16:34:45.158918Z"}
+{"event": "info", "ts": "2025-09-25T16:39:00.102510Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 80, "ts": "2025-09-25T16:39:04.031638Z"}
+{"event": "info", "ts": "2025-09-25T16:42:52.061981Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 82, "ts": "2025-09-25T16:42:59.145710Z"}
+{"event": "info", "ts": "2025-09-25T16:47:40.037065Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 84, "ts": "2025-09-25T16:47:44.021300Z"}
+{"event": "info", "ts": "2025-09-25T16:53:02.583397Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 86, "ts": "2025-09-25T16:53:16.821473Z"}
+{"event": "info", "ts": "2025-09-25T16:59:39.799522Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 88, "ts": "2025-09-25T16:59:56.850960Z"}
+{"event": "info", "ts": "2025-09-25T17:06:53.966377Z"}
+{"event": "plaid_scan", "key": "harness-sandbox", "start_date": "2025-08-26", "end_date": "2025-09-25", "requested_count": 100, "returned": 19, "min_amount": null, "include_pending": true, "blacklist_hits": 0, "total_in_window": 19, "rule_hits": 1, "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\plaid_scan_harness-sandbox_2025-08-26_2025-09-25.json", "ts": "2025-09-25T17:07:03.885010Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-170710.json", "ts": "2025-09-25T17:07:10.379727Z"}
+{"event": "fraud_detection", "risk_score": 64, "patterns_found": 18, "ts": "2025-09-25T17:07:36.390090Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 93, "ts": "2025-09-25T17:07:36.425546Z"}
+{"event": "info", "ts": "2025-09-25T17:16:14.703149Z"}
+{"event": "plaid_scan", "key": "harness-sandbox", "start_date": "2025-08-26", "end_date": "2025-09-25", "requested_count": 100, "returned": 19, "min_amount": null, "include_pending": true, "blacklist_hits": 0, "total_in_window": 19, "rule_hits": 1, "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\plaid_scan_harness-sandbox_2025-08-26_2025-09-25.json", "ts": "2025-09-25T17:16:28.678896Z"}
+{"event": "tax_report_generated", "year": 1, "format": "json", "report_file": "C:\\Users\\Hi\\Documents\\GitHub\\FCC\\Financial-Command-Center-AI\\reports\\tax_report_1_20250925-171633.json", "ts": "2025-09-25T17:16:33.492936Z"}
+{"event": "fraud_detection", "risk_score": 64, "patterns_found": 18, "ts": "2025-09-25T17:16:44.092562Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 98, "ts": "2025-09-25T17:16:44.132872Z"}
+{"event": "info", "ts": "2025-09-25T17:26:53.409930Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 100, "ts": "2025-09-25T17:26:59.409032Z"}
+{"event": "info", "ts": "2025-09-25T18:59:09.880464Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 102, "ts": "2025-09-25T18:59:27.351630Z"}
+{"event": "info", "ts": "2025-09-25T19:03:25.874045Z"}
+{"event": "audit_export", "days": 30, "format": "json", "total_events": 104, "ts": "2025-09-25T19:03:32.398769Z"}

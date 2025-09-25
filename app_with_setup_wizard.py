@@ -57,7 +57,14 @@ import xero_demo_data
 import plaid_demo_data
 
 # Import setup wizard functionality
-from setup_wizard import SetupWizardAPI, get_configured_credentials, is_setup_required, get_integration_status
+from setup_wizard import (
+    SetupWizardAPI,
+    ConfigurationManager,
+    get_configured_credentials,
+    is_setup_required,
+    get_integration_status,
+    sync_credentials_to_env,
+)
 from ui.helpers import build_nav, format_timestamp, summarize_details
 from ui.dashboard import build_admin_dashboard_context
 from ui.health import render_health_dashboard
@@ -144,8 +151,12 @@ if CORS is not None:
     # Allow any origin for the narrow setup API surface only
     CORS(app, resources={r"/api/setup/*": {"origins": "*"}}, supports_credentials=False)
 
+
+
+
 def _apply_post_save_setup(result):
     """Update integration state after setup wizard finishes."""
+    sync_credentials_to_env()
     global XERO_AVAILABLE, api_client, oauth, xero, session_config
 
     credentials = get_credentials_or_redirect()

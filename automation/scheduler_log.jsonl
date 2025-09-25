@@ -52,3 +52,55 @@
 {"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T15:40:57.975395Z"}
 {"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T15:42:09.466204Z"}
 {"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T15:42:09.479593Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:19:14.861802Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:19:21.214563Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:19:26.500843Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:19:26.505371Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:24:33.384353Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:24:39.460563Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:24:45.894444Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:24:45.899179Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:31:03.492675Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:31:07.670446Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:31:15.427298Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:31:15.434000Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:35:03.415043Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:35:05.542900Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:35:09.981853Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:35:09.989327Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:39:21.363384Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:39:23.087845Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:39:29.102639Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:39:29.110713Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:43:18.624497Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:43:20.654242Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:43:25.404813Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:43:25.413803Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:48:02.190686Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:48:05.193711Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:48:10.573734Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:48:10.578509Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T16:53:33.209655Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T16:53:35.843336Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T16:53:40.835982Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T16:53:40.841699Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T17:00:16.135970Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T17:08:38.996336Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T17:17:47.424373Z"}
+{"event": "auto_expense_categorization", "account_key": "harness-sandbox", "suggestions": 0, "auto_applied": 0, "status": "completed", "timestamp": "2025-09-25T17:18:09.688088Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T17:18:09.695647Z"}
+{"event": "auto_payment_reconciliation", "account_key": "harness-sandbox", "total_payments": 0, "auto_matched": 0, "needs_review": 0, "status": "completed", "timestamp": "2025-09-25T17:18:27.957217Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T17:19:02.169184Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T17:19:02.171053Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T17:27:09.411194Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-25", "status": "scheduled", "timestamp": "2025-09-25T17:27:10.830385Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T17:27:26.061141Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T17:27:26.064213Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T18:59:55.083028Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-26", "status": "scheduled", "timestamp": "2025-09-25T19:00:23.781306Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T19:01:00.036158Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T19:01:00.040522Z"}
+{"event": "auto_payment_reminders", "reminders_sent": 0, "status": "completed", "timestamp": "2025-09-25T19:03:44.897445Z"}
+{"event": "recurring_invoice_scheduled", "invoice_id": "2968702f", "template": "template_name_sample", "frequency": "monthly", "next_date": "2025-10-26", "status": "scheduled", "timestamp": "2025-09-25T19:04:02.913959Z"}
+{"event": "scheduler_started", "status": "running", "timestamp": "2025-09-25T19:04:09.282379Z"}
+{"event": "scheduler_stopped", "status": "stopped", "timestamp": "2025-09-25T19:04:09.286332Z"}
