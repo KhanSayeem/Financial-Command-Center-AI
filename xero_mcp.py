@@ -883,7 +883,7 @@ def xero_create_payment(
 
 
 @app.tool()
-def xero_apply_payment_to_invoice(invoice_id: str, payment_id: str) -> Dict[str, Any]:
+def xero_apply_payment_to_invoice(invoice_id: str, payment_id: str, date: str = None) -> Dict[str, Any]:
     """Allocate an existing Xero payment to a specific invoice."""
     invoice_id = (invoice_id or '').strip()
     payment_id = (payment_id or '').strip()
@@ -1490,7 +1490,7 @@ def xero_import_bank_feed(
                     type="SPEND" if tx_data.get("type") == "DEBIT" else "RECEIVE",
                     contact=None,  # Will need contact mapping for proper categorization
                     line_items=[line_item],
-                    bank_account={"account_id": xero_bank_account_id},
+                    bank_account=Account(account_id=xero_bank_account_id),
                     date=datetime.strptime(tx_data.get("date"), "%Y-%m-%d").date() if tx_data.get("date") else datetime.now().date(),
                     reference=tx_data.get("plaid_transaction_id", "")
                 )
