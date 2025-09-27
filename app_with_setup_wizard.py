@@ -161,13 +161,18 @@ def _apply_post_save_setup(result):
 
     credentials = get_credentials_or_redirect()
     has_xero_credentials = bool(credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'))
-    client = initialize_xero_client(credentials)
 
-    if has_xero_credentials and client:
-        result['xero_status'] = 'configured'
-    elif has_xero_credentials:
-        result['xero_status'] = 'saved_but_needs_restart'
-        logger.warning('Xero configuration saved but client failed to initialize - restart may be required.')
+    if has_xero_credentials:
+        logger.info("Xero credentials found in setup save - initializing client")
+        client = initialize_xero_client(credentials)
+        if client:
+            # Update global state
+            XERO_AVAILABLE = True
+            result['xero_status'] = 'configured'
+            logger.info("Xero client successfully initialized after setup save")
+        else:
+            result['xero_status'] = 'saved_but_needs_restart'
+            logger.warning('Xero configuration saved but client failed to initialize')
     else:
         result['xero_status'] = 'skipped'
 
@@ -185,6 +190,10 @@ def _apply_post_save_setup(result):
 
 def _xero_connection_payload():
     """Return persisted Xero connection status for the setup wizard UI."""
+    import time
+    # Small delay to ensure any concurrent token saves have completed
+    time.sleep(0.05)
+
     tenant_id = get_tenant_id()
     has_token = has_stored_token()
     return {
@@ -889,20 +898,35 @@ def login():
         # Check if credentials exist but weren't loaded
         credentials = get_credentials_or_redirect()
         if credentials.get('XERO_CLIENT_ID') and credentials.get('XERO_CLIENT_SECRET'):
-            logger.warning("Xero credentials exist but XERO_AVAILABLE is False - try restarting the app")
+            logger.info("Xero credentials found - attempting dynamic initialization")
+            # Try to initialize Xero client dynamically
+            initialized_client = initialize_xero_client(credentials)
+            if initialized_client:
+                logger.info("Xero client initialized dynamically - proceeding with OAuth")
+                # Continue with the OAuth flow since we now have Xero available
+            else:
+                logger.error("Failed to initialize Xero client dynamically")
+                return jsonify({
+                    'error': 'Xero initialization failed',
+                    'message': 'Failed to initialize Xero client with saved credentials',
+                    'setup_url': url_for('setup_wizard', _external=True)
+                }), 500
+        else:
             return jsonify({
-                'error': 'Xero configured but not loaded',
-                'message': 'Please restart the application to load Xero configuration',
-                'setup_url': url_for('setup_wizard', _external=True)
+                'error': 'Xero not configured',
+                'message': 'Complete setup wizard first',
+                'setup_url': build_xero_setup_url(external=True)
             }), 400
-        
-        return jsonify({
-            'error': 'Xero not configured',
-            'message': 'Complete setup wizard first',
-            'setup_url': build_xero_setup_url(external=True)
-        }), 400
     
     try:
+        # Check if this OAuth flow is coming from the setup wizard
+        from_setup = request.args.get('from') == 'setup'
+        if from_setup:
+            session['oauth_source'] = 'setup'
+            logger.info("OAuth initiated from setup wizard")
+        else:
+            session.pop('oauth_source', None)
+
         logger.info("Initiating Xero OAuth redirect")
         redirect_uri = app.config.get('XERO_REDIRECT_URI', _build_xero_redirect_uri())
         logger.info(f"Using redirect URI: {redirect_uri}")
@@ -1078,13 +1102,28 @@ def callback():
                 "tenant_id": session['tenant_id'],
                 "timestamp": datetime.now().isoformat()
             })
-        
-        return redirect(url_for('profile'))
+
+        # Check if OAuth was initiated from setup wizard
+        if session.get('oauth_source') == 'setup':
+            session.pop('oauth_source', None)  # Clean up
+            logger.info("OAuth completed from setup wizard, redirecting back to setup")
+            # Redirect to setup wizard step 4 (Xero connection step)
+            return redirect(url_for('setup_wizard') + '#step4')
+        else:
+            return redirect(url_for('profile'))
         
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
-        # Return a simple error message to avoid validation issues
-        return "Authorization failed: Please check the application logs for details", 400
+
+        # Check if OAuth was initiated from setup wizard
+        if session.get('oauth_source') == 'setup':
+            session.pop('oauth_source', None)  # Clean up
+            logger.info("OAuth failed from setup wizard, redirecting back to setup with error")
+            # Redirect to setup wizard step 4 with error parameter
+            return redirect(url_for('setup_wizard') + '#step4?error=oauth_failed')
+        else:
+            # Return a simple error message to avoid validation issues
+            return "Authorization failed: Please check the application logs for details", 400
 
 @app.route('/profile')
 def profile():

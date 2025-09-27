@@ -76,16 +76,20 @@ class ConfigurationManager:
             encrypted_data = self.encrypt_data(config)
             with open(self.config_file, 'wb') as f:
                 f.write(encrypted_data)
-                
+                f.flush()  # Force write to disk
+                os.fsync(f.fileno())  # Ensure data is written to disk
+
             # Save metadata separately (unencrypted for info)
             metadata = {
                 'last_updated': datetime.now().isoformat(),
                 'services_configured': list(config.keys()),
                 'config_version': '1.0'
             }
-            
+
             with open(self.metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2)
+                f.flush()  # Force write to disk
+                os.fsync(f.fileno())  # Ensure data is written to disk
                 
             return True
             

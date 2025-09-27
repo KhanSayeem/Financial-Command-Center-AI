@@ -48,7 +48,13 @@ def load_store() -> Optional[Dict[str, Any]]:
 
 
 def _write_store(store: Dict[str, Any]) -> None:
-    TOKEN_FILE.write_text(json.dumps(store, indent=2), encoding="utf-8")
+    import os
+
+    # Write the data and ensure it's flushed to disk immediately
+    with open(TOKEN_FILE, 'w', encoding='utf-8') as f:
+        json.dump(store, f, indent=2)
+        f.flush()  # Force write to disk
+        os.fsync(f.fileno())  # Ensure data is written to disk
 
 
 def store_token(token: Dict[str, Any]) -> None:
