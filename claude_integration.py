@@ -26,6 +26,10 @@ def setup_claude_routes(app, logger=None):
     @app.route('/api/claude/generate-config', methods=['GET'])
     def generate_claude_config():
         try:
+            import time
+            # Small delay to ensure any concurrent save operations have completed
+            time.sleep(0.1)
+
             config_json, summary, server_url = _build_claude_config(app)
             return jsonify({
                 'success': True,
@@ -33,6 +37,7 @@ def setup_claude_routes(app, logger=None):
                 'summary': summary,
                 'server_url': server_url,
                 'message': f"Configuration generated with {summary['total_servers']} MCP servers",
+                'timestamp': time.time()  # Add timestamp for debugging
             })
         except Exception as exc:
             if logger:
@@ -48,8 +53,27 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
     """Generate the Claude Desktop MCP configuration payload."""
     from setup_wizard import ConfigurationManager
 
+    # Create a fresh ConfigurationManager instance to ensure we get the latest config
     config_manager = ConfigurationManager()
+
+    # Force a fresh read by clearing any potential caches
+    # Check if config file exists and force a fresh stat to avoid OS caching
+    if config_manager.config_file.exists():
+        # Touch the file access time to ensure fresh read
+        import time
+        config_manager.config_file.touch()
+
     stored_config = config_manager.load_config() or {}
+    app.logger.info(f"Stored config: {stored_config}")
+
+    # Debug logging to help identify issues
+    if hasattr(app, 'logger') and app.logger:
+        stripe_config = stored_config.get('stripe', {})
+        if stripe_config and not stripe_config.get('skipped'):
+            api_key = stripe_config.get('api_key', '')
+            app.logger.info(f"Claude config generation using Stripe key: {api_key[:20]}..." if len(api_key) > 20 else f"Stripe key: {api_key}")
+        else:
+            app.logger.info("Claude config generation: No Stripe config found or skipped")
 
     port = app.config.get('PORT', int(os.getenv('FCC_PORT', '8000')))
     server_url = f"https://localhost:{port}"

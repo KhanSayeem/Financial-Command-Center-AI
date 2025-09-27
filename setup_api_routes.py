@@ -67,4 +67,46 @@ def create_setup_blueprint(*, setup_wizard_api, logger, post_save_callback, conn
                 'error': str(exc),
             }), 500
 
+    @bp.route('/debug-config', methods=['GET'])
+    def debug_config():
+        """Debug endpoint to check current configuration"""
+        try:
+            from setup_wizard import ConfigurationManager
+            cm = ConfigurationManager()
+            config = cm.load_config() or {}
+
+            return jsonify({
+                'success': True,
+                'config': config,
+                'file_exists': cm.config_file.exists(),
+                'file_path': str(cm.config_file)
+            })
+        except Exception as exc:
+            return jsonify({
+                'success': False,
+                'error': str(exc)
+            }), 500
+
+    @bp.route('/force-config', methods=['POST'])
+    def force_config():
+        """Debug endpoint to manually set configuration"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'error': 'No data provided'}), 400
+
+            from setup_wizard import ConfigurationManager
+            cm = ConfigurationManager()
+            success = cm.save_config(data)
+
+            return jsonify({
+                'success': success,
+                'message': 'Configuration forcefully saved' if success else 'Failed to save configuration'
+            })
+        except Exception as exc:
+            return jsonify({
+                'success': False,
+                'error': str(exc)
+            }), 500
+
     return bp

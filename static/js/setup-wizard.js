@@ -55,7 +55,20 @@ function showStep(step) {
         if (finishButton && !xeroOauthConnected) {
             finishButton.disabled = true;
         }
+        // Always check connection when entering step 4, but silently first
         checkXeroConnection(true);
+
+        // Set up periodic checking in case user completed OAuth in another tab
+        const connectionCheckInterval = setInterval(() => {
+            if (currentStep === 4 && !xeroOauthConnected) {
+                checkXeroConnection(true); // Silent check
+            } else {
+                clearInterval(connectionCheckInterval);
+            }
+        }, 5000); // Check every 5 seconds
+
+        // Clear interval after 5 minutes
+        setTimeout(() => clearInterval(connectionCheckInterval), 300000);
     }
     if (window.lucide) {
         window.lucide.createIcons();
@@ -338,14 +351,14 @@ function launchXeroOAuth() {
     if (finishButton) {
         finishButton.disabled = true;
     }
-    const oauthUrl = buildApiUrl('/login');
+    const oauthUrl = buildApiUrl('/login?from=setup');
     const oauthWindow = window.open(oauthUrl, '_blank', 'noopener');
     if (!oauthWindow) {
         updateConnectXeroStatus('pending');
         showMessage('connect-xero-messages', 'error', 'Unable to open the Xero OAuth window. Allow pop-ups or open the connection URL manually: ' + oauthUrl);
         return;
     }
-    showMessage('connect-xero-messages', 'success', 'Xero OAuth window opened. Complete the flow, then return to verify the connection.');
+    showMessage('connect-xero-messages', 'success', 'Xero OAuth window opened. You will be redirected back here after completing the flow.');
 }
 
 async function checkXeroConnection(silent = false) {
@@ -364,13 +377,15 @@ async function checkXeroConnection(silent = false) {
         if (isConnected) {
             updateConnectXeroStatus('connected');
             if (!silent) {
-                showMessage('connect-xero-messages', 'success', `Connected to Xero tenant ${result.tenant_id}.`);
+                // Clear any existing messages and show success
+                document.getElementById('connect-xero-messages').innerHTML = '';
+                showMessage('connect-xero-messages', 'success', `Successfully connected to Xero!<br><strong>Tenant ID:</strong> ${result.tenant_id}<br>You can now finish the setup.`);
             }
         } else {
             updateConnectXeroStatus('pending');
             if (!silent) {
                 const reason = result.error ? ` Details: ${result.error}` : '';
-                showMessage('connect-xero-messages', 'error', `No active Xero connection detected.${reason} Authorize the application and select a tenant, then check again.`);
+                showMessage('connect-xero-messages', 'error', `No active Xero connection detected.${reason} If you just completed the OAuth flow, please click "Check connection" or wait a moment for automatic detection.`);
             }
         }
     } catch (error) {
@@ -450,17 +465,47 @@ function showCompletion(result) {
 async function finishSetup() {
     const messageContainer = (currentStep >= 4 && document.getElementById('connect-xero-messages')) ? 'connect-xero-messages' : 'xero-messages';
     try {
+        // Debug: Check current state of configuration flags
+        console.log('Setup completion debug:', {
+            stripeConfigured: stripeConfigured,
+            plaidConfigured: plaidConfigured,
+            xeroConfigured: xeroConfigured,
+            xeroOauthConnected: xeroOauthConnected
+        });
+
+        // More robust configuration detection - check if fields have values AND status indicates success
+        const stripeApiKey = document.getElementById('stripeApiKey')?.value?.trim();
+        const plaidClientId = document.getElementById('plaidClientId')?.value?.trim();
+        const xeroClientId = document.getElementById('xeroClientId')?.value?.trim();
+
+        // Check status indicators for additional validation
+        const stripeStatus = document.getElementById('stripeStatus')?.textContent;
+        const plaidStatus = document.getElementById('plaidStatus')?.textContent;
+        const xeroStatus = document.getElementById('xeroStatus')?.textContent;
+
+        const hasStripeConfig = stripeConfigured || (stripeApiKey && stripeStatus === 'Connected');
+        const hasPlaidConfig = plaidConfigured || (plaidClientId && plaidStatus === 'Configured');
+        const hasXeroConfig = xeroConfigured || (xeroClientId && xeroStatus === 'Connected');
+
+        console.log('Configuration detection:', {
+            hasStripeConfig: hasStripeConfig,
+            hasPlaidConfig: hasPlaidConfig,
+            hasXeroConfig: hasXeroConfig
+        });
+
+        console.log('About to save config data:', JSON.stringify(configData, null, 2));
+
         const configData = {
-            stripe: stripeConfigured ? {
+            stripe: hasStripeConfig ? {
                 api_key: document.getElementById('stripeApiKey').value,
                 publishable_key: document.getElementById('stripePublishableKey').value
             } : { skipped: true },
-            plaid: plaidConfigured ? {
+            plaid: hasPlaidConfig ? {
                 client_id: document.getElementById('plaidClientId').value,
                 secret: document.getElementById('plaidSecret').value,
                 environment: document.getElementById('plaidEnvironment').value
             } : { skipped: true },
-            xero: xeroConfigured ? {
+            xero: hasXeroConfig ? {
                 client_id: document.getElementById('xeroClientId').value,
                 client_secret: document.getElementById('xeroClientSecret').value
             } : { skipped: true }
@@ -489,5 +534,37 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgress();
     if (window.lucide) {
         window.lucide.createIcons();
+    }
+
+    // Check if we're on step 4 from URL hash (e.g., #step4)
+    const hash = window.location.hash;
+    if (hash.startsWith('#step4')) {
+        // Show setup steps and navigate to step 4
+        document.getElementById('setupSteps').style.display = 'block';
+        showStep(4);
+
+        // Check for error parameter in URL
+        if (hash.includes('error=oauth_failed')) {
+            setTimeout(() => {
+                showMessage('connect-xero-messages', 'error', 'OAuth authorization failed. Please try connecting to Xero again.');
+                updateConnectXeroStatus('pending');
+            }, 500);
+        } else {
+            // Wait a moment for page to settle, then check Xero connection
+            setTimeout(() => {
+                checkXeroConnection(false);
+            }, 1000);
+        }
+    }
+});
+
+// Add window focus listener to check Xero connection when user returns from OAuth
+window.addEventListener('focus', () => {
+    // If we're on step 4 (Xero connection step) and not already connected
+    if (currentStep === 4 && !xeroOauthConnected) {
+        // Small delay to allow session to be established
+        setTimeout(() => {
+            checkXeroConnection(false);
+        }, 1000);
     }
 });
