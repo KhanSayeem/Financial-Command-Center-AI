@@ -1,0 +1,152 @@
+FINANCIAL COMMAND CENTER AI (FCC) – PROJECT CONTEXT
+===================================================
+
+OVERVIEW
+- FCC is a self-hosted financial operations command center built on Flask that unifies banking (Plaid), payments (Stripe), and accounting (Xero) data with automation, compliance tooling, and AI assistants (Claude Desktop MCP as primary, optional ChatGPT integration with client-supplied API key).
+- The platform ships with an HTTPS-secured web UI, guided setup wizard, AI copilots, Warp terminal MCP servers, automation schedulers, and audit/compliance monitoring so finance teams can run day-to-day operations with natural-language workflows.
+
+VALUE PROPOSITION & PERSONAS
+- Finance leaders (CFO, VP Finance) get real-time financial health, alerts, and AI-generated insights without touching raw APIs.
+- Finance operations teams automate recurring tasks (invoice reminders, reconciliations, categorization) and monitor compliance from a single console.
+- Engineers/admins deploy FCC locally or on-prem, manage credentials through the wizard, and expose MCP tools to desktop AI clients (Claude Desktop, Warp) or other LLMs.
+- Optional ChatGPT assistant is delivered as a billable add-on; clients must provide their own OpenAI API key to enable it.
+
+PRIMARY WORKFLOWS
+- Guided onboarding: run `app_with_setup_wizard.py`, complete the HTTPS setup wizard to encrypt and store Plaid/Stripe/Xero credentials, generate Claude Desktop config, and unlock dashboards.
+- Daily operations: monitor dashboards (`/`, `/health`, `/admin/dashboard`), manage contacts/invoices (`/xero/*`), trigger automations, and review compliance alerts/logs.
+- AI orchestration: Claude Desktop drives natural-language workflows via generated MCP config; optional `/assistant/*` web chat can be enabled when a client provides their own OpenAI (ChatGPT) API key.
+- Automation & compliance: schedule jobs via `automation_mcp.py`, review logs in `automation/*.jsonl`, manage blacklists/rules with `compliance_mcp.py`, export reports.
+
+ASSISTANT PROVISIONING
+- Primary interface: Claude Desktop imports the generated MCP config and gains read/write tools across Plaid, Stripe, Xero, automation, and compliance services.
+- Optional ChatGPT assistant: Enabled only when a client provides their own OpenAI API key; includes structured chat history, polished executive output, and is delivered as a paid add-on.
+- Legacy Gemini/Llama integrations remain in the repository for reference but are not supported in deployments.
+
+
+SYSTEM ARCHITECTURE
+- Backend: Python 3.13+ Flask application (`app_with_setup_wizard.py`) with Blueprints for assistant, setup wizard, admin, integrations, and API endpoints. Session management hardened in `session_config.py`; security middleware lives in `auth/security.py`.
+- Frontend: Jinja templates (`templates/`) with modern glassmorphism styling, Tailwind-like utility classes, and static assets in `static/`. UI helpers in `ui/`.
+- Integrations: Stripe (via `stripe_mcp.py`), Plaid (`plaid_mcp.py`), Xero (`xero_mcp.py` & OAuth helpers), automation (`automation_mcp.py`), compliance (`compliance_mcp.py`), and health endpoints (`setup_api_routes.py`, `server_modes.py`).
+- LLM Adapters: 
+  - Assistant stack (`fcc_assistant_integration.py`, `custom_fcc_assistant.py`) bridges Flask with the optional ChatGPT integration when clients supply their OpenAI API key; legacy Gemini/Llama modules remain for reference but are not supported in production.
+  - Claude Desktop support through `claude_integration.py`, `warp_integration.py`, and generated configs (`/claude/setup`, `docs/CLAUDE_DESKTOP_SETUP.md`).
+  - Warp terminal MCP servers duplicated under `MCPServers/` with `*-warp.py` suffixes built on FastMCP.
+- Data & storage: encrypted credentials saved to `secure_config/config.enc` with AES-256 managed by `SetupWizardAPI`; auxiliary stores (`plaid_store.json`, `automation_store.json`, `reports/`, `audit/`) persist integration state and outputs.
+
+KEY DIRECTORIES & FILES
+- `app_with_setup_wizard.py` – main Flask application combining web UI, setup wizard, API endpoints, security, OAuth, automation hooks.
+- `setup_wizard.py`, `setup_api_routes.py` – credential onboarding, encryption, and REST API for wizard UI.
+- `auth/` – API key management, rate limiting, encryption keys (`auth/security.py`, `auth/api_keys.json`).
+- `automation_mcp.py`, `automation_config_manager.py`, `automation/` – ML-powered finance automations, scheduler logs, alert configuration.
+- `compliance_mcp.py`, `audit/` – transaction scanning, blacklist management, audit log persistence.
+- `plaid_mcp.py`, `stripe_mcp.py`, `xero_mcp.py`, `mcp_endpoints.py` – primary MCP servers and Flask endpoints for financial services.
+- `fcc_assistant_integration.py`, `fcc_assistant_core.py`, `custom_fcc_assistant.py`, `chatgpt_integration.py`, `claude_integration.py` - Claude Desktop integration plus optional ChatGPT assistant (client-provided API key); `fcc_llama32_integration.py` remains for legacy reference only.
+- `docs/` – extensive guides (setup wizard, automation, Warp MCP, Claude config, SSL, troubleshooting, completion summaries).
+- `templates/` & `static/` – web UI layouts (home, health dashboard, setup wizard, assistant chat, admin).
+- `scripts/` – helper utilities (Docker helpers, MCP protocol tests, data preparation, launcher scripts).
+- `installer/`, `installer_package/`, `financial_launcher.py`, `ultimate_cert_fix.cmd` – Windows packaging, mkcert automation, desktop launcher.
+- `tests/` – pytest suites, manual MCP/automation tests, fixtures for Plaid/Xero/Stripe.
+- `secure_config/` – encrypted credential store (`config.enc`, `master.key`, metadata, mode toggles).
+- `automation_store.json`, `automation_config.json`, `reports/` – automation schedules, generated reports.
+- `version.txt`, `.env*`, `requirements*.txt`, `pyproject.toml` – metadata, configuration, dependency lists.
+
+INTEGRATIONS & CAPABILITIES
+- Plaid: account linking, transactions, balances, identity, ACH auth, sandbox helpers. MCP tools handle token exchange, transaction retrieval, and log storage in `plaid_store.json`.
+- Stripe: payment intents, capture/cancel/refund flows, products/pricing, subscriptions, webhook validation, hosted checkout, customer management.
+- Xero: OAuth with persistent tokens (`xero_client.py`), contacts, invoices, PDF export, organization data, dashboards, tenant management.
+- Automation: expense categorization, payment reconciliation, reminders, anomaly detection, forecasting, alerting; CLI/GUI config via `automation_config_manager.py`.
+- Compliance: configurable thresholds, blacklist management, Plaid transaction scans, Stripe payment status checks, audit logging, rule configuration in `compliance_rules.json`.
+- AI Assistants: natural-language financial Q&A, tool calling, context caching, integration with FCC MCP routers, primary support for Claude Desktop with optional ChatGPT add-on.
+- Health & Monitoring: `/health` returns HTML dashboard and JSON with integration status, auto-refresh, scoring; `ui/health.py` drives cards/widgets.
+- Certificates & HTTPS: `cert_manager.py`, `ultimate_cert_fix.cmd`, `mkcert.exe` automate local CA creation and certificate trust for HTTPS-only access.
+
+SECURITY MODEL
+- Credential storage encrypted with AES-256-GCM (cryptography/Fernet) using keys in `secure_config/master.key`; metadata tracked in `secure_config/metadata.json`.
+- API key enforcement and rate limiting through `auth/security.py` (decorators `require_api_key`, `log_transaction`); API keys stored in `auth/api_keys.json`.
+- Sessions hardened with secure cookies, SameSite protection, auto-generated secret keys (`session_config.py`).
+- Compliance/audit logs stored under `audit/` with rotation; automation and MCP logs under `automation/` and `reports/`.
+- HTTPS enforced by default (`FORCE_HTTPS` env) with mkcert certificates; setup wizard refuses insecure transport unless explicitly overridden.
+
+SETUP & DEPLOYMENT
+- Prerequisites: Python 3.13+, Plaid/Stripe/Xero accounts, mkcert for trusted local HTTPS. Optional: OpenAI key, Ollama for Llama 3.2, Claude Desktop, Warp terminal.
+- Launch options:
+  - `python app_with_setup_wizard.py` (cross-platform) or `ultimate_cert_fix.cmd` (Windows) for certificates + app.
+  - Docker: `docker-compose.yml` & `scripts/docker-up.*` for containerized deployment (SSL, API services).
+- Setup wizard steps: detect environment, collect Stripe/Xero/Plaid credentials, test via live API calls, encrypt/store config, sync to `.env`, update integration state, optionally toggle demo mode.
+- Claude Desktop integration: visit `/claude/setup` to generate per-machine MCP config; docs cover path detection and troubleshooting.
+- Warp MCP: use `docs/WARP_MCP_README.md` and `warp_mcp_config.json` (if present) for Warp CLI integration; warp-specific data stored separately (`*_warp.*` files).
+
+CONFIGURATION & DATA
+- `.env`, `.env.example`, `.env.docker.example`, `.env.assistant.example` provide environment templates for API keys, ports (`FCC_PORT`, `FORCE_HTTPS`, `ASSISTANT_MODEL_TYPE`, etc.).
+- `secure_config/` contains encrypted runtime credentials; never commit `master.key` or `config.enc`.
+- Automation & compliance configs: `automation_config.json`, `automation_store.json`, `alerts/*.jsonl`, `compliance_config.json`, `compliance_blacklist.json`.
+- Plaid tokens & connections tracked in `plaid_store.json`; Xero tenant info in `xero_tenant.json`; Stripe metadata inside `reports/`, `exports/`.
+- Logs: `automation/notification_log.jsonl`, `automation/scheduler_log.jsonl`, `audit/audit_log.jsonl`, `server_log.txt`, `test_output.log`.
+
+API & ENDPOINT GUIDE (selected)
+- Root/Home: `GET /` (redirects to setup or dashboard) – uses `templates/home.html`.
+- Health dashboard: `GET /health` – HTML auto-refresh + JSON fallback.
+- Setup wizard: `GET /setup`, `POST /api/setup/*` (test/save/status) – driven by `SetupWizardAPI`.
+- Assistant: `GET /assistant/`, `POST /assistant/api/chat`, `GET /assistant/chat` – uses `fcc_assistant_integration`.
+- Xero: `GET /xero/contacts`, `/xero/invoices`, `/xero/dashboard`, OAuth callback `/callback`.
+- Admin: `/admin/dashboard`, `/admin/create-demo-key`, `/admin/mode` toggles (via `DemoModeManager`).
+- MCP endpoints: `POST /api/mcp/*` (financial data, automation triggers) with API-key protection.
+
+AUTOMATION & MCP USAGE
+- Run automation CLI helpers: `python automation_mcp.py dashboard|status|start|stop`, `python automation_mcp_warp.py ...`.
+- Compliance scans: `python compliance_mcp.py scan_plaid_transactions`, manage blacklist via MCP tools or CLI.
+- Warp MCP servers replicate functionality with FastMCP for Warp terminal; configure via docs and `warp_*.json`.
+- Test suites: `python scripts/run_mcp_protocol_tests.py`, `tests/manual/test_warp_mcp.py`, `scripts/utilities/simple_automation_test.py`.
+
+CLI & TOOLING
+- `scripts/utilities/` – smoke tests, automation testers, Plaid/Xero data prep.
+- `scripts/mcp/` – MCP harness utilities, protocol diagnostics.
+- `scripts/launcher/` – packaging and Windows shortcut scripts.
+- `tools/` – additional helper modules (check for CLI wrappers).
+- Launcher binaries: packaged via `financial_launcher.spec`, `Financial-Command-Center-Launcher.spec`, `Create-Desktop-Shortcut.cmd`.
+
+TESTING & QA
+- Pytest configuration (`pytest.ini`, `tests/`) covers automation workflows, MCP endpoints, setup wizard logic.
+- Reports stored as JSON (`test_results.json`, `latest_test_report.json`) for regression tracking.
+- Manual test scripts for Plaid, Stripe, Xero located in `scripts/` and `tests/manual/`.
+
+DOCUMENTATION INDEX (docs/)
+- `SETUP_WIZARD_README.md` – deep dive into setup wizard UX and security.
+- `AUTOMATION_README.md` – automation capabilities, scheduling, testing.
+- `WARP_MCP_README.md` – Warp MCP integration guide.
+- `CLAUDE_DESKTOP_SETUP.md` – Claude Desktop config generation.
+- `ASSISTANT_INTEGRATION_SUMMARY.md`, `PROJECT_COMPLETION_SUMMARY.md`, `BROWSER_TRUST_GUIDE.md`, `SSL_SETUP_GUIDE.md`, `WEB_UI_IMPLEMENTATION.md`, plus troubleshooting (session fixes, launcher, SSL).
+- Use docs as authoritative reference for onboarding, debugging, and feature rationale.
+
+KEY ENVIRONMENT VARIABLES
+- `FCC_PORT`, `FORCE_HTTPS`, `ALLOW_HTTP` – server networking.
+- `STRIPE_API_KEY`, `STRIPE_PUBLISHABLE_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`.
+- `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_REDIRECT_HOST`.
+- `ASSISTANT_MODEL_TYPE` (gemini|openai|llama32), `OPENAI_API_KEY`, `GEMINI_API_KEY`, `LLAMA_MODEL`, `LLAMA_BASE_URL`.
+- `USE_LLAMA32`, `USE_WARP_ADAPTER`, `CLAUDE_DESKTOP_CONFIG_PATH` (if applicable).
+
+KNOWN MODES & DEMO SUPPORT
+- Demo mode controlled via `DemoModeManager` (`demo_mode.py`) and toggled with `/admin/mode` endpoints; provides mock data for Stripe/Plaid/Xero so the UI remains interactive without credentials.
+- Setup wizard allows skipping services and auto-switches the app to demo when real credentials absent.
+- Warp variants (`*_warp.py`, `reports_warp/`, `exports_warp/`) keep demo and live data isolated.
+
+ADDITIONAL NOTES FOR LLM HAND-OFF
+- When assisting developers, reference this file plus README and docs for authoritative instructions; mention that sensitive keys live in `secure_config/` and should never be committed.
+- For troubleshooting, direct to logs (`automation/`, `audit/`, `server_log.txt`) and health endpoints; use MCP test scripts to reproduce integration issues.
+- Claude Desktop and Warp rely on generated JSON config pointing to local python interpreter and MCP scripts; misaligned paths are the top cause of integration failures.
+- mkcert-generated certificates reside under `certs/`; rerun `ultimate_cert_fix.cmd` if browsers lose trust.
+- Keep distinctions clear between standard MCP (`stripe_mcp.py`) and Warp-tailored FastMCP variants (`MCPServers/stripe_mcp_warp.py`).
+- Automation ML helpers require optional dependencies (scikit-learn, pandas, numpy, schedule) listed in docs; install before running schedulers.
+
+ONBOARDING CHECKLIST (SUGGESTED)
+1. Install dependencies from `requirements.txt` + optional ML packages; ensure Python 3.13+.
+2. Run `ultimate_cert_fix.cmd` (Windows) or `python app_with_setup_wizard.py` (Mac/Linux) to bootstrap HTTPS and launch the setup wizard.
+3. Complete setup wizard or enable demo mode; verify `/health` shows green status.
+4. Generate Claude Desktop config (`/claude/setup`) and test MCP tools with Claude or Warp; provision the ChatGPT assistant only after a client shares their OpenAI API key.
+5. Configure automation/compliance thresholds (`automation_config.json`, `compliance_config.json`) and review logs after first runs.
+6. Explore docs/ for deep dives; run `python scripts/run_mcp_protocol_tests.py` before production changes.
+
+REFERENCE
+- Source repository: `C:\Users\Hi\Documents\GitHub\FCC\Financial-Command-Center-AI`
+- Primary documentation: `README.md`, `docs/` folder
+- This context file: `FCC_PROJECT_CONTEXT.txt`
