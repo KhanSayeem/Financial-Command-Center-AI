@@ -8,7 +8,27 @@ pushd "%SCRIPT_DIR%" >nul
 for %%I in ("%SCRIPT_DIR%.") do set "SCRIPT_DIR=%%~fI"
 
 set "INSTALL_FLAG_FILE=%SCRIPT_DIR%\.fcc_installed"
-set "DESKTOP_SHORTCUT=%USERPROFILE%\Desktop\FCC.lnk"
+
+:: Resolve the actual Desktop path (handles OneDrive or custom locations)
+set "DESKTOP_DIR="
+for /f "usebackq delims=" %%D in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Environment]::GetFolderPath('Desktop')"`) do (
+    if not defined DESKTOP_DIR set "DESKTOP_DIR=%%D"
+)
+if not defined DESKTOP_DIR (
+    if exist "%USERPROFILE%\Desktop" (
+        set "DESKTOP_DIR=%USERPROFILE%\Desktop"
+    ) else (
+        if exist "%USERPROFILE%\OneDrive\Desktop" (
+            set "DESKTOP_DIR=%USERPROFILE%\OneDrive\Desktop"
+        ) else (
+            set "DESKTOP_DIR=%USERPROFILE%\Desktop"
+        )
+    )
+)
+if not exist "%DESKTOP_DIR%" (
+    mkdir "%DESKTOP_DIR%" >nul 2>&1
+)
+set "DESKTOP_SHORTCUT=%DESKTOP_DIR%\FCC.lnk"
 
 if exist "%INSTALL_FLAG_FILE%" (
     if exist "%DESKTOP_SHORTCUT%" (
@@ -39,7 +59,7 @@ if not defined LOCALAPPDATA (
     set "LOCALAPPDATA=%USERPROFILE%\AppData\Local"
 )
 set "MKCERT_ROOT=%LOCALAPPDATA%\mkcert\rootCA.pem"
-set "DESKTOP_CERT=%USERPROFILE%\Desktop\mkcert-rootCA.crt"
+set "DESKTOP_CERT=%DESKTOP_DIR%\mkcert-rootCA.crt"
 
 echo Step 1: Closing previous Financial Command Center Python processes...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -100,11 +120,18 @@ echo Step 4: Verifying certificate health...
 if "!LAUNCH_MODE!"=="install" (
     echo.
     echo Step 5: Creating desktop shortcut for future quick launches...
+    set "SHORTCUT_ICON=%SCRIPT_DIR%\assets\application.ico"
+    if not exist "!SHORTCUT_ICON!" set "SHORTCUT_ICON=%SCRIPT_DIR%\installer_package\assets\application.ico"
+    if exist "!SHORTCUT_ICON!" (
+        echo  - Using shortcut icon: !SHORTCUT_ICON!
+    ) else (
+        echo  - No custom icon found, default icon will be used
+    )
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\create_shortcut.ps1" ^
         -ShortcutPath "%DESKTOP_SHORTCUT%" ^
         -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
         -WorkingDirectory "%SCRIPT_DIR%" ^
-        -IconPath "%SCRIPT_DIR%\installer_package\assets\application.ico"
+        -IconPath "!SHORTCUT_ICON!"
     if exist "%DESKTOP_SHORTCUT%" (
         echo  - Desktop shortcut created successfully
         echo  - Use the desktop shortcut for quick launches in the future
@@ -120,11 +147,18 @@ if "!LAUNCH_MODE!"=="install" (
 if "!LAUNCH_MODE!"=="repair" (
     echo.
     echo Step 5: Recreating desktop shortcut...
+    set "SHORTCUT_ICON=%SCRIPT_DIR%\assets\application.ico"
+    if not exist "!SHORTCUT_ICON!" set "SHORTCUT_ICON=%SCRIPT_DIR%\installer_package\assets\application.ico"
+    if exist "!SHORTCUT_ICON!" (
+        echo  - Using shortcut icon: !SHORTCUT_ICON!
+    ) else (
+        echo  - No custom icon found, default icon will be used
+    )
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\create_shortcut.ps1" ^
         -ShortcutPath "%DESKTOP_SHORTCUT%" ^
         -TargetPath "%SCRIPT_DIR%\ultimate_cert_fix.cmd" ^
         -WorkingDirectory "%SCRIPT_DIR%" ^
-        -IconPath "%SCRIPT_DIR%\installer_package\assets\application.ico"
+        -IconPath "!SHORTCUT_ICON!"
     if exist "%DESKTOP_SHORTCUT%" (
         echo  - Desktop shortcut recreated successfully
     ) else (
