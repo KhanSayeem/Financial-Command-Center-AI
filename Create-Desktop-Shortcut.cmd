@@ -7,8 +7,12 @@ set "CURRENT_DIR=%cd%"
 set "DESKTOP=%USERPROFILE%\Desktop"
 set "SHORTCUT_PATH=%DESKTOP%\%APP_NAME%.lnk"
 set "TARGET_SCRIPT=%CURRENT_DIR%\ultimate_cert_fix.cmd"
-set "ICON_PATH=%CURRENT_DIR%\installer_package\assets\credit-card.ico"
+set "ICON_PATH="
 set "LEGACY_SHORTCUT=%DESKTOP%\Financial Command Center AI - Quick Start.lnk"
+
+set "ICON_PATH=%CURRENT_DIR%\assets\application.ico"
+if not exist "%ICON_PATH%" set "ICON_PATH=%CURRENT_DIR%\installer_package\assets\application.ico"
+if not exist "%ICON_PATH%" set "ICON_PATH="
 
 echo Creating desktop shortcut for %APP_NAME%...
 echo Current directory: %CURRENT_DIR%
