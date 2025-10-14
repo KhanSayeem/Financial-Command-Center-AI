@@ -61,20 +61,8 @@ if not defined LOCALAPPDATA (
 set "MKCERT_ROOT=%LOCALAPPDATA%\mkcert\rootCA.pem"
 set "DESKTOP_CERT=%DESKTOP_DIR%\mkcert-rootCA.crt"
 
-echo Step 1: Closing previous Financial Command Center Python processes...
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$repo = Convert-Path $env:SCRIPT_DIR; $procs = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'python' -and $_.Path -and $_.Path.StartsWith($repo, [System.StringComparison]::OrdinalIgnoreCase) }; if ($procs) { $procs | ForEach-Object { Write-Host (' - Stopping PID {0}' -f $_.Id) -ForegroundColor Yellow; try { $_ | Stop-Process -Force -ErrorAction Stop } catch { Write-Host ('   Warning: ' + $_.Exception.Message) -ForegroundColor DarkYellow } } } else { Write-Host ' - No running repo python processes found.' -ForegroundColor DarkGray }"
-
-if "!LAUNCH_MODE!"=="quick" (
-    echo.
-    echo Skipping certificate setup - Quick launch mode enabled.
-    goto launch_app
-)
-
-echo.
-echo Step 2: Ensuring mkcert root certificate exists...
-set "PYTHON_CMD="
 set "VENV_PY=%SCRIPT_DIR%\.venv\Scripts\python.exe"
+set "PYTHON_CMD="
 if exist "%VENV_PY%" (
     set "PYTHON_CMD=%VENV_PY%"
 )
@@ -87,6 +75,33 @@ if not defined PYTHON_CMD (
     echo [ERROR] Python 3 was not found in PATH. Please install Python 3.11+ and re-run this tool.
     goto cleanup_fail
 )
+
+echo Step 1: Verifying Financial Command Center license...
+if /I "!LAUNCH_MODE!"=="install" (
+    echo  - First-time installation detected; prompting for license.
+    "%PYTHON_CMD%" "license_manager.py" --verify --force
+) else (
+    "%PYTHON_CMD%" "license_manager.py" --verify
+)
+if errorlevel 1 (
+    echo [ERROR] License verification failed. Please ensure you entered a valid license key.
+    goto cleanup_fail
+)
+echo  - License verified successfully.
+
+echo.
+echo Step 2: Closing previous Financial Command Center Python processes...
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$repo = Convert-Path $env:SCRIPT_DIR; $procs = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'python' -and $_.Path -and $_.Path.StartsWith($repo, [System.StringComparison]::OrdinalIgnoreCase) }; if ($procs) { $procs | ForEach-Object { Write-Host (' - Stopping PID {0}' -f $_.Id) -ForegroundColor Yellow; try { $_ | Stop-Process -Force -ErrorAction Stop } catch { Write-Host ('   Warning: ' + $_.Exception.Message) -ForegroundColor DarkYellow } } } else { Write-Host ' - No running repo python processes found.' -ForegroundColor DarkGray }"
+
+if "!LAUNCH_MODE!"=="quick" (
+    echo.
+    echo Skipping certificate setup - Quick launch mode enabled.
+    goto launch_app
+)
+
+echo.
+echo Step 3: Ensuring mkcert root certificate exists...
 if not exist "%MKCERT_ROOT%" (
     echo  - mkcert root certificate not found. Generating with cert_manager.py...
     "%PYTHON_CMD%" "cert_manager.py" --mkcert
@@ -100,7 +115,7 @@ if not exist "%MKCERT_ROOT%" (
 )
 
 echo.
-echo Step 3: Importing certificate into trust stores...
+echo Step 4: Importing certificate into trust stores...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$certPath = $env:MKCERT_ROOT; if (-not (Test-Path $certPath)) { Write-Host ' - mkcert root certificate not available.' -ForegroundColor Red; exit }; try { Import-Certificate -FilePath $certPath -CertStoreLocation 'Cert:\LocalMachine\Root' -ErrorAction Stop; Write-Host 'SUCCESS: Certificate installed to Local Machine store.' -ForegroundColor Green } catch { Write-Host 'INFO: Could not add to Local Machine store (try Run as administrator).' -ForegroundColor Yellow }"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -114,12 +129,12 @@ if exist "%MKCERT_ROOT%" (
 )
 
 echo.
-echo Step 4: Verifying certificate health...
+echo Step 5: Verifying certificate health...
 "%PYTHON_CMD%" "cert_manager.py" --health
 
 if "!LAUNCH_MODE!"=="install" (
     echo.
-    echo Step 5: Creating desktop shortcut for future quick launches...
+    echo Step 6: Creating desktop shortcut for future quick launches...
     set "SHORTCUT_ICON=%SCRIPT_DIR%\assets\application.ico"
     if not exist "!SHORTCUT_ICON!" set "SHORTCUT_ICON=%SCRIPT_DIR%\installer_package\assets\application.ico"
     if exist "!SHORTCUT_ICON!" (
@@ -146,7 +161,7 @@ if "!LAUNCH_MODE!"=="install" (
 
 if "!LAUNCH_MODE!"=="repair" (
     echo.
-    echo Step 5: Recreating desktop shortcut...
+    echo Step 6: Recreating desktop shortcut...
     set "SHORTCUT_ICON=%SCRIPT_DIR%\assets\application.ico"
     if not exist "!SHORTCUT_ICON!" set "SHORTCUT_ICON=%SCRIPT_DIR%\installer_package\assets\application.ico"
     if exist "!SHORTCUT_ICON!" (
@@ -168,7 +183,7 @@ if "!LAUNCH_MODE!"=="repair" (
 
 :launch_app
 echo.
-echo Step 6: Launching Financial Command Center...
+echo Step 7: Launching Financial Command Center...
 set "FCC_HOST=127.0.0.1"
 if not defined FCC_PORT set "FCC_PORT=8000"
 set "SERVER_URL=https://%FCC_HOST%:%FCC_PORT%"
@@ -182,23 +197,6 @@ set "APP_MODE=demo"
 set "XERO_REDIRECT_HOST=localhost"
 set "ASSISTANT_MODEL_TYPE=llama32"
 set "USE_LLAMA32=true"
-
-if "!LAUNCH_MODE!"=="quick" (
-    set "PYTHON_CMD="
-    set "VENV_PY=%SCRIPT_DIR%\.venv\Scripts\python.exe"
-    if exist "%VENV_PY%" (
-        set "PYTHON_CMD=%VENV_PY%"
-    )
-    if not defined PYTHON_CMD (
-        for /f "delims=" %%P in ('where python 2^>nul') do (
-            if not defined PYTHON_CMD set "PYTHON_CMD=%%P"
-        )
-    )
-    if not defined PYTHON_CMD (
-        echo [ERROR] Python 3 was not found in PATH. Please install Python 3.11+ and re-run this tool.
-        goto cleanup_fail
-    )
-)
 
 if exist "%VENV_PY%" (
     echo  - Using virtual environment Python at %VENV_PY%
