@@ -353,6 +353,12 @@ def create_installer_package() -> bool:
     if icon_path and icon_path.exists():
         shutil.copy2(icon_path, assets_dir / icon_path.name)
 
+    license_manager_src = Path("license_manager.py")
+    if license_manager_src.exists():
+        shutil.copy2(license_manager_src, package_dir / license_manager_src.name)
+    else:
+        print("⚠️  license_manager.py not found; installer package will lack license enforcement script.")
+
     for file_name in ["README.md", "requirements.txt", "launcher_requirements.txt"]:
         src = Path(file_name)
         if src.exists():
@@ -467,6 +473,7 @@ def create_installer_package_full() -> bool:
         "fcc_assistant_core.py",
         "fcc_assistant_integration.py",
         "fcc_llama32_integration.py",
+        "license_manager.py",
         "financial_export.py",
         "financial_launcher.py",
         "mcp_endpoints.py",
