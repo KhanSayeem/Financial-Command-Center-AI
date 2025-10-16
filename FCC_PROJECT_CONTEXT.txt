@@ -6,9 +6,9 @@ OVERVIEW
 - The platform ships with an HTTPS-secured web UI, guided setup wizard, AI copilots, Warp terminal MCP servers, automation schedulers, and audit/compliance monitoring so finance teams can run day-to-day operations with natural-language workflows.
 
 VALUE PROPOSITION & PERSONAS
-- Finance leaders (CFO, VP Finance) get real-time financial health, alerts, and AI-generated insights without touching raw APIs.
-- Finance operations teams automate recurring tasks (invoice reminders, reconciliations, categorization) and monitor compliance from a single console.
-- Engineers/admins deploy FCC locally or on-prem, manage credentials through the wizard, and expose MCP tools to desktop AI clients (Claude Desktop, Warp) or other LLMs.
+- Finance leaders (CFO, VP Finance) transition from reactive reporting to proactive strategy, using predictive forecasting, anomaly detection, and real-time intelligence to drive growth and mitigate risk.
+- Finance operations teams evolve from manual data processors to strategic controllers, using the platform's powerful automation, active fraud defense, and unified compliance monitoring to secure and streamline the business.
+- Engineers/admins deploy a secure, self-hosted command center, empowering their finance teams with top-tier AI and automation tools without sacrificing data control.
 - Optional ChatGPT assistant is delivered as a billable add-on; clients must provide their own OpenAI API key to enable it.
 
 PRIMARY WORKFLOWS
