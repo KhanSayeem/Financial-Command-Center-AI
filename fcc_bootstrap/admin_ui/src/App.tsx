@@ -762,7 +762,7 @@ function App() {
 
 
   function resumeEmailPreview() {
-    if (!pendingLicense || !emailPreview) {
+    if (!pendingLicense || !emailPreview || !initialEmailPreview) {
       setAdminNotice("No pending email preview available to resume.");
       return;
     }
@@ -808,9 +808,11 @@ function App() {
           <span>
             Email preview saved. Click resume when you are ready to send it.
           </span>
-          <Button size="sm" onClick={resumeEmailPreview}>
-            Resume email preview
-          </Button>
+          {initialEmailPreview && (
+            <Button onClick={resumeEmailPreview}>
+              Resume email preview
+            </Button>
+          )}
         </div>
       ),
     });
