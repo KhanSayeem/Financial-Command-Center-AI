@@ -289,7 +289,7 @@ function Dashboard({
   isLoading: boolean;
   lastSyncedAt: Date | null;
   onRefresh: () => Promise<void>;
-  notice?: string | null;
+  notice?: React.ReactNode | null;
   onIssueLicense: (values: IssueLicenseValues) => Promise<License>;
   onResend: (licenseId: string) => Promise<void>;
   onRevoke: (licenseId: string) => Promise<void>;
@@ -640,7 +640,7 @@ function App() {
   const [previewError, setPreviewError] = React.useState<string | null>(null);
   const [actionLicenseId, setActionLicenseId] = React.useState<string | null>(null);
   const [actionType, setActionType] = React.useState<"resend" | "revoke" | null>(null);
-  const [adminNotice, setAdminNotice] = React.useState<string | null>(null);
+  const [adminNotice, setAdminNotice] = React.useState<React.ReactNode>(null);
 
   const refreshLicenses = React.useCallback(
     async (tokenOverride?: string | null) => {
@@ -768,18 +768,66 @@ function App() {
     setEmailText(initialEmailPreview.text);
   }
 
-  function closePreview(message?: string) {
-    setIsPreviewOpen(false);
-    setPendingLicense(null);
-    setInitialEmailPreview(null);
-    setEmailPreview(null);
-    setEmailSubject("");
-    setEmailHtml("");
-    setEmailText("");
-    setPreviewError(null);
-    if (message) {
-      setAdminNotice(message);
+  function resumeEmailPreview() {
+    if (!pendingLicense || !emailPreview) {
+      setAdminNotice("No pending email preview available to resume.");
+      return;
     }
+    setIsPreviewOpen(true);
+    setPreviewError(null);
+    setAdminNotice(null);
+  }
+
+  function closePreview(options?: {
+    message?: React.ReactNode;
+    resetState?: boolean;
+  }) {
+    setIsPreviewOpen(false);
+    setPreviewError(null);
+
+    if (options?.message) {
+      setAdminNotice(options.message);
+    }
+
+    if (options?.resetState ?? true) {
+      setPendingLicense(null);
+      setInitialEmailPreview(null);
+      setEmailPreview(null);
+      setEmailSubject("");
+      setEmailHtml("");
+      setEmailText("");
+    }
+  }
+
+  function handlePreviewDismiss() {
+    if (!pendingLicense || !emailPreview) {
+      closePreview({
+        message:
+          "Email preview closed. Use Resend later if you need to deliver it.",
+      });
+      return;
+    }
+
+    closePreview({
+      resetState: false,
+      message: (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Email preview saved. Click resume when you are ready to send it.
+          </span>
+          <Button size="sm" onClick={resumeEmailPreview}>
+            Resume email preview
+          </Button>
+        </div>
+      ),
+    });
+  }
+
+  function handleSkipSending() {
+    closePreview({
+      message:
+        "License created without sending email. Use Resend later if you need to deliver it.",
+    });
   }
 
   async function sendPreviewedEmail() {
@@ -974,7 +1022,7 @@ function App() {
       {isPreviewOpen && pendingLicense ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-foreground">
                   Review email before sending
@@ -983,13 +1031,32 @@ function App() {
                   License {pendingLicense.id} · {pendingLicense.issuedTo}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => closePreview()}
-                disabled={isSendingEmail}
-              >
-                Close
-              </Button>
+              <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
+                  {isSendingEmail ? "Sending..." : "Send email"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleSkipSending}
+                  disabled={isSendingEmail}
+                >
+                  Skip sending
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={resetEmailPreview}
+                  disabled={isSendingEmail || !initialEmailPreview}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handlePreviewDismiss}
+                  disabled={isSendingEmail}
+                >
+                  Close preview
+                </Button>
+              </div>
             </div>
             {previewError ? (
               <p className="mt-4 text-sm font-medium text-destructive">
@@ -1036,7 +1103,7 @@ function App() {
                 />
               </div>
             </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="text-xs text-muted-foreground">
                 <p>
                   License key:
@@ -1059,29 +1126,6 @@ function App() {
                     "Will be generated automatically."
                   )}
                 </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={resetEmailPreview}
-                  disabled={isSendingEmail || !initialEmailPreview}
-                >
-                  Reset
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    closePreview(
-                      "License created without sending email. Use Resend later if you need to deliver it."
-                    )
-                  }
-                  disabled={isSendingEmail}
-                >
-                  Skip sending
-                </Button>
-                <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
-                  {isSendingEmail ? "Sending..." : "Send email"}
-                </Button>
               </div>
             </div>
           </div>
