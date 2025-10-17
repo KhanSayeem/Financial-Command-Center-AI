@@ -641,8 +641,8 @@ function App() {
   const [actionLicenseId, setActionLicenseId] = React.useState<string | null>(null);
   const [actionType, setActionType] = React.useState<"resend" | "revoke" | null>(null);
   const [adminNotice, setAdminNotice] = React.useState<React.ReactNode>(null);
-  const [showTextBody, setShowTextBody] = React.useState(false);
-  const [showHtmlBody, setShowHtmlBody] = React.useState(false);
+  const [showTextBody, setShowTextBody] = React.useState(true);
+  const [showHtmlBody, setShowHtmlBody] = React.useState(true);
 
   const refreshLicenses = React.useCallback(
     async (tokenOverride?: string | null) => {
