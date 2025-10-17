@@ -14,6 +14,7 @@ from typing import Dict, Optional
 import requests
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+DEFAULT_EMAIL_SUBJECT = "Your Financial Command Center License"
 
 
 class EmailConfigError(RuntimeError):
@@ -38,16 +39,17 @@ def _load_config() -> Dict[str, str]:
     }
 
 
-def _build_email_content(
+def build_license_email_content(
     *,
     client_name: str,
     license_key: str,
     download_url: Optional[str],
     support_email: Optional[str],
+    subject: Optional[str] = None,
     product_name: str = "Financial Command Center AI",
     plan_label: str = "Pilot Program",
 ) -> Dict[str, str]:
-    """Return text and HTML bodies for the onboarding email."""
+    """Return subject, text, and HTML bodies for the onboarding email."""
 
     fallback_download = download_url or "Download link will be shared separately."
     support_line = (
@@ -100,7 +102,9 @@ def _build_email_content(
         """
     ).strip()
 
-    return {"text": text_body, "html": html_body}
+    email_subject = subject or f"Your {product_name} License"
+
+    return {"subject": email_subject, "text": text_body, "html": html_body}
 
 
 def send_license_email(
@@ -110,7 +114,9 @@ def send_license_email(
     license_key: str,
     download_url: Optional[str] = None,
     support_email: Optional[str] = None,
-    subject: str = "Your Financial Command Center License",
+    subject: Optional[str] = None,
+    html_body: Optional[str] = None,
+    text_body: Optional[str] = None,
 ) -> bool:
     """
     Send a license onboarding email via Brevo.
@@ -120,12 +126,17 @@ def send_license_email(
     """
 
     config = _load_config()
-    bodies = _build_email_content(
-        client_name=client_name,
-        license_key=license_key,
-        download_url=download_url,
-        support_email=support_email,
-    )
+    if subject is None or html_body is None or text_body is None:
+        preview = build_license_email_content(
+            client_name=client_name,
+            license_key=license_key,
+            download_url=download_url,
+            support_email=support_email,
+            subject=subject or DEFAULT_EMAIL_SUBJECT,
+        )
+        subject = preview["subject"]
+        html_body = html_body or preview["html"]
+        text_body = text_body or preview["text"]
 
     payload = {
         "sender": {
@@ -133,9 +144,9 @@ def send_license_email(
             "name": config["sender_name"],
         },
         "to": [{"email": recipient_email, "name": client_name or recipient_email}],
-        "subject": subject,
-        "htmlContent": bodies["html"],
-        "textContent": bodies["text"],
+        "subject": subject or DEFAULT_EMAIL_SUBJECT,
+        "htmlContent": html_body,
+        "textContent": text_body,
     }
 
     headers = {
@@ -152,4 +163,3 @@ def send_license_email(
         return False
 
     return True
-

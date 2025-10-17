@@ -35,6 +35,16 @@ interface License {
   tokenPreview?: string;
   tier?: string;
   activationCount?: number;
+  downloadUrl?: string;
+  isRevoked?: boolean;
+  revokedAt?: string | null;
+  lastEmailSentAt?: string | null;
+}
+
+interface EmailPreview {
+  subject: string;
+  html: string;
+  text: string;
 }
 
 interface IssueLicenseValues {
@@ -66,6 +76,26 @@ interface LicensesResponse {
 interface CreateLicenseResponse {
   ok: boolean;
   license_key?: string;
+  license?: License;
+  email_preview?: EmailPreview;
+  email_sent?: boolean;
+  email_error?: string;
+  download_url?: string;
+  error?: string;
+}
+
+interface SendEmailResponse {
+  ok: boolean;
+  license?: License;
+  email_sent?: boolean;
+  email_preview?: EmailPreview;
+  email_error?: string;
+  download_url?: string;
+  error?: string;
+}
+
+interface RevokeResponse {
+  ok: boolean;
   license?: License;
   error?: string;
 }
@@ -111,6 +141,16 @@ function formatDate(date: string) {
     year: "numeric",
     month: "short",
     day: "numeric",
+  }).format(new Date(date));
+}
+
+function formatDateTime(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
   }).format(new Date(date));
 }
 
@@ -240,6 +280,10 @@ function Dashboard({
   onRefresh,
   notice,
   onIssueLicense,
+  onResend,
+  onRevoke,
+  actionLicenseId,
+  actionType,
 }: {
   licenses: License[];
   isLoading: boolean;
@@ -247,6 +291,10 @@ function Dashboard({
   onRefresh: () => Promise<void>;
   notice?: string | null;
   onIssueLicense: (values: IssueLicenseValues) => Promise<License>;
+  onResend: (licenseId: string) => Promise<void>;
+  onRevoke: (licenseId: string) => Promise<void>;
+  actionLicenseId: string | null;
+  actionType: "resend" | "revoke" | null;
 }) {
   const [isIssueOpen, setIsIssueOpen] = React.useState(false);
   const [issueEmail, setIssueEmail] = React.useState("");
@@ -285,7 +333,7 @@ function Dashboard({
         tier: issueTier,
       });
       setIssueSuccess(
-        `Issued ${issued.tokenPreview ?? issued.id} for ${issued.issuedTo}.`
+        `License ${issued.tokenPreview ?? issued.id} created. Review the email preview before sending.`
       );
       setIssueEmail("");
       setIssueClientName("");
@@ -492,33 +540,74 @@ function Dashboard({
                 <TableHead>Issued</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Token</TableHead>
+                <TableHead>Last Email</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {licenses.map((license) => (
-                <TableRow key={license.id}>
-                  <TableCell className="font-medium">{license.id}</TableCell>
-                  <TableCell>{license.issuedTo}</TableCell>
-                  <TableCell className="text-right">
-                    {license.seats.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={license.status} />
-                  </TableCell>
-                  <TableCell className="capitalize text-muted-foreground">
-                    {license.tier ?? "pilot"}
-                  </TableCell>
-                  <TableCell>{formatDate(license.issuedAt)}</TableCell>
-                  <TableCell>{formatDate(license.expiresAt)}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {license.tokenPreview ?? "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {licenses.map((license) => {
+                const isRevoked = license.isRevoked ?? false;
+                const isProcessing = actionLicenseId === license.id;
+                const resendBusy = isProcessing && actionType === "resend";
+                const revokeBusy = isProcessing && actionType === "revoke";
+                const lastEmail = license.lastEmailSentAt
+                  ? formatDateTime(license.lastEmailSentAt)
+                  : "—";
+
+                return (
+                  <TableRow key={license.id}>
+                    <TableCell className="font-medium">{license.id}</TableCell>
+                    <TableCell>{license.issuedTo}</TableCell>
+                    <TableCell className="text-right">
+                      {license.seats.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {isRevoked ? (
+                        <Badge variant="destructive">Revoked</Badge>
+                      ) : (
+                        <StatusBadge status={license.status} />
+                      )}
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground">
+                      {license.tier ?? "pilot"}
+                    </TableCell>
+                    <TableCell>{formatDate(license.issuedAt)}</TableCell>
+                    <TableCell>{formatDate(license.expiresAt)}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {license.tokenPreview ?? "—"}
+                    </TableCell>
+                    <TableCell>{lastEmail}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-8 px-3 text-xs"
+                          disabled={isRevoked || resendBusy || isLoading}
+                          onClick={() => void onResend(license.id)}
+                        >
+                          {resendBusy ? "Resending..." : "Resend"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-8 px-3 text-xs"
+                          disabled={isRevoked || revokeBusy}
+                          onClick={() => void onRevoke(license.id)}
+                        >
+                          {isRevoked
+                            ? "Revoked"
+                            : revokeBusy
+                            ? "Revoking..."
+                            : "Revoke"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
             <TableCaption>
-              Manage pilot programs, renewals, and revocations from this
-              dashboard.
+              Manage pilot programs, renewals, resends, and revocations from
+              this dashboard.
             </TableCaption>
           </Table>
           {licenses.length === 0 ? (
@@ -540,6 +629,18 @@ function App() {
   const [licenses, setLicenses] = React.useState<License[]>(mockLicenses);
   const [isLoadingLicenses, setIsLoadingLicenses] = React.useState(false);
   const [lastSyncedAt, setLastSyncedAt] = React.useState<Date | null>(null);
+  const [pendingLicense, setPendingLicense] = React.useState<License | null>(null);
+  const [initialEmailPreview, setInitialEmailPreview] = React.useState<EmailPreview | null>(null);
+  const [emailPreview, setEmailPreview] = React.useState<EmailPreview | null>(null);
+  const [emailSubject, setEmailSubject] = React.useState("");
+  const [emailHtml, setEmailHtml] = React.useState("");
+  const [emailText, setEmailText] = React.useState("");
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+  const [previewError, setPreviewError] = React.useState<string | null>(null);
+  const [actionLicenseId, setActionLicenseId] = React.useState<string | null>(null);
+  const [actionType, setActionType] = React.useState<"resend" | "revoke" | null>(null);
+  const [adminNotice, setAdminNotice] = React.useState<string | null>(null);
 
   const refreshLicenses = React.useCallback(
     async (tokenOverride?: string | null) => {
@@ -613,13 +714,39 @@ function App() {
           client_name: values.clientName,
           tier: values.tier,
           max_activations: values.seats,
+          send_email: false,
         }),
       });
 
       const payload = (await response.json()) as CreateLicenseResponse;
       if (!response.ok || !payload.ok || !payload.license) {
-        throw new Error(payload.error ?? "Unable to issue license.");
+        throw new Error(
+          payload.error ?? payload.email_error ?? "Unable to issue license."
+        );
       }
+
+      const preview: EmailPreview =
+        payload.email_preview ?? {
+          subject: "Your Financial Command Center License",
+          html: payload.license.downloadUrl
+            ? `<p>Download: <a href="${payload.license.downloadUrl}">${payload.license.downloadUrl}</a></p><p>License key: ${payload.license.tokenPreview ?? payload.license.id}</p>`
+            : `<p>License key: ${payload.license.tokenPreview ?? payload.license.id}</p>`,
+          text: `License key: ${payload.license.tokenPreview ?? payload.license.id}`,
+        };
+
+      setPendingLicense(payload.license);
+      setInitialEmailPreview(preview);
+      setEmailPreview(preview);
+      setEmailSubject(preview.subject);
+      setEmailHtml(preview.html);
+      setEmailText(preview.text);
+      setPreviewError(payload.email_error ?? null);
+      setIsPreviewOpen(true);
+      setAdminNotice(
+        payload.email_error
+          ? payload.email_error
+          : "License created. Review the email preview before sending it to the client."
+      );
 
       await refreshLicenses(authToken);
       return payload.license;
@@ -629,6 +756,135 @@ function App() {
           ? error.message
           : "Unexpected error while issuing license.";
       throw new Error(message);
+    }
+  }
+
+  function resetEmailPreview() {
+    if (!initialEmailPreview) {
+      return;
+    }
+    setEmailSubject(initialEmailPreview.subject);
+    setEmailHtml(initialEmailPreview.html);
+    setEmailText(initialEmailPreview.text);
+  }
+
+  function closePreview(message?: string) {
+    setIsPreviewOpen(false);
+    setPendingLicense(null);
+    setInitialEmailPreview(null);
+    setEmailPreview(null);
+    setEmailSubject("");
+    setEmailHtml("");
+    setEmailText("");
+    setPreviewError(null);
+    if (message) {
+      setAdminNotice(message);
+    }
+  }
+
+  async function sendPreviewedEmail() {
+    if (!authToken || !pendingLicense || !emailPreview) {
+      return;
+    }
+    setIsSendingEmail(true);
+    setPreviewError(null);
+    try {
+      const response = await fetch(
+        `/api/admin/licenses/${pendingLicense.id}/send_email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            email_subject: emailSubject,
+            email_html: emailHtml,
+            email_text: emailText,
+          }),
+        }
+      );
+      const payload = (await response.json()) as SendEmailResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.email_error ?? payload.error ?? "Unable to send email."
+        );
+      }
+      setAdminNotice(
+        `Email sent to ${pendingLicense.issuedTo ?? pendingLicense.id}.`
+      );
+      closePreview();
+      await refreshLicenses(authToken);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to send email. Try again.";
+      setPreviewError(message);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  }
+
+  async function resendLicenseEmail(licenseId: string) {
+    if (!authToken) {
+      throw new Error("Sign in required before resending emails.");
+    }
+    setActionLicenseId(licenseId);
+    setActionType("resend");
+    setAdminNotice(null);
+    try {
+      const response = await fetch(`/api/admin/licenses/${licenseId}/resend`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const payload = (await response.json()) as SendEmailResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.email_error ?? payload.error ?? "Unable to resend email."
+        );
+      }
+      setAdminNotice(`Resent email for license ${licenseId}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to resend email. Try again.";
+      setAdminNotice(message);
+    } finally {
+      setActionLicenseId(null);
+      setActionType(null);
+      await refreshLicenses(authToken);
+    }
+  }
+
+  async function revokeLicense(licenseId: string) {
+    if (!authToken) {
+      throw new Error("Sign in required before revoking licenses.");
+    }
+    setActionLicenseId(licenseId);
+    setActionType("revoke");
+    setAdminNotice(null);
+    try {
+      const response = await fetch(`/api/admin/licenses/${licenseId}/revoke`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const payload = (await response.json()) as RevokeResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to revoke license.");
+      }
+      setAdminNotice(`License ${licenseId} revoked.`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to revoke license. Try again.";
+      setAdminNotice(message);
+    } finally {
+      setActionLicenseId(null);
+      setActionType(null);
+      await refreshLicenses(authToken);
     }
   }
 
@@ -698,8 +954,12 @@ function App() {
             isLoading={isLoadingLicenses}
             lastSyncedAt={lastSyncedAt}
             onRefresh={() => refreshLicenses()}
-            notice={authError}
+            notice={adminNotice ?? authError}
             onIssueLicense={issueLicense}
+            onResend={resendLicenseEmail}
+            onRevoke={revokeLicense}
+            actionLicenseId={actionLicenseId}
+            actionType={actionType}
           />
         ) : (
           <div className="flex flex-1 items-center justify-center">
@@ -711,9 +971,124 @@ function App() {
           </div>
         )}
       </div>
+      {isPreviewOpen && pendingLicense ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Review email before sending
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  License {pendingLicense.id} · {pendingLicense.issuedTo}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => closePreview()}
+                disabled={isSendingEmail}
+              >
+                Close
+              </Button>
+            </div>
+            {previewError ? (
+              <p className="mt-4 text-sm font-medium text-destructive">
+                {previewError}
+              </p>
+            ) : null}
+            <div className="mt-4 space-y-4">
+              <div>
+                <Label htmlFor="preview-subject">Subject</Label>
+                <Input
+                  id="preview-subject"
+                  value={emailSubject}
+                  onChange={(event) => setEmailSubject(event.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="preview-text">Plain text body</Label>
+                <textarea
+                  id="preview-text"
+                  value={emailText}
+                  onChange={(event) => setEmailText(event.target.value)}
+                  className="mt-1 h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="preview-html">HTML body</Label>
+                <textarea
+                  id="preview-html"
+                  value={emailHtml}
+                  onChange={(event) => setEmailHtml(event.target.value)}
+                  className="mt-1 h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+              <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm leading-relaxed">
+                <p className="mb-2 text-sm font-medium text-muted-foreground">
+                  HTML preview
+                </p>
+                <div
+                  className="rounded-md border border-border bg-card/60 p-4"
+                  dangerouslySetInnerHTML={{
+                    __html: emailHtml || "<p>(No HTML body provided.)</p>",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                <p>
+                  License key:
+                  <span className="ml-1 font-mono">
+                    {pendingLicense.tokenPreview ?? pendingLicense.id}
+                  </span>
+                </p>
+                <p>
+                  Download link:{" "}
+                  {pendingLicense.downloadUrl ? (
+                    <a
+                      href={pendingLicense.downloadUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                      className="underline"
+                    >
+                      {pendingLicense.downloadUrl}
+                    </a>
+                  ) : (
+                    "Will be generated automatically."
+                  )}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={resetEmailPreview}
+                  disabled={isSendingEmail || !initialEmailPreview}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    closePreview(
+                      "License created without sending email. Use Resend later if you need to deliver it."
+                    )
+                  }
+                  disabled={isSendingEmail}
+                >
+                  Skip sending
+                </Button>
+                <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
+                  {isSendingEmail ? "Sending..." : "Send email"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export default App;
-
