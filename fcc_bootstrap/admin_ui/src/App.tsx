@@ -282,6 +282,7 @@ function Dashboard({
   onIssueLicense,
   onResend,
   onRevoke,
+  onDelete,
   actionLicenseId,
   actionType,
 }: {
@@ -293,6 +294,7 @@ function Dashboard({
   onIssueLicense: (values: IssueLicenseValues) => Promise<License>;
   onResend: (licenseId: string) => Promise<void>;
   onRevoke: (licenseId: string) => Promise<void>;
+  onDelete: (licenseId: string) => Promise<void>;
   actionLicenseId: string | null;
   actionType: "resend" | "revoke" | null;
 }) {
@@ -579,27 +581,36 @@ function Dashboard({
                     <TableCell>{lastEmail}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
+                      {isRevoked ? (
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           className="h-8 px-3 text-xs"
-                          disabled={isRevoked || resendBusy || isLoading}
-                          onClick={() => void onResend(license.id)}
+                          disabled={revokeBusy}
+                          onClick={() => void onDelete(license.id)}
                         >
-                          {resendBusy ? "Resending..." : "Resend"}
+                          {revokeBusy ? "Deleting..." : "Delete"}
                         </Button>
-                        <Button
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          disabled={isRevoked || revokeBusy}
-                          onClick={() => void onRevoke(license.id)}
-                        >
-                          {isRevoked
-                            ? "Revoked"
-                            : revokeBusy
-                            ? "Revoking..."
-                            : "Revoke"}
-                        </Button>
-                      </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="h-8 px-3 text-xs"
+                            disabled={resendBusy || isLoading}
+                            onClick={() => void onResend(license.id)}
+                          >
+                            {resendBusy ? "Resending..." : "Resend"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="h-8 px-3 text-xs"
+                            disabled={revokeBusy}
+                            onClick={() => void onRevoke(license.id)}
+                          >
+                            {revokeBusy ? "Revoking..." : "Revoke"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -744,11 +755,11 @@ function App() {
       setEmailText(preview.text);
       setPreviewError(payload.email_error ?? null);
       setIsPreviewOpen(true);
-      setAdminNotice(
-        payload.email_error
-          ? payload.email_error
-          : "License created. Review the email preview before sending it to the client."
-      );
+      setInitialEmailPreview(preview);
+      setEmailPreview(preview);
+      setEmailSubject(preview.subject);
+      setEmailHtml(preview.html);
+      setEmailText(preview.text);
 
       await refreshLicenses(authToken);
       return payload.license;
@@ -902,6 +913,12 @@ function App() {
     if (!authToken) {
       throw new Error("Sign in required before revoking licenses.");
     }
+
+    const confirmed = window.confirm(`Are you sure you want to revoke license ${licenseId}? This will prevent all clients using this license from accessing the product.`);
+    if (!confirmed) {
+      return;
+    }
+
     setActionLicenseId(licenseId);
     setActionType("revoke");
     setAdminNotice(null);
@@ -920,6 +937,42 @@ function App() {
         error instanceof Error
           ? error.message
           : "Failed to revoke license. Try again.";
+      setAdminNotice(message);
+    } finally {
+      setActionLicenseId(null);
+      setActionType(null);
+      await refreshLicenses(authToken);
+    }
+  }
+
+  async function deleteLicense(licenseId: string) {
+    if (!authToken) {
+      throw new Error("Sign in required before deleting licenses.");
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to permanently delete license ${licenseId}? This action cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setActionLicenseId(licenseId);
+    setActionType("revoke"); // Using same action tracking
+    setAdminNotice(null);
+    try {
+      const response = await fetch(`/api/admin/licenses/${licenseId}/delete`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const payload = (await response.json()) as RevokeResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to delete license.");
+      }
+      setAdminNotice(`License ${licenseId} deleted.`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete license. Try again.";
       setAdminNotice(message);
     } finally {
       setActionLicenseId(null);
@@ -998,6 +1051,7 @@ function App() {
             onIssueLicense={issueLicense}
             onResend={resendLicenseEmail}
             onRevoke={revokeLicense}
+            onDelete={deleteLicense}
             actionLicenseId={actionLicenseId}
             actionType={actionType}
           />
