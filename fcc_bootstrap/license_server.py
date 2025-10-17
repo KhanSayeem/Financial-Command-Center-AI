@@ -249,6 +249,7 @@ def _compose_email_preview(
         license_key=str(record.get("license_key") or ""),
         download_url=download_url,
         support_email=SUPPORT_EMAIL,
+        recipient_email=record.get("email") or "",
         subject=subject,
     )
     final_subject = subject or preview["subject"]

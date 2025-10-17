@@ -759,14 +759,7 @@ function App() {
     }
   }
 
-  function resetEmailPreview() {
-    if (!initialEmailPreview) {
-      return;
-    }
-    setEmailSubject(initialEmailPreview.subject);
-    setEmailHtml(initialEmailPreview.html);
-    setEmailText(initialEmailPreview.text);
-  }
+
 
   function resumeEmailPreview() {
     if (!pendingLicense || !emailPreview) {
@@ -824,10 +817,10 @@ function App() {
   }
 
   function handleSkipSending() {
-    closePreview({
-      message:
-        "License created without sending email. Use Resend later if you need to deliver it.",
-    });
+    setAdminNotice(
+      "License created without sending email. Use Resend later if you need to deliver it."
+    );
+    closePreview();
   }
 
   async function sendPreviewedEmail() {
@@ -1022,111 +1015,108 @@ function App() {
       {isPreviewOpen && pendingLicense ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground">
-                  Review email before sending
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  License {pendingLicense.id} · {pendingLicense.issuedTo}
-                </p>
+            <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    Review email before sending
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    License {pendingLicense.id} · {pendingLicense.issuedTo}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                  <Button
+                    variant="ghost"
+                    onClick={handlePreviewDismiss}
+                    disabled={isSendingEmail}
+                  >
+                    Close preview
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
-                <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
-                  {isSendingEmail ? "Sending..." : "Send email"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleSkipSending}
-                  disabled={isSendingEmail}
-                >
-                  Skip sending
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={resetEmailPreview}
-                  disabled={isSendingEmail || !initialEmailPreview}
-                >
-                  Reset
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handlePreviewDismiss}
-                  disabled={isSendingEmail}
-                >
-                  Close preview
-                </Button>
+              {previewError ? (
+                <p className="mt-4 text-sm font-medium text-destructive">
+                  {previewError}
+                </p>
+              ) : null}
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label htmlFor="preview-subject">Subject</Label>
+                  <Input
+                    id="preview-subject"
+                    value={emailSubject}
+                    onChange={(event) => setEmailSubject(event.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="preview-text">Plain text body</Label>
+                  <textarea
+                    id="preview-text"
+                    value={emailText}
+                    onChange={(event) => setEmailText(event.target.value)}
+                    className="mt-1 h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="preview-html">HTML body</Label>
+                  <textarea
+                    id="preview-html"
+                    value={emailHtml}
+                    onChange={(event) => setEmailHtml(event.target.value)}
+                    className="mt-1 h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+                <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm leading-relaxed">
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">
+                    HTML preview
+                  </p>
+                  <div
+                    className="rounded-md border border-border bg-card/60 p-4"
+                    dangerouslySetInnerHTML={{
+                      __html: emailHtml || "<p>(No HTML body provided.)</p>",
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="text-xs text-muted-foreground">
+                  <p>
+                    License key:
+                    <span className="ml-1 font-mono">
+                      {pendingLicense.tokenPreview ?? pendingLicense.id}
+                    </span>
+                  </p>
+                  <p>
+                    Download link:{" "}
+                    {pendingLicense.downloadUrl ? (
+                      <a
+                        href={pendingLicense.downloadUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                        className="underline"
+                      >
+                        {pendingLicense.downloadUrl}
+                      </a>
+                    ) : (
+                      "Will be generated automatically."
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
-            {previewError ? (
-              <p className="mt-4 text-sm font-medium text-destructive">
-                {previewError}
-              </p>
-            ) : null}
-            <div className="mt-4 space-y-4">
-              <div>
-                <Label htmlFor="preview-subject">Subject</Label>
-                <Input
-                  id="preview-subject"
-                  value={emailSubject}
-                  onChange={(event) => setEmailSubject(event.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="preview-text">Plain text body</Label>
-                <textarea
-                  id="preview-text"
-                  value={emailText}
-                  onChange={(event) => setEmailText(event.target.value)}
-                  className="mt-1 h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="preview-html">HTML body</Label>
-                <textarea
-                  id="preview-html"
-                  value={emailHtml}
-                  onChange={(event) => setEmailHtml(event.target.value)}
-                  className="mt-1 h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-              <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm leading-relaxed">
-                <p className="mb-2 text-sm font-medium text-muted-foreground">
-                  HTML preview
-                </p>
-                <div
-                  className="rounded-md border border-border bg-card/60 p-4"
-                  dangerouslySetInnerHTML={{
-                    __html: emailHtml || "<p>(No HTML body provided.)</p>",
-                  }}
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="text-xs text-muted-foreground">
-                <p>
-                  License key:
-                  <span className="ml-1 font-mono">
-                    {pendingLicense.tokenPreview ?? pendingLicense.id}
-                  </span>
-                </p>
-                <p>
-                  Download link:{" "}
-                  {pendingLicense.downloadUrl ? (
-                    <a
-                      href={pendingLicense.downloadUrl}
-                      rel="noreferrer"
-                      target="_blank"
-                      className="underline"
-                    >
-                      {pendingLicense.downloadUrl}
-                    </a>
-                  ) : (
-                    "Will be generated automatically."
-                  )}
-                </p>
-              </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+              <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
+                {isSendingEmail ? "Sending..." : "Send mail"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSkipSending}
+                disabled={isSendingEmail}
+              >
+                Skip
+              </Button>
             </div>
           </div>
         </div>
