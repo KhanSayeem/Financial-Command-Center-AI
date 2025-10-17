@@ -8,6 +8,7 @@ Currently supports Brevo transactional emails using the v3 API.
 from __future__ import annotations
 
 import os
+import re
 from textwrap import dedent
 from typing import Dict, Optional
 
@@ -15,16 +16,28 @@ import requests
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 DEFAULT_EMAIL_SUBJECT = "Your Financial Command Center License"
+_INLINE_COMMENT_REGEX = re.compile(r"\s+#")
 
 
 class EmailConfigError(RuntimeError):
     """Raised when the email configuration is missing required values."""
 
 
+def _clean_env_value(raw: Optional[str]) -> Optional[str]:
+    """Return env values without trailing inline comments or extra whitespace."""
+    if raw is None:
+        return None
+    candidate = raw.strip()
+    if not candidate:
+        return ""
+    parts = _INLINE_COMMENT_REGEX.split(candidate, 1)
+    return parts[0].strip()
+
+
 def _load_config() -> Dict[str, str]:
-    api_key = os.getenv("BREVO_API_KEY")
-    sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    sender_name = os.getenv("BREVO_SENDER_NAME", "Financial Command Center")
+    api_key = _clean_env_value(os.getenv("BREVO_API_KEY"))
+    sender_email = _clean_env_value(os.getenv("BREVO_SENDER_EMAIL"))
+    sender_name = _clean_env_value(os.getenv("BREVO_SENDER_NAME")) or "Financial Command Center"
 
     if not api_key or not sender_email:
         raise EmailConfigError(
