@@ -23,7 +23,7 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 
-from emailer import EmailConfigError, send_license_email
+from .emailer import EmailConfigError, send_license_email
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR.parent / ".env", override=False)
