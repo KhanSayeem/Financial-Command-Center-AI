@@ -546,6 +546,20 @@ def revoke_license(license_key: str) -> tuple[Dict[str, object], int]:
     return jsonify({"ok": True, "license": summary}), 200
 
 
+@app.post("/api/admin/licenses/<license_key>/delete")
+def delete_license(license_key: str) -> tuple[Dict[str, object], int]:
+    if not _require_admin_token():
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+
+    license_key = _normalize_key(license_key)
+    if license_key in _licenses:
+        del _licenses[license_key]
+        _save_store()
+        return jsonify({"ok": True, "message": "License deleted successfully"}), 200
+    else:
+        return jsonify({"ok": False, "error": "license_not_found"}), 404
+
+
 @app.post("/api/license/verify")
 def verify_license() -> tuple[Dict[str, object], int]:
     data = request.get_json(force=True) or {}
@@ -561,6 +575,10 @@ def verify_license() -> tuple[Dict[str, object], int]:
     record = _lookup_license(license_key)
     if record is None:
         return jsonify({"ok": False, "error": "invalid_license"}), 400
+
+    # Check if license has been revoked
+    if record.get("is_revoked"):
+        return jsonify({"ok": False, "error": "license_revoked"}), 400
 
     record_email = (record.get("email") or "").strip().lower()
     if record_email and email and email != record_email:
