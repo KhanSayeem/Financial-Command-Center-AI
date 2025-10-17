@@ -1091,13 +1091,22 @@ function App() {
               </div>
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={handlePreviewDismiss}
-                disabled={isSendingEmail}
-              >
-                Close preview
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handlePreviewDismiss}
+                  disabled={isSendingEmail}
+                >
+                  Close preview
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => closePreview({ message: "Email sending cancelled." })}
+                  disabled={isSendingEmail}
+                >
+                  Cancel
+                </Button>
+              </div>
               <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
                 {isSendingEmail ? "Sending..." : "Send mail"}
               </Button>
