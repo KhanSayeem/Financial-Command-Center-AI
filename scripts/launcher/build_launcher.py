@@ -97,6 +97,42 @@ ULTIMATE_SHORTCUT_ICON_NEW = (
     '    if exist "!SHORTCUT_ICON!" (\n'
 )
 
+def build_admin_ui_bundle() -> bool:
+    """Ensure the React admin UI is built before packaging."""
+    admin_ui_dir = REPO_ROOT / "fcc_bootstrap" / "admin_ui"
+    if not admin_ui_dir.exists():
+        print("?? Admin UI directory not found; skipping bundle step.")
+        return True
+
+    npm_executable = shutil.which("npm")
+    if npm_executable is None:
+        print("?? npm is not available on PATH. Install Node.js to build the admin UI bundle.")
+        return False
+
+    node_modules_dir = admin_ui_dir / "node_modules"
+    if not node_modules_dir.exists():
+        print("   Installing admin UI dependencies (npm install)...")
+        install_result = subprocess.run(
+            [npm_executable, "install"],
+            cwd=admin_ui_dir,
+            check=False,
+        )
+        if install_result.returncode != 0:
+            print("?? Failed to install admin UI dependencies.")
+            return False
+
+    print("   Building admin UI bundle (npm run build)...")
+    build_result = subprocess.run(
+        [npm_executable, "run", "build"],
+        cwd=admin_ui_dir,
+        check=False,
+    )
+    if build_result.returncode != 0:
+        print("?? Failed to build the admin UI bundle.")
+        return False
+
+    return True
+
 
 def create_icon() -> Path | None:
     """Ensure the canonical application icon exists, creating it from fallbacks if needed."""
@@ -429,6 +465,7 @@ def create_installer_package_full() -> bool:
         "*.bak",
         ".DS_Store",
         "Thumbs.db",
+        "issued_pilot_licenses.csv",
     ]
     missing_assets: list[str] = []
 
@@ -482,6 +519,7 @@ def create_installer_package_full() -> bool:
         "setup_wizard.py",
         "stripe_mcp.py",
         "stripe_mcp_warp.py",
+        "license_manager.py",
         "utils.py",
         "warp_integration.py",
         "webhook_server.py",
@@ -512,6 +550,7 @@ def create_installer_package_full() -> bool:
         ("MCPServers", ["test_*"]),
         ("fcc-openai-adapter", ["tests", "demos", "*.ipynb"]),
         ("fcc-local-llm-adapter", ["tests", "*.ipynb"]),
+        ("fcc_bootstrap", ["__pycache__", "*.pyc", "*.pyo"]),
     ]
     for folder_name, ignore_patterns in folder_manifest:
         _copy_tree(Path(folder_name), package_dir / folder_name, ignore_patterns)
@@ -693,6 +732,7 @@ def main() -> int:
     enforce_shortcut_icon_scripts(REPO_ROOT)
 
     build_steps = [
+        ("Building admin UI bundle", build_admin_ui_bundle),
         ("Installing build dependencies", install_build_dependencies),
         ("Cleaning build directories", clean_build_dirs),
         ("Building executable", build_executable),
