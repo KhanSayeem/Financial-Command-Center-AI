@@ -641,6 +641,8 @@ function App() {
   const [actionLicenseId, setActionLicenseId] = React.useState<string | null>(null);
   const [actionType, setActionType] = React.useState<"resend" | "revoke" | null>(null);
   const [adminNotice, setAdminNotice] = React.useState<React.ReactNode>(null);
+  const [showTextBody, setShowTextBody] = React.useState(false);
+  const [showHtmlBody, setShowHtmlBody] = React.useState(false);
 
   const refreshLicenses = React.useCallback(
     async (tokenOverride?: string | null) => {
@@ -1016,7 +1018,7 @@ function App() {
       </div>
       {isPreviewOpen && pendingLicense ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg">
+          <div className="max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg">
             <div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -1026,15 +1028,6 @@ function App() {
                   <p className="text-sm text-muted-foreground">
                     License {pendingLicense.id} · {pendingLicense.issuedTo}
                   </p>
-                </div>
-                <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
-                  <Button
-                    variant="ghost"
-                    onClick={handlePreviewDismiss}
-                    disabled={isSendingEmail}
-                  >
-                    Close preview
-                  </Button>
                 </div>
               </div>
               {previewError ? (
@@ -1052,30 +1045,49 @@ function App() {
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="preview-text">Plain text body</Label>
-                  <textarea
-                    id="preview-text"
-                    value={emailText}
-                    onChange={(event) => setEmailText(event.target.value)}
-                    className="mt-1 h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  />
+                
+                <div className="space-y-2">
+                  <div 
+                    className="flex items-center justify-between cursor-pointer p-2 bg-muted rounded-md"
+                    onClick={() => setShowTextBody(!showTextBody)}
+                  >
+                    <Label htmlFor="preview-text">Plain text body</Label>
+                    <span className="text-sm">{showTextBody ? '▲' : '▼'}</span>
+                  </div>
+                  {showTextBody && (
+                    <textarea
+                      id="preview-text"
+                      value={emailText}
+                      onChange={(event) => setEmailText(event.target.value)}
+                      className="mt-1 h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  )}
                 </div>
-                <div>
-                  <Label htmlFor="preview-html">HTML body</Label>
-                  <textarea
-                    id="preview-html"
-                    value={emailHtml}
-                    onChange={(event) => setEmailHtml(event.target.value)}
-                    className="mt-1 h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  />
+                
+                <div className="space-y-2">
+                  <div 
+                    className="flex items-center justify-between cursor-pointer p-2 bg-muted rounded-md"
+                    onClick={() => setShowHtmlBody(!showHtmlBody)}
+                  >
+                    <Label htmlFor="preview-html">HTML body</Label>
+                    <span className="text-sm">{showHtmlBody ? '▲' : '▼'}</span>
+                  </div>
+                  {showHtmlBody && (
+                    <textarea
+                      id="preview-html"
+                      value={emailHtml}
+                      onChange={(event) => setEmailHtml(event.target.value)}
+                      className="mt-1 h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  )}
                 </div>
+                
                 <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm leading-relaxed">
                   <p className="mb-2 text-sm font-medium text-muted-foreground">
                     HTML preview
                   </p>
                   <div
-                    className="rounded-md border border-border bg-card/60 p-4"
+                    className="rounded-md border border-border bg-card/60 p-4 max-h-60 overflow-y-auto"
                     dangerouslySetInnerHTML={{
                       __html: emailHtml || "<p>(No HTML body provided.)</p>",
                     }}
@@ -1083,16 +1095,16 @@ function App() {
                 </div>
               </div>
             </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-              <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
-                {isSendingEmail ? "Sending..." : "Send mail"}
-              </Button>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 variant="outline"
-                onClick={handleSkipSending}
+                onClick={handlePreviewDismiss}
                 disabled={isSendingEmail}
               >
-                Skip
+                Close preview
+              </Button>
+              <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
+                {isSendingEmail ? "Sending..." : "Send mail"}
               </Button>
             </div>
           </div>
