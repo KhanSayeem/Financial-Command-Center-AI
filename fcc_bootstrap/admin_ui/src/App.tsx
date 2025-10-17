@@ -820,12 +820,7 @@ function App() {
     });
   }
 
-  function handleSkipSending() {
-    setAdminNotice(
-      "License created without sending email. Use Resend later if you need to deliver it."
-    );
-    closePreview();
-  }
+
 
   async function sendPreviewedEmail() {
     if (!authToken || !pendingLicense || !emailPreview) {
