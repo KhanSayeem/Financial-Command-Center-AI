@@ -1080,31 +1080,6 @@ function App() {
                   />
                 </div>
               </div>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="text-xs text-muted-foreground">
-                  <p>
-                    License key:
-                    <span className="ml-1 font-mono">
-                      {pendingLicense.tokenPreview ?? pendingLicense.id}
-                    </span>
-                  </p>
-                  <p>
-                    Download link:{" "}
-                    {pendingLicense.downloadUrl ? (
-                      <a
-                        href={pendingLicense.downloadUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                        className="underline"
-                      >
-                        {pendingLicense.downloadUrl}
-                      </a>
-                    ) : (
-                      "Will be generated automatically."
-                    )}
-                  </p>
-                </div>
-              </div>
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
               <Button onClick={sendPreviewedEmail} disabled={isSendingEmail}>
