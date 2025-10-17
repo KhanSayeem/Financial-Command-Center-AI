@@ -58,6 +58,7 @@ def build_license_email_content(
     license_key: str,
     download_url: Optional[str],
     support_email: Optional[str],
+    recipient_email: Optional[str] = None,
     subject: Optional[str] = None,
     product_name: str = "Financial Command Center AI",
     plan_label: str = "Pilot Program",
@@ -97,21 +98,55 @@ def build_license_email_content(
 
     html_body = dedent(
         f"""
-        <p>Hi {client_name or 'there'},</p>
-        <p>Welcome to the <strong>{product_name}</strong> ({plan_label})!</p>
-        <p><strong>Your license key</strong><br/>
-        <code style="font-size:1.1rem;">{license_key}</code></p>
-        <p><strong>Download the installer</strong><br/>
-        <a href="{fallback_download}">{fallback_download}</a></p>
-        <p><strong>Setup checklist</strong></p>
-        <ol>
-          <li>Unzip the archive on your admin machine.</li>
-          <li>Run <code>ultimate_cert_fix.cmd</code> to install the local certificates.</li>
-          <li>Launch the installer and enter the license key above.</li>
-          <li>Complete the setup wizard to connect Plaid, Stripe, and Xero.</li>
-        </ol>
-        <p>{support_line}</p>
-        <p>Thank you for choosing Daywin Labs.</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Your {product_name} License</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body style="margin:0; padding:20px; font-family:Arial, sans-serif; background-color:#f5f5f5;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f5f5;">
+                <tr>
+                    <td style="padding:20px 0;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                            <tr>
+                                <td style="padding:30px 30px 20px 30px; text-align:center; border-bottom:1px solid #eaeaea;">
+                                    <h1 style="margin:0; font-size:24px; color:#333333;">{product_name}</h1>
+                                    <p style="margin:10px 0 0 0; font-size:16px; color:#666666;">{plan_label}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:30px 30px 20px 30px;">
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Hi {client_name or 'there'},</p>
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Welcome to the <strong>{product_name}</strong> ({plan_label})!</p>
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Your license key</strong><br/>
+                                    <code style="font-size:1.1rem; background-color:#f9f9f9; padding:5px 8px; border-radius:4px; border:1px solid #ddd;">{license_key}</code></p>
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Download the installer</strong><br/>
+                                    <a href="{fallback_download}" style="color:#007bff; text-decoration:underline;">Download Now</a></p>
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Setup checklist</strong></p>
+                                    <ol style="padding-left:20px; margin:0 0 15px 0;">
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Unzip the archive on your admin machine.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">ultimate_cert_fix.cmd</code> to install the local certificates.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Launch the installer and enter the license key above.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Complete the setup wizard to connect Plaid, Stripe, and Xero.</li>
+                                    </ol>
+                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
+                                    <p style="margin:0 0 0 0; font-size:16px; color:#333333;">Thank you for choosing Daywin Labs.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:20px 30px; text-align:center; background-color:#f8f9fa; border-top:1px solid #eaeaea; color:#666666; font-size:14px;">
+                                    <p style="margin:0 0 10px 0;">Daywin Labs</p>
+                                    <p style="margin:0;">This email was sent to {client_name or ''} - {recipient_email or ''}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
         """
     ).strip()
 
@@ -145,6 +180,7 @@ def send_license_email(
             license_key=license_key,
             download_url=download_url,
             support_email=support_email,
+            recipient_email=recipient_email,
             subject=subject or DEFAULT_EMAIL_SUBJECT,
         )
         subject = preview["subject"]
