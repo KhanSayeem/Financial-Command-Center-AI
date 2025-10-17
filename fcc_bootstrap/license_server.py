@@ -23,7 +23,7 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 
-from .emailer import EmailConfigError, send_license_email
+from .emailer import EmailConfigError, build_license_email_content, send_license_email
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR.parent / ".env", override=False)
@@ -105,6 +105,9 @@ def _load_store() -> None:
             "max_activations": int(record.get("max_activations") or MAX_ACTIVATIONS),
             "activations": activation_map.get(license_key, []),
             "is_revoked": bool(record.get("is_revoked", False)),
+            "revoked_at": record.get("revoked_at"),
+            "last_email_sent_at": record.get("last_email_sent_at"),
+            "last_download_url": record.get("last_download_url"),
         }
 
 
@@ -138,10 +141,13 @@ def _save_store() -> None:
             "issued_at": created_at.isoformat(),
             "expires_at": expires_at.isoformat(),
             "is_revoked": bool(record.get("is_revoked", False)),
+            "revoked_at": record.get("revoked_at"),
             "max_activations": int(record.get("max_activations") or MAX_ACTIVATIONS),
             "activation_count": activation_count,
             "last_activation_at": last_activation.get("last_seen_at"),
             "last_activated_machine": last_activation.get("machine_fingerprint"),
+            "last_email_sent_at": record.get("last_email_sent_at"),
+            "last_download_url": record.get("last_download_url"),
         }
 
         for activation in activations:
@@ -230,6 +236,62 @@ def _generate_download_link() -> Optional[str]:
     return None
 
 
+def _compose_email_preview(
+    record: Dict[str, object],
+    download_url: Optional[str],
+    *,
+    subject: Optional[str] = None,
+    html: Optional[str] = None,
+    text: Optional[str] = None,
+) -> Dict[str, str]:
+    preview = build_license_email_content(
+        client_name=record.get("client_name") or record.get("email") or "",
+        license_key=str(record.get("license_key") or ""),
+        download_url=download_url,
+        support_email=SUPPORT_EMAIL,
+        subject=subject,
+    )
+    final_subject = subject or preview["subject"]
+    final_html = html or preview["html"]
+    final_text = text or preview["text"]
+    return {"subject": final_subject, "html": final_html, "text": final_text}
+
+
+def _send_email_for_record(
+    record: Dict[str, object],
+    download_url: Optional[str],
+    email_preview: Dict[str, str],
+) -> tuple[bool, Optional[str]]:
+    recipient = (record.get("email") or "").strip()
+    if not recipient:
+        message = "License record missing recipient email."
+        print(f"[email] {message}")
+        return False, "missing_recipient"
+    try:
+        sent = send_license_email(
+            recipient_email=recipient,
+            client_name=record.get("client_name") or recipient,
+            license_key=str(record.get("license_key") or ""),
+            download_url=download_url,
+            support_email=SUPPORT_EMAIL,
+            subject=email_preview["subject"],
+            html_body=email_preview["html"],
+            text_body=email_preview["text"],
+        )
+    except EmailConfigError as exc:
+        print(f"[email] Skipping onboarding email: {exc}")
+        return False, str(exc)
+
+    if sent:
+        print(f"[email] Sent onboarding email to {recipient}")
+        record["last_email_sent_at"] = _now_iso()
+        record["last_download_url"] = download_url
+        return True, None
+
+    print(f"[email] Failed to send onboarding email to {recipient}. See logs for details.")
+    return False, "delivery_failed"
+
+
 def _now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
@@ -286,6 +348,7 @@ def _license_summary(record: Dict[str, object]) -> Dict[str, object]:
         status = "active" if activations else "pending"
     issued_to = (record.get("client_name") or "").strip() or (record.get("email") or "").strip() or "Unassigned"
     seats = int(record.get("max_activations") or MAX_ACTIVATIONS)
+    download_url = record.get("last_download_url") or INSTALLER_DOWNLOAD_URL
     return {
         "id": license_key,
         "issuedTo": issued_to,
@@ -296,6 +359,10 @@ def _license_summary(record: Dict[str, object]) -> Dict[str, object]:
         "tier": record.get("tier") or "pilot",
         "activationCount": len(activations),
         "tokenPreview": _mask_key(license_key),
+        "downloadUrl": download_url,
+        "isRevoked": bool(record.get("is_revoked", False)),
+        "revokedAt": record.get("revoked_at"),
+        "lastEmailSentAt": record.get("last_email_sent_at"),
     }
 
 
@@ -329,6 +396,10 @@ def create_license() -> tuple[Dict[str, object], int]:
     client_name = (data.get("client_name") or "").strip()
     max_activations = int(data.get("max_activations") or MAX_ACTIVATIONS)
     max_activations = max(1, max_activations)
+    send_email_flag = bool(data.get("send_email", True))
+    custom_subject = data.get("email_subject") or data.get("subject")
+    custom_html = data.get("email_html") or data.get("html")
+    custom_text = data.get("email_text") or data.get("text")
     if not email:
         return jsonify({"ok": False, "error": "missing_email"}), 400
 
@@ -341,32 +412,137 @@ def create_license() -> tuple[Dict[str, object], int]:
         "created_at": _now_iso(),
         "max_activations": max_activations,
         "activations": [],
+        "is_revoked": False,
+        "revoked_at": None,
+        "last_email_sent_at": None,
+        "last_download_url": None,
     }
     _licenses[license_key] = record
-    _save_store()
 
     signed_download = _generate_download_link()
-    download_url = signed_download or INSTALLER_DOWNLOAD_URL
+    download_url = signed_download or INSTALLER_DOWNLOAD_URL or record.get("last_download_url")
+    record["last_download_url"] = download_url
+
+    email_preview = _compose_email_preview(
+        record,
+        download_url,
+        subject=custom_subject,
+        html=custom_html,
+        text=custom_text,
+    )
+    email_sent = False
+    email_error: Optional[str] = None
+    if send_email_flag:
+        email_sent, email_error = _send_email_for_record(record, download_url, email_preview)
+
+    _save_store()
+    summary = _license_summary(record)
+    summary["downloadUrl"] = record.get("last_download_url") or download_url
+    response_payload: Dict[str, object] = {
+        "ok": True,
+        "license_key": license_key,
+        "license": summary,
+        "email_sent": email_sent,
+        "email_preview": email_preview,
+        "download_url": summary.get("downloadUrl"),
+    }
+    if email_error:
+        response_payload["email_error"] = email_error
+    print(f"Issued license for {email}: {license_key}")
+    return jsonify(response_payload), 200
+
+
+@app.post("/api/admin/licenses/<license_key>/send_email")
+def send_existing_license_email(license_key: str) -> tuple[Dict[str, object], int]:
+    if not _require_admin_token():
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+
+    record = _lookup_license(_normalize_key(license_key))
+    if record is None:
+        return jsonify({"ok": False, "error": "license_not_found"}), 404
+    if record.get("is_revoked"):
+        return jsonify({"ok": False, "error": "license_revoked"}), 400
+
+    data = request.get_json(force=True) or {}
+    custom_subject = data.get("email_subject") or data.get("subject")
+    custom_html = data.get("email_html") or data.get("html")
+    custom_text = data.get("email_text") or data.get("text")
+    download_override = data.get("download_url")
+
+    download_url = (
+        download_override
+        or _generate_download_link()
+        or record.get("last_download_url")
+        or INSTALLER_DOWNLOAD_URL
+    )
+    email_preview = _compose_email_preview(
+        record,
+        download_url,
+        subject=custom_subject,
+        html=custom_html,
+        text=custom_text,
+    )
+    email_sent, email_error = _send_email_for_record(record, download_url, email_preview)
+    _save_store()
 
     summary = _license_summary(record)
-    if download_url:
-        summary["downloadUrl"] = download_url
-    try:
-        if send_license_email(
-            recipient_email=email,
-            client_name=client_name or email,
-            license_key=license_key,
-            download_url=download_url,
-            support_email=SUPPORT_EMAIL,
-        ):
-            print(f"[email] Sent onboarding email to {email}")
-        else:
-            print(f"[email] Failed to send onboarding email to {email}. See logs for details.")
-    except EmailConfigError as exc:
-        print(f"[email] Skipping onboarding email: {exc}")
+    response_payload: Dict[str, object] = {
+        "ok": email_sent,
+        "license": summary,
+        "email_sent": email_sent,
+        "email_preview": email_preview,
+        "download_url": summary.get("downloadUrl"),
+    }
+    if email_error:
+        response_payload["email_error"] = email_error
+    return jsonify(response_payload), 200
 
-    print(f"Issued license for {email}: {license_key}")
-    return jsonify({"ok": True, "license_key": license_key, "license": summary}), 200
+
+@app.post("/api/admin/licenses/<license_key>/resend")
+def resend_license_email(license_key: str) -> tuple[Dict[str, object], int]:
+    if not _require_admin_token():
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+
+    record = _lookup_license(_normalize_key(license_key))
+    if record is None:
+        return jsonify({"ok": False, "error": "license_not_found"}), 404
+    if record.get("is_revoked"):
+        return jsonify({"ok": False, "error": "license_revoked"}), 400
+
+    download_url = _generate_download_link() or record.get("last_download_url") or INSTALLER_DOWNLOAD_URL
+    email_preview = _compose_email_preview(record, download_url)
+    email_sent, email_error = _send_email_for_record(record, download_url, email_preview)
+    _save_store()
+
+    summary = _license_summary(record)
+    response_payload: Dict[str, object] = {
+        "ok": email_sent,
+        "license": summary,
+        "email_sent": email_sent,
+        "email_preview": email_preview,
+        "download_url": summary.get("downloadUrl"),
+    }
+    if email_error:
+        response_payload["email_error"] = email_error
+    return jsonify(response_payload), 200
+
+
+@app.post("/api/admin/licenses/<license_key>/revoke")
+def revoke_license(license_key: str) -> tuple[Dict[str, object], int]:
+    if not _require_admin_token():
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+
+    record = _lookup_license(_normalize_key(license_key))
+    if record is None:
+        return jsonify({"ok": False, "error": "license_not_found"}), 404
+
+    if not record.get("is_revoked"):
+        record["is_revoked"] = True
+        record["revoked_at"] = _now_iso()
+        _save_store()
+
+    summary = _license_summary(record)
+    return jsonify({"ok": True, "license": summary}), 200
 
 
 @app.post("/api/license/verify")
