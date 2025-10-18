@@ -18,11 +18,27 @@ import requests
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 DEFAULT_EMAIL_SUBJECT = "Your Financial Command Center License"
+DEFAULT_EMAIL_LOGO_URL = (
+    "https://jqfoqqnefabtqcjmceyu.supabase.co/storage/v1/object/sign/Branding/"
+    "logo-no-background.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9iYzQ0MzBkOC05MTAyLTQ5ZjUtYmQwOS04Zjk0ZmFkNmY3MjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJCcmFuZGluZy9sb2dvLW5vLWJhY2tncm91bmQucG5nIiwiaWF0IjoxNzYwODI5MzI1LCJleHAiOjI0NTQ2MjEzMjV9.u-JO5pK3EgGpn8hGTl90ZKr2EGg0_TWeAqKVHtiw8u8"
+)
 _INLINE_COMMENT_REGEX = re.compile(r"\s+#")
 
 
-def _get_logo_data_uri() -> str:
-    """Return the logo as a data URI for embedding in emails."""
+def _get_logo_src() -> str:
+    """
+    Return a logo source URL or data URI suitable for HTML email.
+
+    Many email clients (including Gmail) block inline data URIs, so allowing an
+    externally hosted HTTPS image via the EMAIL_LOGO_URL environment variable
+    keeps the logo visible while still supporting local fallbacks for testing.
+    """
+    remote_override = _clean_env_value(os.getenv("EMAIL_LOGO_URL"))
+    if remote_override and remote_override.lower().startswith(("http://", "https://")):
+        return remote_override
+    if DEFAULT_EMAIL_LOGO_URL:
+        return DEFAULT_EMAIL_LOGO_URL
+
     project_root = Path(__file__).parent.parent
     candidate_paths = [
         project_root / "logo-no-background.png",
@@ -124,11 +140,11 @@ def build_license_email_content(
     ).strip()
 
     # Prepare branding blocks for the HTML email
-    logo_data_uri = _get_logo_data_uri()
+    logo_src = _get_logo_src()
     logo_img_html = (
-        f'<img src="{logo_data_uri}" alt="Daywin Labs" '
+        f'<img src="{logo_src}" alt="Daywin Labs" '
         'style="display:block; height:30px; width:auto;">'
-    ) if logo_data_uri else ""
+    ) if logo_src else ""
 
     if logo_img_html:
         thank_you_line = (
