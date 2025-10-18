@@ -7,8 +7,10 @@ Currently supports Brevo transactional emails using the v3 API.
 
 from __future__ import annotations
 
+import base64
 import os
 import re
+from pathlib import Path
 from textwrap import dedent
 from typing import Dict, Optional
 
@@ -17,6 +19,19 @@ import requests
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 DEFAULT_EMAIL_SUBJECT = "Your Financial Command Center License"
 _INLINE_COMMENT_REGEX = re.compile(r"\s+#")
+
+
+def _get_logo_data_uri() -> str:
+    """Return the logo as a data URI for embedding in emails."""
+    logo_path = Path(__file__).parent.parent / "assets" / "logo-no-background.png"
+    if not logo_path.exists():
+        # Return a placeholder or empty string if logo doesn't exist
+        return ""
+    
+    with open(logo_path, "rb") as img_file:
+        img_data = img_file.read()
+        img_base64 = base64.b64encode(img_data).decode('utf-8')
+        return f"data:image/png;base64,{img_base64}"
 
 
 class EmailConfigError(RuntimeError):
@@ -96,6 +111,12 @@ def build_license_email_content(
         """
     ).strip()
 
+    # Get the logo as a data URI
+    logo_data_uri = _get_logo_data_uri()
+    
+    # Create logo HTML element if logo exists
+    logo_html = f'<img src="{logo_data_uri}" alt="Daywin Labs" style="height:30px; vertical-align:middle; margin-right:8px;"/>' if logo_data_uri else ''
+    
     html_body = dedent(
         f"""
         <!DOCTYPE html>
@@ -132,12 +153,12 @@ def build_license_email_content(
                                       <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Complete the setup wizard to connect Plaid, Stripe, and Xero.</li>
                                     </ol>
                                     <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
-                                    <p style="margin:0 0 0 0; font-size:16px; color:#333333;">Thank you for choosing Daywin Labs.</p>
+                                    <p style="margin:0 0 0 0; font-size:16px; color:#333333;">Thank you for choosing {logo_html}Daywin Labs.</p>
                                 </td>
                             </tr>
                             <tr>
                                 <td style="padding:20px 30px; text-align:center; background-color:#f8f9fa; border-top:1px solid #eaeaea; color:#666666; font-size:14px;">
-                                    <p style="margin:0 0 10px 0;">Daywin Labs</p>
+                                    <p style="margin:0 0 10px 0;">{logo_html}Daywin Labs</p>
                                     <p style="margin:0;">This email was sent to {client_name or ''} - {recipient_email or ''}</p>
                                 </td>
                             </tr>
