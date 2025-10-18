@@ -23,15 +23,21 @@ _INLINE_COMMENT_REGEX = re.compile(r"\s+#")
 
 def _get_logo_data_uri() -> str:
     """Return the logo as a data URI for embedding in emails."""
-    logo_path = Path(__file__).parent.parent / "assets" / "logo-no-background.png"
-    if not logo_path.exists():
-        # Return a placeholder or empty string if logo doesn't exist
+    project_root = Path(__file__).parent.parent
+    candidate_paths = [
+        project_root / "logo-no-background.png",
+        project_root / "assets" / "logo-no-background.png",
+    ]
+
+    logo_path = next((path for path in candidate_paths if path.exists()), None)
+    if logo_path is None:
+        # No logo available; let the email fall back to text-only branding.
         return ""
-    
-    with open(logo_path, "rb") as img_file:
+
+    with logo_path.open("rb") as img_file:
         img_data = img_file.read()
-        img_base64 = base64.b64encode(img_data).decode('utf-8')
-        return f"data:image/png;base64,{img_base64}"
+    img_base64 = base64.b64encode(img_data).decode("utf-8")
+    return f"data:image/png;base64,{img_base64}"
 
 
 class EmailConfigError(RuntimeError):
