@@ -25,6 +25,9 @@ from flask import Flask, jsonify, request, send_from_directory
 
 from .emailer import EmailConfigError, build_license_email_content, send_license_email
 
+# Define the assets directory path
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
+
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR.parent / ".env", override=False)
 
@@ -669,6 +672,23 @@ def serve_admin_ui(path: str) -> object:
         pass
 
     return send_from_directory(dist_root, "index.html", max_age=0)
+
+
+@app.get("/assets/<path:filename>")
+def serve_assets(filename: str) -> object:
+    """
+    Serve static assets from the assets folder.
+    """
+    try:
+        asset_path = (ASSETS_DIR / filename).resolve()
+        if asset_path.is_file() and ASSETS_DIR in asset_path.parents:
+            relative_path = asset_path.relative_to(ASSETS_DIR).as_posix()
+            return send_from_directory(ASSETS_DIR, relative_path)
+    except (OSError, ValueError):
+        # Fall through to error response on path traversal attempts.
+        pass
+
+    return jsonify({"ok": False, "error": "asset_not_found"}), 404
 
 
 def main() -> None:
