@@ -9,6 +9,7 @@ venv/
 
 # Tokens / secrets
 tokens/
+.plaid_token
 *.json
 !**/package.json
 !**/package-lock.json
@@ -58,3 +59,10 @@ automation/notification_log.jsonl
 exports_warp/
 nul
 plaid_client_store.py
+
+# Local build artefacts
+.venv_cli/
+assets/
+build/
+dist/
+deploy/
