@@ -27,6 +27,12 @@ def _get_logo_data_uri() -> str:
     candidate_paths = [
         project_root / "logo-no-background.png",
         project_root / "assets" / "logo-no-background.png",
+        project_root
+        / "fcc_bootstrap"
+        / "admin_ui"
+        / "public"
+        / "logo-no-background.png",
+        project_root / "fcc_bootstrap" / "admin_ui" / "dist" / "logo-no-background.png",
     ]
 
     logo_path = next((path for path in candidate_paths if path.exists()), None)

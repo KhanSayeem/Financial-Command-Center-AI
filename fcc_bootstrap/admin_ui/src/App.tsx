@@ -173,7 +173,7 @@ function BrandMark() {
   return (
     <div className="flex items-center gap-3 text-foreground">
       <img
-        src="/assets/logo-no-background.png"
+        src="/logo-no-background.png"
         alt="Daywin Labs logo"
         className="h-10 w-auto"
         loading="lazy"
