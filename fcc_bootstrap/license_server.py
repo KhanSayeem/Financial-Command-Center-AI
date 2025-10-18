@@ -679,6 +679,16 @@ def serve_assets(filename: str) -> object:
     """
     Serve static assets from the assets folder.
     """
+    if ADMIN_UI_DIST.exists():
+        try:
+            dist_root = ADMIN_UI_DIST.resolve()
+            dist_asset = (dist_root / "assets" / filename).resolve()
+            if dist_asset.is_file() and dist_root in dist_asset.parents:
+                relative_path = dist_asset.relative_to(dist_root).as_posix()
+                return send_from_directory(dist_root, relative_path, max_age=0)
+        except (OSError, ValueError):
+            pass
+
     try:
         asset_path = (ASSETS_DIR / filename).resolve()
         if asset_path.is_file() and ASSETS_DIR in asset_path.parents:
