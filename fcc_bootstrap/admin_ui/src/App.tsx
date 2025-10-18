@@ -169,6 +169,21 @@ function StatusBadge({ status }: { status: LicenseStatus }) {
   );
 }
 
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-3 text-foreground">
+      <img
+        src="/assets/logo-no-background.png"
+        alt="Daywin Labs logo"
+        className="h-10 w-auto"
+        loading="lazy"
+        decoding="async"
+      />
+      <span className="text-lg font-semibold">Daywin Labs</span>
+    </div>
+  );
+}
+
 function LoginCard({
   onSubmit,
   isLoading,
@@ -1041,6 +1056,9 @@ function App() {
   return (
     <div className="min-h-svh bg-background">
       <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-10 sm:px-8">
+        <div className="mb-8 flex justify-center md:justify-start">
+          <BrandMark />
+        </div>
         {isAuthenticated ? (
           <Dashboard
             licenses={licenses}
