@@ -123,12 +123,41 @@ def build_license_email_content(
         """
     ).strip()
 
-    # Get the logo as a data URI
+    # Prepare branding blocks for the HTML email
     logo_data_uri = _get_logo_data_uri()
-    
-    # Create logo HTML element if logo exists
-    logo_html = f'<img src="{logo_data_uri}" alt="Daywin Labs" style="height:30px; vertical-align:middle; margin-right:8px;"/>' if logo_data_uri else ''
-    
+    logo_img_html = (
+        f'<img src="{logo_data_uri}" alt="Daywin Labs" '
+        'style="display:block; height:30px; width:auto;">'
+    ) if logo_data_uri else ""
+
+    if logo_img_html:
+        thank_you_line = (
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+            'style="margin:0 0 15px 0; padding:0;">'
+            '<tr>'
+            f'<td style="padding:0 10px 0 0; vertical-align:middle;">{logo_img_html}</td>'
+            '<td style="vertical-align:middle; font-size:16px; color:#333333;">'
+            'Thank you for choosing Daywin Labs.</td>'
+            '</tr>'
+            '</table>'
+        )
+        footer_brand_html = (
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+            'align="center" style="margin:0 auto 10px auto; padding:0;">'
+            '<tr>'
+            f'<td style="padding:0 8px 0 0; vertical-align:middle;">{logo_img_html}</td>'
+            '<td style="vertical-align:middle; font-size:14px; color:#666666;">Daywin Labs</td>'
+            '</tr>'
+            '</table>'
+        )
+    else:
+        thank_you_line = (
+            '<p style="margin:0 0 15px 0; font-size:16px; color:#333333;">'
+            'Thank you for choosing Daywin Labs.'
+            '</p>'
+        )
+        footer_brand_html = '<p style="margin:0 0 10px 0;">Daywin Labs</p>'
+
     html_body = dedent(
         f"""
         <!DOCTYPE html>
@@ -165,12 +194,12 @@ def build_license_email_content(
                                       <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Complete the setup wizard to connect Plaid, Stripe, and Xero.</li>
                                     </ol>
                                     <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
-                                    <p style="margin:0 0 0 0; font-size:16px; color:#333333;">Thank you for choosing {logo_html}Daywin Labs.</p>
+                                    {thank_you_line}
                                 </td>
                             </tr>
                             <tr>
                                 <td style="padding:20px 30px; text-align:center; background-color:#f8f9fa; border-top:1px solid #eaeaea; color:#666666; font-size:14px;">
-                                    <p style="margin:0 0 10px 0;">{logo_html}Daywin Labs</p>
+                                    {footer_brand_html}
                                     <p style="margin:0;">This email was sent to {client_name or ''} - {recipient_email or ''}</p>
                                 </td>
                             </tr>
