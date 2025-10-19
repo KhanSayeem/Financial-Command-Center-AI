@@ -651,7 +651,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 **Deployment Strategy:**
 1. **IT Admin Setup** (10 minutes):
-   - Download `Financial-Command-Center-Launcher.exe`
+   - Download the latest `FCC.zip` bundle and extract it
    - Test on admin machine first
    - Configure company Stripe/Xero credentials
    - Document server URL for team access
@@ -669,7 +669,7 @@ Linux: ~/.config/Claude/claude_desktop_config.json
 
 **Business Network Considerations:**
 - **Firewall**: Ensure access to pypi.org for dependency installation
-- **Antivirus**: Whitelist Financial-Command-Center-Launcher.exe
+- **Antivirus**: Whitelist `ultimate_cert_fix.cmd` (and the generated Python runtime if prompted)
 - **Group Policy**: Allow desktop shortcut creation
 - **SSL Certificates**: Consider using company CA for trust
 
@@ -875,7 +875,7 @@ If you're building custom integrations or connecting other business tools:
 #### **"Installer won't start or shows security warning"**
 1. **Right-click** installer → **"Run as administrator"**
 2. **Windows Defender**: Click "More info" → "Run anyway"
-3. **Antivirus software**: Add exception for Financial-Command-Center-Launcher.exe
+3. **Antivirus software**: Add exception for `ultimate_cert_fix.cmd`
 4. **Corporate networks**: Contact IT to whitelist the application
 
 #### **"Python installation failed"**

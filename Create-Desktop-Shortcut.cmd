@@ -11,7 +11,7 @@ set "ICON_PATH="
 set "LEGACY_SHORTCUT=%DESKTOP%\Financial Command Center AI - Quick Start.lnk"
 
 set "ICON_PATH=%CURRENT_DIR%\assets\application.ico"
-if not exist "%ICON_PATH%" set "ICON_PATH=%CURRENT_DIR%\installer_package\assets\application.ico"
+if not exist "%ICON_PATH%" set "ICON_PATH=%CURRENT_DIR%\FCC\assets\application.ico"
 if not exist "%ICON_PATH%" set "ICON_PATH="
 
 echo Creating desktop shortcut for %APP_NAME%...

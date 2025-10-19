@@ -44,7 +44,7 @@ KEY DIRECTORIES & FILES
 - `docs/` – extensive guides (setup wizard, automation, Warp MCP, Claude config, SSL, troubleshooting, completion summaries).
 - `templates/` & `static/` – web UI layouts (home, health dashboard, setup wizard, assistant chat, admin).
 - `scripts/` – helper utilities (Docker helpers, MCP protocol tests, data preparation, launcher scripts).
-- `installer/`, `installer_package/`, `financial_launcher.py`, `ultimate_cert_fix.cmd` – Windows packaging, mkcert automation, desktop launcher.
+- `installer/`, `FCC/`, `financial_launcher.py`, `ultimate_cert_fix.cmd` – Windows packaging, mkcert automation, desktop launcher.
 - `tests/` – pytest suites, manual MCP/automation tests, fixtures for Plaid/Xero/Stripe.
 - `secure_config/` – encrypted credential store (`config.enc`, `master.key`, metadata, mode toggles).
 - `automation_store.json`, `automation_config.json`, `reports/` – automation schedules, generated reports.
@@ -66,6 +66,7 @@ SECURITY MODEL
 - Sessions hardened with secure cookies, SameSite protection, auto-generated secret keys (`session_config.py`).
 - Compliance/audit logs stored under `audit/` with rotation; automation and MCP logs under `automation/` and `reports/`.
 - HTTPS enforced by default (`FORCE_HTTPS` env) with mkcert certificates; setup wizard refuses insecure transport unless explicitly overridden.
+- License enforcement: `ultimate_cert_fix.cmd` verifies keys against `https://license.daywinlabs.com` on every launch (no local cache persisted) before continuing the installer workflow.
 
 SETUP & DEPLOYMENT
 - Prerequisites: Python 3.13+, Plaid/Stripe/Xero accounts, mkcert for trusted local HTTPS. Optional: OpenAI key, Ollama for Llama 3.2, Claude Desktop, Warp terminal.

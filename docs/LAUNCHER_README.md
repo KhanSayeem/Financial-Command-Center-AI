@@ -84,8 +84,8 @@ pyinstaller --onefile --windowed --icon=assets/launcher_icon.ico financial_launc
 
 After building, you'll get:
 ```
-installer_package/
-├── Financial-Command-Center-Launcher.exe  # Main executable
+FCC/
+├── ultimate_cert_fix.cmd                  # Primary launcher (license + setup)
 ├── INSTALL.md                             # User instructions
 ├── Launch.bat                             # Windows helper script
 ├── README.md                              # Project documentation
@@ -94,7 +94,7 @@ installer_package/
 
 ## 🎯 User Experience Flow
 
-1. **Download & Run**: User downloads and runs `Financial-Command-Center-Launcher.exe`
+1. **Download & Run**: User downloads the bundle and launches `ultimate_cert_fix.cmd`
 2. **Welcome Screen**: Branded welcome screen with setup options
 3. **Automatic Setup**: 
    - Python environment detection/creation
@@ -188,17 +188,17 @@ python tests/manual/test_launcher.py
 ## 📚 Usage Instructions
 
 ### For End Users
-1. Download `Financial-Command-Center-Launcher.exe`
-2. Run the executable (no installation required)
-3. Follow the setup wizard prompts
-4. Access the application via the system tray icon
+1. Download the latest `FCC.zip` bundle.
+2. Extract the archive and open the `FCC` folder.
+3. Run `ultimate_cert_fix.cmd` and complete the guided prompts.
+4. Access the application in your browser once the setup launches it.
 
 ### For Developers
 1. Clone the repository
 2. Install development dependencies: `pip install -r launcher_requirements.txt`
 3. Test the launcher: `python tests/manual/test_launcher.py`
 4. Build executable: `python scripts/launcher/build_launcher.py`
-5. Distribute the `installer_package/` folder
+5. Distribute the `FCC/` folder
 
 ## 🔍 Troubleshooting
 
