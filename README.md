@@ -181,7 +181,15 @@
 2. **Select "Download ZIP"**
 3. **Extract** to your preferred location (Documents, Desktop, etc.)
 4. **Navigate** to the extracted folder
-5. **Double-click** `ultimate_cert_fix.cmd` in the project root folder
+5. Run the one-time installer:
+   - **Windows:** double-click `bootstrap\bootstrap-install.cmd` (prompts for elevation).  
+     If you prefer the command line:  
+     ```powershell
+     Set-Location "C:\Path\To\Financial-Command-Center-AI"
+     python -m bootstrap install --no-launch
+     ```
+     *(No admin rights? Run the installer normally and then trust the certificate manually with `certutil -user -addstore Root certs\ca.crt`.)*
+   - **macOS/Linux:** run `./bootstrap/bootstrap-install.sh` (prompts for sudo). Without sudo the script prints the manual trust command.
 
 #### **Option B: Git Clone (For Developers)**
 ```bash
@@ -192,7 +200,9 @@ cd Financial-Command-Center-AI
 ### **Step 2: Launch Financial Command Center** (≈ 30 seconds)
 
 #### **Windows Users (Recommended)**
-1. **Double-click** `ultimate_cert_fix.cmd` in the project root folder to start
+1. **Launch options:**
+   - **GUI:** double-click `ultimate_cert_fix.cmd` (the legacy helper still works).
+   - **CLI:** `bootstrap\run_windows.cmd launch` or `python -m bootstrap launch --detach`.
 2. **First Run Automatic Setup**:
    - Creates Python virtual environment automatically
    - Installs all dependencies in background
@@ -201,15 +211,9 @@ cd Financial-Command-Center-AI
    - Opens browser to `https://127.0.0.1:8000` (secured!)
 
 #### **Mac/Linux Users**
-```bash
-# One-time setup
-python -m venv .venv
-source .venv/bin/activate  # Mac/Linux
-pip install -r requirements.txt
-
-# Launch application
-python app_with_setup_wizard.py
-```
+- **One-time setup:** `./bootstrap/bootstrap-install.sh`  
+  (prompts for sudo; see `docs/deployment/cross-platform-launcher.md` for manual trust instructions).
+- **Launch:** `./bootstrap/run_unix.sh launch` or `python3 -m bootstrap launch --detach`
 
 #### **After First Run (Windows)**
 You'll get a **desktop shortcut**: "**Financial Command Center AI - Quick Start**"

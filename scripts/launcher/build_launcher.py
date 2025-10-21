@@ -981,6 +981,11 @@ def create_installer_package_full() -> bool:
         dst.parent.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(src, dst)
+        if dst.suffix == ".sh":
+            try:
+                dst.chmod(dst.stat().st_mode | 0o111)
+            except Exception:
+                pass
 
 
 
@@ -1132,6 +1137,8 @@ def create_installer_package_full() -> bool:
 
         ("fcc-local-llm-adapter", ["tests", "*.ipynb"]),
 
+        ("bootstrap", []),
+
     ]
 
     for folder_name, ignore_patterns in folder_manifest:
@@ -1195,6 +1202,16 @@ def create_installer_package_full() -> bool:
         "create-quick-start-shortcut.ps1",
 
         "ultimate_cert_fix.cmd",
+
+        "bootstrap/run_windows.cmd",
+
+        "bootstrap/run_unix.sh",
+
+        "bootstrap/bootstrap-install.cmd",
+
+        "bootstrap/bootstrap-install.ps1",
+
+        "bootstrap/bootstrap-install.sh",
 
     ]:
 

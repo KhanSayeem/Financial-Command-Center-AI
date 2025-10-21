@@ -26,6 +26,8 @@ urllib3==2.0.7
 certifi==2023.7.22
 charset-normalizer==3.3.2
 idna==3.4
+google-generativeai>=0.5.0
+openai>=1.0.0
 
 # OAuth and security
 oauthlib==3.2.2
