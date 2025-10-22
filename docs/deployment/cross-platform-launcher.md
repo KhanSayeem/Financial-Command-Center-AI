@@ -23,13 +23,15 @@ After installation, use `python -m bootstrap launch --detach` (or
 
 `python -m bootstrap <command>`:
 
-- `install` — create venv, install dependencies (OpenAI/Gemini included),
+- `install` - create venv, install dependencies (OpenAI/Gemini included),
   verify licence, generate certificates, and trust CA when possible.
 - `launch` — start the HTTPS server and open the browser.
 - `repair` — re-run setup tasks without deleting data.
 
 ## Notes
 
+- The Windows bootstrapper auto-installs Python 3.11+ if it is missing and
+  captures output to `%LOCALAPPDATA%\Financial Command Center\bootstrap-<timestamp>.log`.
 - The CLI now checks for admin rights on Windows and warns when the trust
   install is skipped.
 - When run without elevation, it prints the exact manual command to trust

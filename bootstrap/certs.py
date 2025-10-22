@@ -10,16 +10,56 @@ import platform
 import shutil
 import ssl
 import subprocess
+import sys
 from pathlib import Path
+from typing import TYPE_CHECKING, Type
 
-from cert_manager import CertificateManager
+if TYPE_CHECKING:
+    from cert_manager import CertificateManager  # pragma: no cover - type checking only
 
 
 LOG = logging.getLogger("fcc.bootstrap.certs")
+_SITE_PACKAGES_INJECTED: dict[Path, bool] = {}
 
 
 class CertificateError(RuntimeError):
     """Raised when certificate provisioning fails."""
+
+
+def _venv_site_packages(venv_dir: Path) -> list[Path]:
+    candidates: list[Path] = []
+    win_path = venv_dir / "Lib" / "site-packages"
+    if win_path.exists():
+        candidates.append(win_path)
+    lib_dir = venv_dir / "lib"
+    if lib_dir.exists():
+        for candidate in sorted(lib_dir.glob("python*/site-packages"), reverse=True):
+            if candidate.exists():
+                candidates.append(candidate)
+    return candidates
+
+
+def _inject_site_packages(venv_dir: Path | None) -> None:
+    if not venv_dir:
+        return
+    if _SITE_PACKAGES_INJECTED.get(venv_dir):
+        return
+    for site_path in _venv_site_packages(venv_dir):
+        if str(site_path) not in sys.path:
+            sys.path.insert(0, str(site_path))
+    _SITE_PACKAGES_INJECTED[venv_dir] = True
+
+
+def _manager_type(venv_dir: Path | None) -> Type["CertificateManager"]:
+    try:
+        from cert_manager import CertificateManager  # pylint: disable=import-outside-toplevel
+
+        return CertificateManager
+    except ModuleNotFoundError:
+        _inject_site_packages(venv_dir)
+        from cert_manager import CertificateManager  # pylint: disable=import-outside-toplevel
+
+        return CertificateManager
 
 
 def _run_command(cmd: list[str]) -> bool:
@@ -41,8 +81,9 @@ def _validate_cert_pair(cert_path: Path, key_path: Path) -> bool:
         return False
 
 
-def ensure_certificates(base_dir: Path) -> CertificateManager:
-    manager = CertificateManager(base_dir=base_dir, use_mkcert=True)
+def ensure_certificates(base_dir: Path, venv_dir: Path | None = None) -> "CertificateManager":
+    manager_cls = _manager_type(venv_dir)
+    manager = manager_cls(base_dir=base_dir, use_mkcert=True)
     generated = manager.ensure_certificates()
 
     cert_path = Path(manager.config["cert_file"])
@@ -62,7 +103,7 @@ def ensure_certificates(base_dir: Path) -> CertificateManager:
     return manager
 
 
-def _install_trust_windows(manager: CertificateManager) -> bool:
+def _install_trust_windows(manager: "CertificateManager") -> bool:
     if manager.install_certificate_to_system_store():
         LOG.info("Windows trust store updated.")
         return True
@@ -115,7 +156,7 @@ def _install_trust_linux(ca_path: Path) -> bool:
     return False
 
 
-def install_trust(manager: CertificateManager, *, skip: bool = False) -> bool:
+def install_trust(manager: "CertificateManager", *, skip: bool = False) -> bool:
     if skip:
         LOG.info("Skipping certificate trust installation.")
         return False

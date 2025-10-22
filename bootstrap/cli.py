@@ -141,7 +141,7 @@ def _command_install(args: argparse.Namespace) -> int:
 
     _license_check(venv_resolution, stateless=args.stateless_license, quiet=args.quiet_license)
 
-    manager = certs.ensure_certificates(REPO_ROOT)
+    manager = certs.ensure_certificates(REPO_ROOT, paths.venv_dir)
 
     trust_warning = False
     if platform.system() == "Windows" and not args.skip_trust and not is_windows_admin():
@@ -214,7 +214,7 @@ def _command_repair(args: argparse.Namespace) -> int:
     if not args.skip_license:
         _license_check(venv_resolution, stateless=args.stateless_license, quiet=args.quiet_license)
 
-    manager = certs.ensure_certificates(REPO_ROOT)
+    manager = certs.ensure_certificates(REPO_ROOT, paths.venv_dir)
 
     trust_warning = False
     if platform.system() == "Windows" and not args.skip_trust and not is_windows_admin():
@@ -335,4 +335,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

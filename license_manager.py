@@ -14,14 +14,83 @@ import hashlib
 import json
 import os
 import platform
+import ssl
 import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import requests
-from requests import Response
+import urllib.error
+import urllib.request
 from urllib.parse import urlparse, urlunparse
+
+try:
+    import requests  # type: ignore[import]
+except ModuleNotFoundError:  # pragma: no cover - fallback when requests is unavailable
+    requests = None  # type: ignore[assignment]
+
+if requests:
+    NETWORK_ERRORS: tuple[type[Exception], ...] = (requests.RequestException,)  # type: ignore[attr-defined]
+else:  # pragma: no cover - exercised when requests cannot be imported
+    NETWORK_ERRORS = (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        ssl.SSLError,
+        TimeoutError,
+        ConnectionError,
+    )
+
+
+class _SimpleResponse:
+    """Minimal response wrapper used when requests is unavailable."""
+
+    def __init__(self, status_code: int, text: str) -> None:
+        self.status_code = status_code
+        self._text = text
+
+    def json(self) -> Any:
+        if not self._text:
+            raise ValueError("Empty response body")
+        return json.loads(self._text)
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+
+def _post_json(url: str, payload: Dict[str, Any], *, timeout: int, verify: bool):
+    if requests:
+        return requests.post(url, json=payload, timeout=timeout, verify=verify)
+    return _urllib_post_json(url, payload, timeout=timeout, verify=verify)
+
+
+def _urllib_post_json(
+    url: str,
+    payload: Dict[str, Any],
+    *,
+    timeout: int,
+    verify: bool,
+) -> _SimpleResponse:
+    data = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    context = None
+    if url.lower().startswith("https://"):
+        context = ssl.create_default_context()
+        if not verify:
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+    try:
+        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+            text = response.read().decode("utf-8", "replace")
+            status = response.getcode() or 0
+    except urllib.error.HTTPError as exc:
+        text = exc.read().decode("utf-8", "replace")
+        return _SimpleResponse(exc.code, text)
+    return _SimpleResponse(status, text)
 
 try:
     from dotenv import load_dotenv
@@ -272,8 +341,11 @@ class LicenseManager:
             url = f"{target}/api/license/verify"
             verify_flag = self.verify_ssl if target.startswith("https://") else False
             try:
-                response: Response = requests.post(url, json=payload, timeout=15, verify=verify_flag)
-            except requests.RequestException as exc:  # pragma: no cover - network failures are environment-specific
+                response = _post_json(url, payload, timeout=15, verify=verify_flag)
+            except NETWORK_ERRORS as exc:  # pragma: no cover - network failures are environment-specific
+                last_error = exc
+                continue
+            except Exception as exc:  # pragma: no cover - unexpected transport failure
                 last_error = exc
                 continue
 

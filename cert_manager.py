@@ -7,6 +7,7 @@ Handles automatic certificate generation, trust store management, and client ins
 import os
 import sys
 import json
+import shutil
 import subprocess
 import socket
 import ssl
@@ -71,7 +72,11 @@ class CertificateManager:
             print("Installing mkcert CA to system trust store...")
             result = subprocess.run(
                 [str(self.mkcert_path), "-install"],
-                capture_output=True, text=True, timeout=30
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=30,
             )
             
             if result.returncode == 0:
@@ -85,6 +90,45 @@ class CertificateManager:
         except Exception as e:
             print(f"WARNING: Error installing mkcert CA: {e}")
             return False
+    
+    def _sync_mkcert_root_ca(self) -> bool:
+        """Copy mkcert root CA/key into the certs directory used by FCC."""
+        try:
+            caroot = subprocess.run(
+                [str(self.mkcert_path), "-CAROOT"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+            )
+        except Exception as exc:
+            print(f"WARNING: Unable to query mkcert CA root: {exc}")
+            return False
+
+        if caroot.returncode != 0:
+            print(f"WARNING: mkcert -CAROOT failed: {caroot.stderr.strip()}")
+            return False
+
+        root_dir = Path(caroot.stdout.strip()).expanduser().resolve()
+        ca_src = root_dir / "rootCA.pem"
+        key_src = root_dir / "rootCA-key.pem"
+        if not ca_src.exists():
+            print(f"WARNING: mkcert root CA not found at {ca_src}")
+            return False
+
+        dest_ca = Path(self.config["ca_cert"])
+        dest_key = Path(self.config["ca_key"])
+        dest_ca.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            shutil.copy2(ca_src, dest_ca)
+            if key_src.exists():
+                shutil.copy2(key_src, dest_key)
+        except Exception as exc:
+            print(f"WARNING: Failed to copy mkcert CA files: {exc}")
+            return False
+
+        return True
     
     def generate_mkcert_certificates(self):
         """Generate certificates using mkcert for automatic browser trust"""
@@ -102,16 +146,29 @@ class CertificateManager:
             cert_args = [str(self.mkcert_path), "-cert-file", self.config["cert_file"], 
                         "-key-file", self.config["key_file"]] + self.config["hostnames"]
             
-            result = subprocess.run(cert_args, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cert_args,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=30,
+            )
             
             if result.returncode == 0:
                 print(f"SUCCESS: mkcert certificates generated successfully")
                 print(f"   Certificate: {self.config['cert_file']}")
                 print(f"   Private key: {self.config['key_file']}")
+
+                if self._sync_mkcert_root_ca():
+                    print(f"   CA certificate: {self.config['ca_cert']}")
+                else:
+                    print("WARNING: mkcert root CA could not be synced to certs directory.")
                 
                 # Update config
                 self.config["last_generated"] = datetime.now().isoformat()
                 self.config["use_mkcert"] = True
+                self.config["trust_installed"] = True
                 self._save_config()
                 
                 return True
