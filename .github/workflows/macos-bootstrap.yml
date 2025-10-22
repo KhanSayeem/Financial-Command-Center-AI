@@ -1,0 +1,52 @@
+name: macOS Bootstrap Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  bootstrap-test:
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show available Python interpreters
+        run: |
+          which python3 || true
+          python3 --version || true
+          /usr/bin/python3 --version || true
+
+      - name: Ensure Python 3.11 is available
+        run: |
+          if ! python3 --version 2>/dev/null | grep -q '3\.11'; then
+            brew update
+            brew install python@3.11
+            echo "/opt/homebrew/opt/python@3.11/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Make installer scripts executable
+        run: |
+          chmod +x bootstrap/bootstrap-install.sh
+          chmod +x bootstrap/mac-launch.command
+          chmod +x bootstrap/run_unix.sh
+
+      - name: Run bootstrap installer with sudo
+        run: |
+          sudo env FCC_BOOTSTRAP_NO_PAUSE=1 ./bootstrap/bootstrap-install.sh
+
+      - name: Tail bootstrap log
+        run: |
+          LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/financial-command-center"
+          find "$LOG_DIR" -name 'bootstrap-*.log' -print
+          LOG_FILE="$(find "$LOG_DIR" -name 'bootstrap-*.log' | sort | tail -1)"
+          [[ -f "$LOG_FILE" ]] && cat "$LOG_FILE"
+
+      - name: Launch via mac wrapper (smoke test)
+        run: |
+          ./bootstrap/mac-launch.command &
+          sleep 5
+          pkill -f "bootstrap/run_unix.sh" || true

@@ -981,7 +981,7 @@ def create_installer_package_full() -> bool:
         dst.parent.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(src, dst)
-        if dst.suffix == ".sh":
+        if dst.suffix in {".sh", ".command", ".desktop"}:
             try:
                 dst.chmod(dst.stat().st_mode | 0o111)
             except Exception:
@@ -1212,6 +1212,8 @@ def create_installer_package_full() -> bool:
         "bootstrap/bootstrap-install.ps1",
 
         "bootstrap/bootstrap-install.sh",
+        "bootstrap/mac-launch.command",
+        "bootstrap/financial-command-center.desktop",
 
     ]:
 

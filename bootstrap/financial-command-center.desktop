@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Financial Command Center
+Comment=Launch the Financial Command Center web app
+Exec=/bin/sh -c 'cd "$(dirname "$1")/.." && ./bootstrap/run_unix.sh launch' sh %k
+Icon=../assets/application-icon.png
+Terminal=true
+Categories=Office;Finance;
+StartupWMClass=financial-command-center
+Path=.
