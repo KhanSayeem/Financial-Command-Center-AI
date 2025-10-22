@@ -22,11 +22,15 @@ jobs:
 
       - name: Ensure Python 3.11 is available
         run: |
-          if ! python3 --version 2>/dev/null | grep -q '3\.11'; then
-            brew update
-            brew install python@3.11
-            echo "/opt/homebrew/opt/python@3.11/bin" >> "$GITHUB_PATH"
+          if python3 --version 2>/dev/null | grep -q '3\.11'; then
+            echo "Python 3.11 already present."
+            exit 0
           fi
+
+          curl -L -o /tmp/python-3.11.pkg \
+            https://www.python.org/ftp/python/3.11.7/python-3.11.7-macos11.pkg
+          sudo installer -pkg /tmp/python-3.11.pkg -target /
+          echo "/Library/Frameworks/Python.framework/Versions/3.11/bin" >> "$GITHUB_PATH"
 
       - name: Make installer scripts executable
         run: |
