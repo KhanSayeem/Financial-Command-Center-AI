@@ -174,59 +174,64 @@ def build_license_email_content(
         )
         footer_brand_html = '<p style="margin:0 0 10px 0;">Daywin Labs</p>'
 
-    html_body = dedent(
-        f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Your {product_name} License</title>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
-        <body style="margin:0; padding:20px; font-family:Arial, sans-serif; background-color:#f5f5f5;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f5f5;">
-                <tr>
-                    <td style="padding:20px 0;">
-                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
-                            <tr>
-                                <td style="padding:30px 30px 20px 30px; text-align:center; border-bottom:1px solid #eaeaea;">
-                                    <h1 style="margin:0; font-size:24px; color:#333333;">{product_name}</h1>
-                                    <p style="margin:10px 0 0 0; font-size:16px; color:#666666;">{plan_label}</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:30px 30px 20px 30px;">
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Hi {client_name or 'there'},</p>
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Welcome to the <strong>{product_name}</strong> ({plan_label})!</p>
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Your license key</strong><br/>
-                                    <code style="font-size:1.1rem; background-color:#f9f9f9; padding:5px 8px; border-radius:4px; border:1px solid #ddd;">{license_key}</code></p>
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Download the installer</strong><br/>
-                                    <a href="{fallback_download}" style="color:#007bff; text-decoration:underline;">Download Now</a></p>
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Setup checklist</strong></p>
-                                    <ol style="padding-left:20px; margin:0 0 15px 0;">
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Unzip the archive on your admin machine.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> double-click <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\bootstrap-install.cmd</code> and approve the UAC prompt.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/bootstrap-install.sh</code> (approve sudo when prompted) to install certificates and dependencies.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Launch the app via <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\mac-launch.command</code>, <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/financial-command-center.desktop</code>, or <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/run_unix.sh launch</code>, then complete the setup wizard.</li>
-                                    </ol>
-                                    <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
-                                    {thank_you_line}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:20px 30px; text-align:center; background-color:#f8f9fa; border-top:1px solid #eaeaea; color:#666666; font-size:14px;">
-                                    {footer_brand_html}
-                                    <p style="margin:0;">This email was sent to {client_name or ''} - {recipient_email or ''}</p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
-    ).strip()
+    if download_url:
+        download_html = (
+            f'<a href="{fallback_download}" style="color:#007bff; text-decoration:underline;">Download Now</a>'
+        )
+    else:
+        download_html = fallback_download
+
+    greeting_name = client_name or recipient_email or "there"
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Your {product_name} License</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0; padding:20px; font-family:Arial, sans-serif; background-color:#f5f5f5;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f5f5;">
+        <tr>
+            <td style="padding:20px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" align="center" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                    <tr>
+                        <td style="padding:30px 30px 20px 30px; text-align:center; border-bottom:1px solid #eaeaea;">
+                            <h1 style="margin:0; font-size:24px; color:#333333;">{product_name}</h1>
+                            <p style="margin:10px 0 0 0; font-size:16px; color:#666666;">{plan_label}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:30px 30px 20px 30px;">
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Hi {greeting_name},</p>
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">Welcome to the <strong>{product_name}</strong> ({plan_label})!</p>
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Your license key</strong><br/>
+                            <code style="font-size:1.1rem; background-color:#f9f9f9; padding:5px 8px; border-radius:4px; border:1px solid #ddd;">{license_key}</code></p>
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Download the installer</strong><br/>
+                            {download_html}</p>
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Setup checklist</strong></p>
+                            <ol style="padding-left:20px; margin:0 0 15px 0;">
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Unzip the archive on your admin machine.</li>
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> double-click <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\\bootstrap-install.cmd</code> and approve the UAC prompt.</li>
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/bootstrap-install.sh</code> (approve sudo when prompted) to install certificates and dependencies.</li>
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Launch the app via <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\\mac-launch.command</code>, <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/financial-command-center.desktop</code>, or <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/run_unix.sh launch</code>, then complete the setup wizard.</li>
+                            </ol>
+                            <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
+                            {thank_you_line}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:20px 30px; text-align:center; background-color:#f8f9fa; border-top:1px solid #eaeaea; color:#666666; font-size:14px;">
+                            {footer_brand_html}
+                            <p style="margin:0;">This email was sent to {client_name or ''} - {recipient_email or ''}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
 
     email_subject = subject or f"Your {product_name} License"
 
