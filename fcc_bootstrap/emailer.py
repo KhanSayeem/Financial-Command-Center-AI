@@ -129,9 +129,9 @@ def build_license_email_content(
 
         Setup checklist:
         1. Unzip the archive on your admin machine.
-        2. Run `ultimate_cert_fix.cmd` to install the local certificates.
-        3. Launch the installer and enter the license key above.
-        4. Complete the setup wizard to connect Plaid/Stripe/Xero.
+        2. Windows: double-click `bootstrap\bootstrap-install.cmd` and approve the UAC prompt.
+        3. macOS/Linux: run `bootstrap/bootstrap-install.sh` (approve sudo when asked) to install certificates and dependencies.
+        4. Launch the app via the provided shortcuts (`bootstrap\mac-launch.command`, `bootstrap\financial-command-center.desktop`, or `bootstrap\run_unix.sh launch`) and complete the setup wizard.
 
         {support_line}
 
@@ -205,9 +205,9 @@ def build_license_email_content(
                                     <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Setup checklist</strong></p>
                                     <ol style="padding-left:20px; margin:0 0 15px 0;">
                                       <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Unzip the archive on your admin machine.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">ultimate_cert_fix.cmd</code> to install the local certificates.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Launch the installer and enter the license key above.</li>
-                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Complete the setup wizard to connect Plaid, Stripe, and Xero.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> double-click <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\bootstrap-install.cmd</code> and approve the UAC prompt.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/bootstrap-install.sh</code> (approve sudo when prompted) to install certificates and dependencies.</li>
+                                      <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Launch the app via <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\mac-launch.command</code>, <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/financial-command-center.desktop</code>, or <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/run_unix.sh launch</code>, then complete the setup wizard.</li>
                                     </ol>
                                     <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
                                     {thank_you_line}
