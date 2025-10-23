@@ -34,10 +34,10 @@ the new macOS/Linux launch helpers).
 
 `python -m bootstrap <command>`:
 
-- `install` — create venv, install dependencies (OpenAI/Gemini included),
+- `install` - create venv, install dependencies (OpenAI/Gemini included),
   verify licence, generate certificates, and trust CA when possible.
-- `launch` — start the HTTPS server and open the browser.
-- `repair` — re-run setup tasks without deleting data.
+- `launch` - start the HTTPS server and open the browser.
+- `repair` - re-run setup tasks without deleting data.
 
 ## Notes
 
