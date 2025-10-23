@@ -1,0 +1,50 @@
+name: Windows Bootstrap Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  bootstrap-test:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Python versions
+        shell: pwsh
+        run: |
+          python --version
+          where python
+
+      - name: Run bootstrap installer
+        shell: pwsh
+        env:
+          FCC_BOOTSTRAP_NO_PAUSE: "1"
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          & "$PWD\bootstrap\bootstrap-install.ps1"
+
+      - name: Tail bootstrap log
+        shell: pwsh
+        run: |
+          $logDir = Join-Path $env:LOCALAPPDATA 'Financial Command Center'
+          if (Test-Path $logDir) {
+            Get-ChildItem $logDir -Filter 'bootstrap-*.log'
+            $log = Get-ChildItem $logDir -Filter 'bootstrap-*.log' | Sort-Object LastWriteTime | Select-Object -Last 1
+            if ($log) { Get-Content $log.FullName }
+          } else {
+            Write-Host "No bootstrap log directory found."
+          }
+
+      - name: Launch app via run_windows.cmd
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "$PWD\bootstrap\run_windows.cmd" -ArgumentList 'launch','--no-browser','--skip-license' -PassThru
+          Start-Sleep -Seconds 5
+          if (!$proc.HasExited) {
+            Stop-Process -Id $proc.Id -Force
+          }
