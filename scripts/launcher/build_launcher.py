@@ -25,20 +25,20 @@ Usage:
 
 
 import json
-
 import os
-
 import shutil
-
 import subprocess
-
 import sys
-
 from datetime import datetime, timezone
-
 from pathlib import Path
+from typing import Dict, List, Optional
 
-from typing import List, Optional
+try:
+    from dotenv import dotenv_values
+except ImportError:  # pragma: no cover - optional dependency
+    dotenv_values = None
+
+from setup_wizard import ConfigurationManager
 
 
 
@@ -85,6 +85,126 @@ RELEASE_DIR = Path("release")
 UPLOAD_SPLIT_LIMIT_MB = 49
 
 INCLUDE_EXECUTABLE_IN_PACKAGE = False
+
+ENV_PATH = REPO_ROOT / ".env"
+
+PLATFORM_ENV_KEYS = [
+    "XERO_CLIENT_ID",
+    "XERO_CLIENT_SECRET",
+    "XERO_REDIRECT_URI",
+    "XERO_SCOPE",
+    "STRIPE_CLIENT_ID",
+    "STRIPE_CLIENT_SECRET",
+    "STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_REDIRECT_URI",
+    "PLAID_CLIENT_ID",
+    "PLAID_SECRET",
+    "PLAID_ENV",
+    "PLAID_REDIRECT_URI",
+]
+
+
+def _load_dotenv_values(path: Path) -> Dict[str, str]:
+    if not path.exists():
+        return {}
+    if dotenv_values:
+        try:
+            raw = dotenv_values(path)
+            return {k: v for k, v in (raw or {}).items() if v}
+        except Exception:
+            return {}
+    values: Dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            values[key] = value
+    return values
+
+
+def _collect_platform_env() -> Dict[str, str]:
+    values = _load_dotenv_values(ENV_PATH)
+    for key in PLATFORM_ENV_KEYS:
+        env_value = os.environ.get(key)
+        if env_value:
+            values[key] = env_value
+    return values
+
+
+def _build_platform_config(env_values: Dict[str, str]) -> Dict[str, Dict[str, str]]:
+    platform_config: Dict[str, Dict[str, str]] = {}
+
+    stripe_cfg: Dict[str, str] = {}
+    if env_values.get("STRIPE_CLIENT_ID"):
+        stripe_cfg["client_id"] = env_values["STRIPE_CLIENT_ID"]
+    if env_values.get("STRIPE_CLIENT_SECRET"):
+        stripe_cfg["client_secret"] = env_values["STRIPE_CLIENT_SECRET"]
+        stripe_cfg.setdefault("api_key", env_values["STRIPE_CLIENT_SECRET"])
+    if env_values.get("STRIPE_PUBLISHABLE_KEY"):
+        stripe_cfg["publishable_key"] = env_values["STRIPE_PUBLISHABLE_KEY"]
+    if env_values.get("STRIPE_REDIRECT_URI"):
+        stripe_cfg["redirect_uri"] = env_values["STRIPE_REDIRECT_URI"]
+    if stripe_cfg:
+        platform_config["stripe"] = stripe_cfg
+
+    xero_cfg: Dict[str, str] = {}
+    if env_values.get("XERO_CLIENT_ID"):
+        xero_cfg["client_id"] = env_values["XERO_CLIENT_ID"]
+    if env_values.get("XERO_CLIENT_SECRET"):
+        xero_cfg["client_secret"] = env_values["XERO_CLIENT_SECRET"]
+    if env_values.get("XERO_REDIRECT_URI"):
+        xero_cfg["redirect_uri"] = env_values["XERO_REDIRECT_URI"]
+    if env_values.get("XERO_SCOPE"):
+        xero_cfg["scope"] = env_values["XERO_SCOPE"]
+    if xero_cfg:
+        platform_config["xero"] = xero_cfg
+
+    plaid_cfg: Dict[str, str] = {}
+    if env_values.get("PLAID_CLIENT_ID"):
+        plaid_cfg["client_id"] = env_values["PLAID_CLIENT_ID"]
+    if env_values.get("PLAID_SECRET"):
+        plaid_cfg["secret"] = env_values["PLAID_SECRET"]
+    if env_values.get("PLAID_ENV"):
+        plaid_cfg["environment"] = env_values["PLAID_ENV"]
+    if env_values.get("PLAID_REDIRECT_URI"):
+        plaid_cfg["redirect_uri"] = env_values["PLAID_REDIRECT_URI"]
+    if plaid_cfg:
+        platform_config["plaid"] = plaid_cfg
+
+    return platform_config
+
+
+def seed_platform_credentials(package_dir: Path) -> None:
+    platform_env = _collect_platform_env()
+    platform_config = _build_platform_config(platform_env)
+    if not platform_config:
+        print("??  No platform credentials found in environment/.env; setup wizard will prompt users.")
+        return
+
+    secure_dir = package_dir / "secure_config"
+    secure_dir.mkdir(parents=True, exist_ok=True)
+    config_manager = ConfigurationManager(config_dir=str(secure_dir))
+    existing_config = config_manager.load_config() or {}
+
+    updated_services = []
+    for service, data in platform_config.items():
+        merged = dict(existing_config.get(service, {}))
+        merged.update({k: v for k, v in data.items() if v})
+        merged.pop("skipped", None)
+        merged.pop("configured_at", None)
+        existing_config[service] = merged
+        updated_services.append(service)
+
+    if not updated_services:
+        print("??  Platform credentials were detected but identical data already exists; skipping secure_config seed.")
+        return
+
+    config_manager.save_config(existing_config)
+    print(f"??  Seeded platform credentials for: {', '.join(updated_services)}")
 
 
 
@@ -814,6 +934,16 @@ def create_installer_package() -> bool:
 
 
 
+    if ENV_PATH.exists():
+
+        shutil.copy2(ENV_PATH, package_dir / ".env")
+
+    else:
+
+        print("??  No .env file detected; installer package will rely on runtime environment variables.")
+
+
+
     enforce_shortcut_icon_scripts(package_dir)
 
 
@@ -1221,6 +1351,16 @@ def create_installer_package_full() -> bool:
 
 
 
+    if ENV_PATH.exists():
+
+        _copy_file(ENV_PATH, package_dir / ".env")
+
+    else:
+
+        print("??  No .env file detected; package will rely on runtime environment variables.")
+
+
+
     enforce_shortcut_icon_scripts(package_dir)
 
 
@@ -1414,6 +1554,8 @@ start "" "ultimate_cert_fix.cmd"
         target.parent.mkdir(parents=True, exist_ok=True)
 
         target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    seed_platform_credentials(package_dir)
 
 
 

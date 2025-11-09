@@ -6,6 +6,20 @@ Replaces environment variable configuration with secure setup wizard
 import os
 import sys
 from flask import Flask, session, redirect, url_for, jsonify, request, render_template, send_from_directory
+
+# Load environment variables from the repo's .env so packaged builds behave like dev servers
+try:
+    from pathlib import Path
+    from dotenv import load_dotenv
+
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    ENV_PATH = BASE_DIR / ".env"
+    if ENV_PATH.exists():
+        load_dotenv(ENV_PATH)
+    else:
+        load_dotenv()
+except ImportError:
+    print("Warning: python-dotenv not installed; skipping .env load in installer package")
 try:
     from flask_cors import CORS
 except ImportError:

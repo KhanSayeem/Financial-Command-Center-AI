@@ -7,6 +7,26 @@ pushd "%SCRIPT_DIR%" >nul
 
 for %%I in ("%SCRIPT_DIR%.") do set "SCRIPT_DIR=%%~fI"
 
+set "APP_ENTRY=%SCRIPT_DIR%\app_with_setup_wizard.py"
+if not exist "%APP_ENTRY%" (
+    set "APP_ENTRY=%SCRIPT_DIR%\installer_package\app_with_setup_wizard.py"
+)
+if not exist "%APP_ENTRY%" (
+    echo [ERROR] Unable to locate app_with_setup_wizard.py near %SCRIPT_DIR%.
+    echo         Ensure you extracted the full repository before running this tool.
+    goto cleanup_fail
+)
+
+set "ENV_FILE=%SCRIPT_DIR%\.env"
+if exist "%ENV_FILE%" (
+    echo Loading environment overrides from %ENV_FILE% ...
+    for /f "usebackq tokens=1* delims==" %%A in (`findstr /R "^[A-Za-z0-9_][A-Za-z0-9_]*=" "%ENV_FILE%"`) do (
+        call :set_env_from_line "%%~A" "%%~B"
+    )
+) else (
+    echo [INFO] No .env file found beside ultimate_cert_fix.cmd; relying on existing environment variables.
+)
+
 set "INSTALL_FLAG_FILE=%SCRIPT_DIR%\.fcc_installed"
 
 :: Resolve the actual Desktop path (handles OneDrive or custom locations)
@@ -204,11 +224,12 @@ if exist "%VENV_PY%" (
 ) else (
     echo  - Virtual environment not found, using %PYTHON_DISPLAY%
 )
+echo  - Entrypoint: %APP_ENTRY%
 
 if defined PYTHON_ARGS (
-    start "Financial Command Center Server" /MIN "%PYTHON_CMD%" %PYTHON_ARGS% "app_with_setup_wizard.py"
+    start "Financial Command Center Server" /MIN "%PYTHON_CMD%" %PYTHON_ARGS% "%APP_ENTRY%"
 ) else (
-    start "Financial Command Center Server" /MIN "%PYTHON_CMD%" "app_with_setup_wizard.py"
+    start "Financial Command Center Server" /MIN "%PYTHON_CMD%" "%APP_ENTRY%"
 )
 
 echo  - Waiting for server to become ready on %SERVER_URL% ...
@@ -373,6 +394,16 @@ if not "%INSTALL_RC%"=="0" (
     endlocal & exit /b 1
 )
 endlocal & exit /b 0
+
+:set_env_from_line
+setlocal EnableDelayedExpansion
+set "NAME=%~1"
+set "VALUE=%~2"
+if defined VALUE (
+    if "!VALUE:~0,1!"=="\"" if "!VALUE:~-1!"=="\"" set "VALUE=!VALUE:~1,-1!"
+)
+endlocal & set "%NAME%=%VALUE%"
+exit /b 0
 
 :cleanup_fail
 set "EXIT_CODE=1"

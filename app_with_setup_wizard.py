@@ -3,8 +3,17 @@ Enhanced Financial Command Center with Professional Setup Wizard
 Replaces environment variable configuration with secure setup wizard
 """
 
+import base64
 import os
 import sys
+import secrets
+import threading
+import time
+from urllib.parse import urlencode
+from typing import Optional, Dict, Any
+
+import requests
+import schedule
 
 # Ensure stdout can print Unicode on Windows consoles
 try:
@@ -32,8 +41,16 @@ if os.path.exists(adapter_path) and adapter_path not in sys.path:
 
 # Load environment variables from .env file FIRST
 try:
+    from pathlib import Path
     from dotenv import load_dotenv
-    load_dotenv()
+
+    BASE_DIR = Path(__file__).resolve().parent
+    ENV_PATH = BASE_DIR / '.env'
+    if ENV_PATH.exists():
+        load_dotenv(ENV_PATH)
+    else:
+        load_dotenv()
+
     print(f"Environment loaded - ASSISTANT_MODEL_TYPE: {os.getenv('ASSISTANT_MODEL_TYPE', 'not set')}")
     print(f"Environment loaded - USE_LLAMA32: {os.getenv('USE_LLAMA32', 'not set')}")
 except ImportError:
@@ -44,7 +61,7 @@ try:
     from flask_cors import CORS
 except ImportError:
     CORS = None
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 
@@ -64,6 +81,8 @@ from setup_wizard import (
     is_setup_required,
     get_integration_status,
     sync_credentials_to_env,
+    get_staged_credentials,
+    upsert_service_configuration,
 )
 from ui.helpers import build_nav, format_timestamp, summarize_details
 from ui.dashboard import build_admin_dashboard_context
@@ -81,7 +100,16 @@ from xero_python.api_client.oauth2 import OAuth2Token
 from xero_python.exceptions import AccountingBadRequestException
 from xero_python.identity import IdentityApi
 from xero_python.api_client import serialize
-from xero_client import save_token_and_tenant, has_stored_token, get_stored_token, clear_token_and_tenant, get_tenant_id
+from xero_client import (
+    save_token_and_tenant,
+    has_stored_token,
+    get_stored_token,
+    clear_token_and_tenant,
+    get_tenant_id,
+    load_api_client,
+    ensure_valid_token,
+    load_store,
+)
 from setup_api_routes import create_setup_blueprint
 
 # Add our security layer
@@ -203,13 +231,512 @@ def _xero_connection_payload():
     }
 
 
+def _stripe_connection_payload():
+    """Expose Stripe connection details for the setup wizard."""
+    try:
+        service_config = ConfigurationManager().get_service_config('stripe') or {}
+    except Exception:
+        service_config = {}
+
+    account_id = service_config.get('stripe_user_id') or service_config.get('connected_account_id', '')
+    connected = bool(service_config.get('access_token') or service_config.get('api_key'))
+
+    return {
+        'connected': connected,
+        'account_id': account_id or '',
+        'livemode': service_config.get('livemode', False),
+        'has_refresh_token': bool(service_config.get('refresh_token')),
+    }
+
+
+def _plaid_connection_payload():
+    """Expose Plaid connection details for the setup wizard."""
+    try:
+        service_config = ConfigurationManager().get_service_config('plaid') or {}
+    except Exception:
+        service_config = {}
+
+    connected = bool(service_config.get('access_token'))
+    return {
+        'connected': connected,
+        'item_id': service_config.get('item_id', ''),
+        'institution_name': service_config.get('institution_name', ''),
+        'environment': service_config.get('environment', ''),
+    }
+
+
+def _get_stripe_platform_credentials():
+    credentials = get_credentials_or_redirect()
+    return {
+        'client_id': credentials.get('STRIPE_CLIENT_ID') or os.getenv('STRIPE_CLIENT_ID'),
+        'client_secret': credentials.get('STRIPE_CLIENT_SECRET') or os.getenv('STRIPE_CLIENT_SECRET'),
+        'redirect_uri': credentials.get('STRIPE_REDIRECT_URI') or url_for('stripe_oauth_callback', _external=True),
+        'publishable_key': credentials.get('STRIPE_PUBLISHABLE_KEY') or os.getenv('STRIPE_PUBLISHABLE_KEY'),
+    }
+
+
+def _get_xero_platform_credentials():
+    credentials = get_credentials_or_redirect()
+    return {
+        'client_id': credentials.get('XERO_CLIENT_ID') or os.getenv('XERO_CLIENT_ID'),
+        'client_secret': credentials.get('XERO_CLIENT_SECRET') or os.getenv('XERO_CLIENT_SECRET'),
+        'redirect_uri': credentials.get('XERO_REDIRECT_URI') or _build_xero_redirect_uri(),
+        'scope': credentials.get('XERO_SCOPE'),
+    }
+
+
+def _get_plaid_platform_credentials():
+    credentials = get_credentials_or_redirect()
+    return {
+        'client_id': credentials.get('PLAID_CLIENT_ID') or os.getenv('PLAID_CLIENT_ID'),
+        'secret': credentials.get('PLAID_SECRET') or os.getenv('PLAID_SECRET'),
+        'environment': (credentials.get('PLAID_ENV') or os.getenv('PLAID_ENV') or 'sandbox').lower(),
+        'redirect_uri': credentials.get('PLAID_REDIRECT_URI') or url_for('plaid_oauth_callback', _external=True),
+    }
+
+
+def _persist_stripe_connection(token_data: dict) -> None:
+    updates = {
+        'api_key': token_data.get('access_token'),
+        'access_token': token_data.get('access_token'),
+        'refresh_token': token_data.get('refresh_token'),
+        'stripe_user_id': token_data.get('stripe_user_id'),
+        'scope': token_data.get('scope'),
+        'livemode': token_data.get('livemode'),
+        'token_type': token_data.get('token_type'),
+        'connected_account_id': token_data.get('stripe_user_id'),
+    }
+    upsert_service_configuration('stripe', updates, mark_configured=True)
+    sync_credentials_to_env()
+
+
+def _persist_plaid_connection(item_id: str, access_token: str, *, institution: Optional[dict] = None) -> None:
+    institution_name = ''
+    if isinstance(institution, dict):
+        institution_name = institution.get('name', '')
+
+    updates = {
+        'item_id': item_id,
+        'access_token': access_token,
+        'institution_name': institution_name,
+    }
+    upsert_service_configuration('plaid', updates, mark_configured=True)
+    sync_credentials_to_env()
+
+
+def _init_plaid_client():
+    creds = _get_plaid_platform_credentials()
+    client_id = creds.get('client_id')
+    secret = creds.get('secret')
+    environment = (creds.get('environment') or 'sandbox').lower()
+
+    if not client_id or not secret:
+        raise RuntimeError('Plaid client ID and secret are required. Update platform credentials.')
+
+    import plaid
+    from plaid.api import plaid_api
+
+    env_map = {
+        'production': getattr(plaid.Environment, 'Production', plaid.Environment.Sandbox),
+        'development': getattr(plaid.Environment, 'Development', getattr(plaid.Environment, 'Sandbox', plaid.Environment.Production)),
+        'sandbox': getattr(plaid.Environment, 'Sandbox', getattr(plaid.Environment, 'Development', plaid.Environment.Production)),
+    }
+    host = env_map.get(environment, env_map['sandbox'])
+
+    configuration = plaid.Configuration(
+        host=host,
+        api_key={
+            'clientId': client_id,
+            'secret': secret,
+        },
+    )
+    api_client = plaid.ApiClient(configuration)
+    return plaid_api.PlaidApi(api_client), creds
+
+
+def _exchange_plaid_public_token(public_token: str):
+    if not public_token:
+        raise ValueError('Plaid public token is required')
+
+    from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+
+    client, _ = _init_plaid_client()
+    exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
+    exchange_response = client.item_public_token_exchange(exchange_request)
+    return exchange_response
+
+
 setup_api_bp = create_setup_blueprint(
     setup_wizard_api=setup_wizard_api,
     logger=logger,
     post_save_callback=_apply_post_save_setup,
     connection_status_provider=_xero_connection_payload,
+    stripe_status_provider=_stripe_connection_payload,
+    plaid_status_provider=_plaid_connection_payload,
 )
 app.register_blueprint(setup_api_bp, url_prefix='/api/setup')
+
+
+@app.route('/oauth/stripe/start')
+def start_stripe_oauth():
+    """Redirect user to Stripe Connect OAuth."""
+    creds = _get_stripe_platform_credentials()
+    client_id = creds.get('client_id')
+    client_secret = creds.get('client_secret')
+    redirect_uri = creds.get('redirect_uri')
+
+    if not client_id or not client_secret:
+        return jsonify({
+            'error': 'Stripe not configured',
+            'message': 'Stripe client ID/secret missing. Update platform credentials.'
+        }), 400
+
+    state = secrets.token_urlsafe(32)
+    session['stripe_oauth_state'] = state
+    if request.args.get('from') == 'setup':
+        session['stripe_oauth_source'] = 'setup'
+
+    params = {
+        'response_type': 'code',
+        'client_id': client_id,
+        'scope': request.args.get('scope', 'read_write'),
+        'redirect_uri': redirect_uri,
+        'state': state,
+    }
+
+    stripe_url = f"https://connect.stripe.com/oauth/authorize?{urlencode(params)}"
+    return redirect(stripe_url)
+
+
+@app.route('/oauth/stripe/callback')
+def stripe_oauth_callback():
+    """Handle Stripe OAuth callback."""
+    error = request.args.get('error')
+    error_description = request.args.get('error_description')
+    if error:
+        logger.error(f"Stripe OAuth error: {error} - {error_description}")
+        return jsonify({'error': error, 'message': error_description}), 400
+
+    expected_state = session.pop('stripe_oauth_state', None)
+    state = request.args.get('state')
+    if expected_state and expected_state != state:
+        return jsonify({'error': 'invalid_state', 'message': 'OAuth state mismatch'}), 400
+
+    code = request.args.get('code')
+    if not code:
+        return jsonify({'error': 'missing_code', 'message': 'Stripe authorization code missing'}), 400
+
+    creds = _get_stripe_platform_credentials()
+    client_id = creds.get('client_id')
+    client_secret = creds.get('client_secret')
+    redirect_uri = creds.get('redirect_uri')
+
+    if not client_id or not client_secret:
+        return jsonify({'error': 'stripe_not_configured', 'message': 'Platform credentials missing'}), 400
+
+    import requests
+
+    try:
+        response = requests.post(
+            'https://connect.stripe.com/oauth/token',
+            data={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'code': code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': redirect_uri,
+            },
+            timeout=30,
+        )
+    except Exception as exc:
+        logger.error(f"Stripe token exchange failed: {exc}")
+        return jsonify({'error': 'token_exchange_failed', 'message': str(exc)}), 500
+
+    if response.status_code >= 400:
+        logger.error(f"Stripe token exchange error: {response.status_code} - {response.text}")
+        return jsonify({'error': 'token_exchange_failed', 'message': response.text}), 400
+
+    token_data = response.json()
+    _persist_stripe_connection(token_data)
+
+    source = session.pop('stripe_oauth_source', None)
+    target = url_for('setup_wizard') + '#step1' if source == 'setup' else url_for('profile')
+    return redirect(target)
+
+
+@app.route('/oauth/plaid/link-token', methods=['POST'])
+def create_plaid_link_token():
+    """Create a Plaid Link token for the client."""
+    try:
+        client, creds = _init_plaid_client()
+    except Exception as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+
+    from plaid.model.link_token_create_request import LinkTokenCreateRequest
+    from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+    from plaid.model.products import Products
+    from plaid.model.country_code import CountryCode
+
+    payload = request.get_json(silent=True) or {}
+    client_user_id = str(payload.get('user_id') or session.get('tenant_id') or 'fcc-user')
+    products = payload.get('products') or ['transactions']
+    country_codes = payload.get('country_codes') or ['US']
+
+    plaid_products = [Products(p.lower()) for p in products]
+    plaid_countries = [CountryCode(code.upper()) for code in country_codes]
+
+    req = LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id=client_user_id),
+        client_name="Financial Command Center",
+        language='en',
+        country_codes=plaid_countries,
+        products=plaid_products,
+        redirect_uri=creds.get('redirect_uri'),
+    )
+
+    response = client.link_token_create(req)
+    return jsonify({
+        'success': True,
+        'link_token': response.link_token,
+        'expiration': str(response.expiration),
+    })
+
+
+@app.route('/oauth/plaid/exchange', methods=['POST'])
+def exchange_plaid_public_token():
+    """Exchange Plaid public token for access token."""
+    data = request.get_json(silent=True) or {}
+    public_token = data.get('public_token')
+    institution = data.get('institution')
+
+    if not public_token:
+        return jsonify({'success': False, 'error': 'Missing public_token'}), 400
+
+    try:
+        exchange_response = _exchange_plaid_public_token(public_token)
+    except Exception as exc:
+        logger.error(f"Plaid public token exchange failed: {exc}")
+        return jsonify({'success': False, 'error': str(exc)}), 400
+
+    _persist_plaid_connection(
+        exchange_response.item_id,
+        exchange_response.access_token,
+        institution=institution if isinstance(institution, dict) else None,
+    )
+
+    return jsonify({'success': True, 'item_id': exchange_response.item_id})
+
+
+@app.route('/oauth/plaid/callback')
+def plaid_oauth_callback():
+    """Handle Plaid OAuth redirect flow."""
+    public_token = request.args.get('public_token')
+    if public_token:
+        try:
+            exchange_response = _exchange_plaid_public_token(public_token)
+            _persist_plaid_connection(exchange_response.item_id, exchange_response.access_token)
+        except Exception as exc:
+            logger.error(f"Plaid OAuth callback exchange failed: {exc}")
+            return jsonify({'success': False, 'error': str(exc)}), 400
+
+    return redirect(url_for('setup_wizard') + '#step2')
+
+
+@app.route('/sync/stripe', methods=['GET'])
+@require_api_key
+def sync_stripe_data():
+    """Fetch Stripe payments/refunds/balance using stored OAuth tokens."""
+    try:
+        service_config = ConfigurationManager().get_service_config('stripe') or {}
+        access_token = service_config.get('access_token') or service_config.get('api_key')
+        if not access_token:
+            return jsonify({'success': False, 'error': 'Stripe not connected'}), 400
+
+        import stripe
+        stripe.api_key = access_token
+
+        payments = stripe.Charge.list(limit=10)
+        refunds = stripe.Refund.list(limit=10)
+        balance = stripe.Balance.retrieve()
+
+        return jsonify({
+            'success': True,
+            'payments': [c.to_dict_recursive() for c in payments.data],
+            'refunds': [r.to_dict_recursive() for r in refunds.data],
+            'balance': balance.to_dict_recursive(),
+        })
+    except Exception as exc:
+        logger.error(f"Stripe sync failed: {exc}")
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/sync/xero', methods=['GET'])
+@require_api_key
+def sync_xero_data():
+    """Fetch recent Xero transactions and invoices."""
+    try:
+        tenant_id = get_tenant_id()
+        if not tenant_id:
+            return jsonify({'success': False, 'error': 'Xero tenant not connected'}), 400
+
+        client = load_api_client()
+        ensure_valid_token(client)
+        accounting = AccountingApi(client)
+
+        invoices = accounting.get_invoices(xero_tenant_id=tenant_id, page=1)
+        contacts = accounting.get_contacts(xero_tenant_id=tenant_id, page=1)
+        accounts = accounting.get_accounts(xero_tenant_id=tenant_id)
+
+        return jsonify({
+            'success': True,
+            'tenant_id': tenant_id,
+            'invoices': serialize(invoices),
+            'contacts': serialize(contacts),
+            'accounts': serialize(accounts),
+        })
+    except Exception as exc:
+        logger.error(f"Xero sync failed: {exc}")
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+@app.route('/sync/plaid', methods=['GET'])
+@require_api_key
+def sync_plaid_data():
+    """Fetch Plaid balances and recent transactions."""
+    try:
+        service_config = ConfigurationManager().get_service_config('plaid') or {}
+        access_token = service_config.get('access_token')
+        if not access_token:
+            return jsonify({'success': False, 'error': 'Plaid not connected'}), 400
+
+        client, _ = _init_plaid_client()
+
+        from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+        from plaid.model.transactions_get_request import TransactionsGetRequest
+        from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
+
+        balances_req = AccountsBalanceGetRequest(access_token=access_token)
+        balances = client.accounts_balance_get(balances_req)
+
+        end_date = datetime.utcnow().date()
+        start_date = end_date - timedelta(days=30)
+        txn_req = TransactionsGetRequest(
+            access_token=access_token,
+            start_date=start_date,
+            end_date=end_date,
+            options=TransactionsGetRequestOptions(count=25, offset=0),
+        )
+        transactions = client.transactions_get(txn_req)
+
+        return jsonify({
+            'success': True,
+            'accounts': balances.to_dict(),
+            'transactions': transactions.to_dict(),
+        })
+    except Exception as exc:
+        logger.error(f"Plaid sync failed: {exc}")
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+def _refresh_stripe_token() -> Dict[str, Any]:
+    """Refresh Stripe access token if a refresh token is available."""
+    service_config = ConfigurationManager().get_service_config('stripe') or {}
+    refresh_token = service_config.get('refresh_token')
+    if not refresh_token:
+        return {'success': False, 'skipped': True, 'reason': 'missing_refresh_token'}
+
+    creds = _get_stripe_platform_credentials()
+    client_id = creds.get('client_id')
+    client_secret = creds.get('client_secret')
+    if not client_id or not client_secret:
+        return {'success': False, 'error': 'Stripe platform credentials missing'}
+
+    try:
+        response = requests.post(
+            'https://connect.stripe.com/oauth/token',
+            data={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'grant_type': 'refresh_token',
+                'refresh_token': refresh_token,
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        token_data = response.json()
+        _persist_stripe_connection(token_data)
+        return {'success': True, 'account_id': token_data.get('stripe_user_id')}
+    except Exception as exc:
+        logger.warning(f"Stripe token refresh failed: {exc}")
+        return {'success': False, 'error': str(exc)}
+
+
+def _refresh_xero_token() -> Dict[str, Any]:
+    """Refresh Xero OAuth token if a refresh token is available."""
+    store = load_store() or {}
+    token = (store.get('token') or {}).copy()
+    refresh_token = token.get('refresh_token')
+    tenant_id = store.get('tenant_id') or get_tenant_id()
+    if not refresh_token:
+        return {'success': False, 'skipped': True, 'reason': 'missing_refresh_token'}
+
+    creds = _get_xero_platform_credentials()
+    client_id = store.get('client_id') or creds.get('client_id')
+    client_secret = store.get('client_secret') or creds.get('client_secret')
+    if not client_id or not client_secret:
+        return {'success': False, 'error': 'Xero platform credentials missing'}
+
+    token_endpoint = 'https://identity.xero.com/connect/token'
+    payload = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+    }
+    auth_string = f"{client_id}:{client_secret}"
+    headers = {
+        'Authorization': 'Basic ' + base64.b64encode(auth_string.encode('ascii')).decode('ascii'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+
+    try:
+        response = requests.post(token_endpoint, data=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        new_token = response.json()
+        save_token_and_tenant(new_token, tenant_id or '', client_id, client_secret)
+        upsert_service_configuration('xero', {
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'tenant_id': tenant_id or '',
+        }, mark_configured=True)
+        sync_credentials_to_env()
+        return {'success': True, 'tenant_id': tenant_id}
+    except Exception as exc:
+        logger.warning(f"Xero token refresh failed: {exc}")
+        return {'success': False, 'error': str(exc)}
+
+
+def refresh_all_tokens() -> Dict[str, Any]:
+    """Refresh all configured integration tokens."""
+    results = {
+        'stripe': _refresh_stripe_token(),
+        'xero': _refresh_xero_token(),
+    }
+    return results
+
+
+def start_refresh_scheduler():
+    """Start background scheduler that refreshes tokens every 24 hours."""
+    schedule.every(24).hours.do(refresh_all_tokens)
+
+    def _runner():
+        while True:
+            try:
+                schedule.run_pending()
+            except Exception as exc:
+                logger.warning(f"Token refresh scheduler error: {exc}")
+            time.sleep(60)
+
+    thread = threading.Thread(target=_runner, daemon=True, name="token-refresh-scheduler")
+    thread.start()
 
 # Initialize security manager if available
 if SECURITY_ENABLED:
@@ -261,21 +788,51 @@ def get_credentials_or_redirect():
     
     # Override with environment variables if they exist (for backward compatibility)
     env_stripe_key = os.getenv('STRIPE_API_KEY')
+    env_stripe_client_id = os.getenv('STRIPE_CLIENT_ID')
+    env_stripe_client_secret = os.getenv('STRIPE_CLIENT_SECRET')
+    env_stripe_redirect = os.getenv('STRIPE_REDIRECT_URI')
+    env_stripe_publishable = os.getenv('STRIPE_PUBLISHABLE_KEY')
     env_xero_client_id = os.getenv('XERO_CLIENT_ID')
     env_xero_client_secret = os.getenv('XERO_CLIENT_SECRET')
+    env_xero_redirect = os.getenv('XERO_REDIRECT_URI')
+    env_xero_scope = os.getenv('XERO_SCOPE')
     env_plaid_client_id = os.getenv('PLAID_CLIENT_ID')
     env_plaid_secret = os.getenv('PLAID_SECRET')
+    env_plaid_redirect = os.getenv('PLAID_REDIRECT_URI')
+    env_plaid_env = os.getenv('PLAID_ENV')
     
     if env_stripe_key:
         credentials['STRIPE_API_KEY'] = env_stripe_key
+    if env_stripe_client_id:
+        credentials['STRIPE_CLIENT_ID'] = env_stripe_client_id
+    if env_stripe_client_secret:
+        credentials['STRIPE_CLIENT_SECRET'] = env_stripe_client_secret
+    if env_stripe_redirect:
+        credentials['STRIPE_REDIRECT_URI'] = env_stripe_redirect
+    if env_stripe_publishable:
+        credentials['STRIPE_PUBLISHABLE_KEY'] = env_stripe_publishable
     if env_xero_client_id:
         credentials['XERO_CLIENT_ID'] = env_xero_client_id
     if env_xero_client_secret:
         credentials['XERO_CLIENT_SECRET'] = env_xero_client_secret
+    if env_xero_redirect:
+        credentials['XERO_REDIRECT_URI'] = env_xero_redirect
+    if env_xero_scope:
+        credentials['XERO_SCOPE'] = env_xero_scope
     if env_plaid_client_id:
         credentials['PLAID_CLIENT_ID'] = env_plaid_client_id
     if env_plaid_secret:
         credentials['PLAID_SECRET'] = env_plaid_secret
+    if env_plaid_redirect:
+        credentials['PLAID_REDIRECT_URI'] = env_plaid_redirect
+    if env_plaid_env:
+        credentials['PLAID_ENV'] = env_plaid_env
+
+    staged_xero = get_staged_credentials('xero')
+    if staged_xero.get('client_id'):
+        credentials['XERO_CLIENT_ID'] = staged_xero['client_id']
+    if staged_xero.get('client_secret'):
+        credentials['XERO_CLIENT_SECRET'] = staged_xero['client_secret']
 
     return credentials
 
@@ -1091,6 +1648,12 @@ def callback():
             
             # Save token and tenant using existing function
             save_token_and_tenant(filtered_token, tenant_id, app.config['XERO_CLIENT_ID'], app.config['XERO_CLIENT_SECRET'])
+            upsert_service_configuration('xero', {
+                'client_id': app.config['XERO_CLIENT_ID'],
+                'client_secret': app.config['XERO_CLIENT_SECRET'],
+                'tenant_id': tenant_id,
+            }, mark_configured=True)
+            sync_credentials_to_env()
             
         except Exception as identity_error:
             logger.error(f"Failed to get Xero identity: {identity_error}")
@@ -1850,6 +2413,8 @@ def financial_charts_dashboard():
         return render_template('dashboard/financial_charts.html',
                              nav_items=nav_items,
                              xero_connected=False)
+
+start_refresh_scheduler()
 
 if __name__ == '__main__':
     print("Starting Financial Command Center with Setup Wizard...")
