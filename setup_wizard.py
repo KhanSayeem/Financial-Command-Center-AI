@@ -15,6 +15,62 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import secrets
 import hashlib
 import logging
+import threading
+
+# -----------------------------------------------------------------------------
+# In-memory credential staging for setup wizard flows
+# -----------------------------------------------------------------------------
+
+_staged_credentials_lock = threading.Lock()
+_staged_credentials: Dict[str, Dict[str, str]] = {}
+
+
+def _normalize_service_name(service: Optional[str]) -> str:
+    return (service or '').strip().lower()
+
+
+def stage_service_credentials(service: str, credentials: Dict[str, Any]) -> Dict[str, str]:
+    """Stage credentials for a service so other setup steps can use them immediately."""
+    normalized = _normalize_service_name(service)
+    if not normalized:
+        return {}
+
+    sanitized: Dict[str, str] = {}
+    for key, value in (credentials or {}).items():
+        if value is None:
+            continue
+        sanitized[key] = str(value)
+
+    with _staged_credentials_lock:
+        if sanitized:
+            _staged_credentials[normalized] = sanitized
+        else:
+            _staged_credentials.pop(normalized, None)
+
+    return sanitized.copy()
+
+
+def get_staged_credentials(service: str) -> Dict[str, str]:
+    """Get staged credentials for a service, if any."""
+    normalized = _normalize_service_name(service)
+    if not normalized:
+        return {}
+
+    with _staged_credentials_lock:
+        data = _staged_credentials.get(normalized, {})
+        return data.copy()
+
+
+def clear_staged_credentials(service: Optional[str] = None) -> None:
+    """Clear staged credentials for a service or all services."""
+    with _staged_credentials_lock:
+        if service is None:
+            _staged_credentials.clear()
+            return
+
+        normalized = _normalize_service_name(service)
+        if normalized:
+            _staged_credentials.pop(normalized, None)
 
 
 class ConfigurationManager:
@@ -145,14 +201,23 @@ class ConfigurationManager:
         services = {}
         for service in ['stripe', 'xero', 'plaid']:
             service_config = config.get(service, {})
+            skipped = service_config.get('skipped', False)
+            has_credentials = bool(service_config) and not skipped
+            configured = has_credentials and bool(service_config.get('configured_at'))
             services[service] = {
-                'configured': not service_config.get('skipped', False) and bool(service_config),
-                'skipped': service_config.get('skipped', False),
-                'has_credentials': bool(service_config and not service_config.get('skipped', False))
+                'configured': configured,
+                'skipped': skipped,
+                'has_credentials': has_credentials,
+                'configured_at': service_config.get('configured_at')
             }
+        
+        overall_configured = all(
+            data.get('configured') or data.get('skipped')
+            for data in services.values()
+        )
             
         return {
-            'configured': True,
+            'configured': overall_configured,
             'services': services,
             'last_updated': metadata.get('last_updated'),
             'config_version': metadata.get('config_version')
@@ -391,6 +456,7 @@ class SetupWizardAPI:
             client_secret = request_data.get('xero_client_secret', '').strip()
             
             if not client_id or not client_secret:
+                stage_service_credentials('xero', {})
                 return {
                     'success': False,
                     'error': 'Both Client ID and Client Secret are required'
@@ -402,6 +468,10 @@ class SetupWizardAPI:
             )
             
             if success:
+                stage_service_credentials('xero', {
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                })
                 return {
                     'success': True,
                     'message': message,
@@ -410,12 +480,14 @@ class SetupWizardAPI:
                     'note': details.get('note')
                 }
             else:
+                stage_service_credentials('xero', {})
                 return {
                     'success': False,
                     'error': message
                 }
                 
         except Exception as e:
+            stage_service_credentials('xero', {})
             return {
                 'success': False,
                 'error': f'Unexpected error: {str(e)}'
@@ -424,51 +496,75 @@ class SetupWizardAPI:
     def save_configuration(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Save the complete configuration"""
         try:
-            config = {}
+            existing_config = self.config_manager.load_config() or {}
+            config = {
+                key: value for key, value in existing_config.items()
+                if isinstance(value, dict) and not key.startswith('_')
+            }
             
             # Process Stripe configuration
             stripe_config = request_data.get('stripe', {})
             if stripe_config.get('skipped'):
                 config['stripe'] = {'skipped': True}
             elif 'api_key' in stripe_config:
-                config['stripe'] = {
+                merged = dict(config.get('stripe', {}))
+                merged.update({
                     'api_key': stripe_config['api_key'],
                     'publishable_key': stripe_config.get('publishable_key', ''),
                     'configured_at': datetime.now().isoformat()
-                }
+                })
+                merged.pop('skipped', None)
+                config['stripe'] = merged
                 
             # Process Xero configuration  
             xero_config = request_data.get('xero', {})
             if xero_config.get('skipped'):
                 config['xero'] = {'skipped': True}
             elif 'client_id' in xero_config:
-                config['xero'] = {
+                merged = dict(config.get('xero', {}))
+                merged.update({
                     'client_id': xero_config['client_id'],
                     'client_secret': xero_config['client_secret'],
                     'configured_at': datetime.now().isoformat()
-                }
+                })
+                merged.pop('skipped', None)
+                config['xero'] = merged
             
             # Process Plaid configuration
             plaid_config = request_data.get('plaid', {})
             if plaid_config.get('skipped'):
                 config['plaid'] = {'skipped': True}
             elif 'client_id' in plaid_config:
-                config['plaid'] = {
+                merged = dict(config.get('plaid', {}))
+                merged.update({
                     'client_id': plaid_config['client_id'],
                     'secret': plaid_config['secret'],
                     'environment': plaid_config.get('environment', 'sandbox'),
                     'configured_at': datetime.now().isoformat()
-                }
+                })
+                merged.pop('skipped', None)
+                config['plaid'] = merged
                 
             # Save encrypted configuration
             success = self.config_manager.save_config(config)
             
             if success:
+                clear_staged_credentials('xero')
+                configured_services = [
+                    name for name, data in config.items()
+                    if isinstance(data, dict)
+                    and not data.get('skipped', False)
+                    and data.get('configured_at')
+                ]
+                skipped_services = [
+                    name for name, data in config.items()
+                    if isinstance(data, dict) and data.get('skipped', False)
+                ]
                 return {
                     'success': True,
                     'message': 'Configuration saved successfully',
-                    'services_configured': len([k for k in config.keys() if not config[k].get('skipped', False)]),
-                    'services_skipped': len([k for k in config.keys() if config[k].get('skipped', False)]),
+                    'services_configured': len(configured_services),
+                    'services_skipped': len(skipped_services),
                     'redirect_url': '/health'  # Redirect to health check after successful setup
                 }
             else:
@@ -526,6 +622,9 @@ def sync_credentials_to_env(env: Dict[str, str] | None = None) -> Dict[str, str]
     stripe_cfg = config.get('stripe')
     if isinstance(stripe_cfg, dict) and not stripe_cfg.get('skipped'):
         _store('STRIPE_API_KEY', stripe_cfg.get('api_key'))
+        _store('STRIPE_CLIENT_ID', stripe_cfg.get('client_id'))
+        _store('STRIPE_CLIENT_SECRET', stripe_cfg.get('client_secret') or stripe_cfg.get('api_key'))
+        _store('STRIPE_REDIRECT_URI', stripe_cfg.get('redirect_uri'))
         if stripe_cfg.get('publishable_key'):
             _store('STRIPE_PUBLISHABLE_KEY', stripe_cfg.get('publishable_key'))
 
@@ -533,12 +632,15 @@ def sync_credentials_to_env(env: Dict[str, str] | None = None) -> Dict[str, str]
     if isinstance(xero_cfg, dict) and not xero_cfg.get('skipped'):
         _store('XERO_CLIENT_ID', xero_cfg.get('client_id'))
         _store('XERO_CLIENT_SECRET', xero_cfg.get('client_secret'))
+        _store('XERO_REDIRECT_URI', xero_cfg.get('redirect_uri'))
+        _store('XERO_SCOPE', xero_cfg.get('scope'))
 
     plaid_cfg = config.get('plaid')
     if isinstance(plaid_cfg, dict) and not plaid_cfg.get('skipped'):
         _store('PLAID_CLIENT_ID', plaid_cfg.get('client_id'))
         _store('PLAID_SECRET', plaid_cfg.get('secret'))
         _store('PLAID_ENV', plaid_cfg.get('environment', 'sandbox'))
+        _store('PLAID_REDIRECT_URI', plaid_cfg.get('redirect_uri'))
 
     for key, value in env_updates.items():
         target_env[key] = value
@@ -559,23 +661,66 @@ def get_configured_credentials() -> Dict[str, str]:
         credentials = {}
         # Copy credentials from secure config
         if 'stripe' in config and isinstance(config['stripe'], dict) and not config['stripe'].get('skipped', False):
-            credentials['STRIPE_API_KEY'] = config['stripe'].get('api_key', '')
+            stripe_cfg = config['stripe']
+            credentials['STRIPE_API_KEY'] = stripe_cfg.get('api_key', '')
+            credentials['STRIPE_CLIENT_ID'] = stripe_cfg.get('client_id', '')
+            credentials['STRIPE_CLIENT_SECRET'] = stripe_cfg.get('client_secret', stripe_cfg.get('api_key', ''))
+            credentials['STRIPE_REDIRECT_URI'] = stripe_cfg.get('redirect_uri', '')
+            credentials['STRIPE_PUBLISHABLE_KEY'] = stripe_cfg.get('publishable_key', '')
         if 'xero' in config and isinstance(config['xero'], dict) and not config['xero'].get('skipped', False):
-            credentials['XERO_CLIENT_ID'] = config['xero'].get('client_id', '')
-            credentials['XERO_CLIENT_SECRET'] = config['xero'].get('client_secret', '')
+            xero_cfg = config['xero']
+            credentials['XERO_CLIENT_ID'] = xero_cfg.get('client_id', '')
+            credentials['XERO_CLIENT_SECRET'] = xero_cfg.get('client_secret', '')
+            credentials['XERO_REDIRECT_URI'] = xero_cfg.get('redirect_uri', '')
+            credentials['XERO_SCOPE'] = xero_cfg.get('scope', '')
         if 'plaid' in config and isinstance(config['plaid'], dict) and not config['plaid'].get('skipped', False):
-            credentials['PLAID_CLIENT_ID'] = config['plaid'].get('client_id', '')
-            credentials['PLAID_SECRET'] = config['plaid'].get('secret', '')
-        return credentials
+            plaid_cfg = config['plaid']
+            credentials['PLAID_CLIENT_ID'] = plaid_cfg.get('client_id', '')
+            credentials['PLAID_SECRET'] = plaid_cfg.get('secret', '')
+            credentials['PLAID_REDIRECT_URI'] = plaid_cfg.get('redirect_uri', '')
+            credentials['PLAID_ENV'] = plaid_cfg.get('environment', 'sandbox')
+        return _apply_env_overrides(credentials)
     
     # Fall back to environment variables (for backward compatibility)
-    return {
+    return _apply_env_overrides({
         'STRIPE_API_KEY': os.getenv('STRIPE_API_KEY', ''),
+        'STRIPE_CLIENT_ID': os.getenv('STRIPE_CLIENT_ID', ''),
+        'STRIPE_CLIENT_SECRET': os.getenv('STRIPE_CLIENT_SECRET', ''),
+        'STRIPE_REDIRECT_URI': os.getenv('STRIPE_REDIRECT_URI', ''),
+        'STRIPE_PUBLISHABLE_KEY': os.getenv('STRIPE_PUBLISHABLE_KEY', ''),
         'XERO_CLIENT_ID': os.getenv('XERO_CLIENT_ID', ''),
         'XERO_CLIENT_SECRET': os.getenv('XERO_CLIENT_SECRET', ''),
+        'XERO_REDIRECT_URI': os.getenv('XERO_REDIRECT_URI', ''),
+        'XERO_SCOPE': os.getenv('XERO_SCOPE', ''),
         'PLAID_CLIENT_ID': os.getenv('PLAID_CLIENT_ID', ''),
-        'PLAID_SECRET': os.getenv('PLAID_SECRET', '')
+        'PLAID_SECRET': os.getenv('PLAID_SECRET', ''),
+        'PLAID_REDIRECT_URI': os.getenv('PLAID_REDIRECT_URI', ''),
+        'PLAID_ENV': os.getenv('PLAID_ENV', 'sandbox')
+    })
+
+
+def _apply_env_overrides(credentials: Dict[str, str]) -> Dict[str, str]:
+    """Ensure environment variables always override secure config for each service."""
+    env_map = {
+        'STRIPE_API_KEY': 'STRIPE_API_KEY',
+        'STRIPE_CLIENT_ID': 'STRIPE_CLIENT_ID',
+        'STRIPE_CLIENT_SECRET': 'STRIPE_CLIENT_SECRET',
+        'STRIPE_REDIRECT_URI': 'STRIPE_REDIRECT_URI',
+        'STRIPE_PUBLISHABLE_KEY': 'STRIPE_PUBLISHABLE_KEY',
+        'XERO_CLIENT_ID': 'XERO_CLIENT_ID',
+        'XERO_CLIENT_SECRET': 'XERO_CLIENT_SECRET',
+        'XERO_REDIRECT_URI': 'XERO_REDIRECT_URI',
+        'XERO_SCOPE': 'XERO_SCOPE',
+        'PLAID_CLIENT_ID': 'PLAID_CLIENT_ID',
+        'PLAID_SECRET': 'PLAID_SECRET',
+        'PLAID_REDIRECT_URI': 'PLAID_REDIRECT_URI',
+        'PLAID_ENV': 'PLAID_ENV',
     }
+    for key, env_key in env_map.items():
+        value = os.getenv(env_key)
+        if value:
+            credentials[key] = value
+    return credentials
 
 
 def is_setup_required() -> bool:
@@ -600,6 +745,25 @@ def get_integration_status() -> Dict[str, Dict[str, Any]]:
             'xero': {'configured': False, 'skipped': False, 'has_credentials': False},
             'plaid': {'configured': False, 'skipped': False, 'has_credentials': False}
         }
+
+
+def upsert_service_configuration(service: str, updates: Dict[str, Any], *, mark_configured: bool = False) -> Dict[str, Any]:
+    """Merge updates into a service configuration and persist to secure storage."""
+    config_manager = ConfigurationManager()
+    config = config_manager.load_config() or {}
+    existing = dict(config.get(service, {}))
+
+    for key, value in (updates or {}).items():
+        if value is not None:
+            existing[key] = value
+
+    if mark_configured:
+        existing.pop('skipped', None)
+        existing['configured_at'] = existing.get('configured_at') or datetime.now().isoformat()
+
+    config[service] = existing
+    config_manager.save_config(config)
+    return existing
 
 
 if __name__ == "__main__":

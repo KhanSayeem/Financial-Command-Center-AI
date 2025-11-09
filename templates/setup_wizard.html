@@ -94,7 +94,7 @@
                         Step 1 of 4
                     </span>
                     <h2 class="text-2xl font-semibold text-foreground">Connect Stripe</h2>
-                    <p class="text-sm leading-relaxed text-muted-foreground">Use a restricted key wherever possible. The wizard encrypts values at rest and never transmits them externally.</p>
+                    <p class="text-sm leading-relaxed text-muted-foreground">Authorize a Stripe account via OAuth. The launcher already knows the platform client credentials, so you only need to approve access.</p>
                 </div>
 
                 <div id="stripe-messages" class="space-y-3"></div>
@@ -106,34 +106,25 @@
                                 <i data-lucide="credit-card" class="h-5 w-5"></i>
                             </span>
                             <div>
-                                <h3 class="text-base font-semibold text-foreground">Stripe API configuration</h3>
-                                <p class="mt-1 text-sm text-muted-foreground">Validate connectivity before saving credentials.</p>
+                                <h3 class="text-base font-semibold text-foreground">Stripe Connect</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Launch OAuth to connect a live or test Stripe account. No API keys required.</p>
                             </div>
                         </div>
                         <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="stripeStatus">Pending</span>
                     </div>
 
-                    <form id="stripeForm" onsubmit="event.preventDefault();" class="space-y-4">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium text-foreground" for="stripeApiKey">Stripe secret key</label>
-                            <input type="password" id="stripeApiKey" name="stripe_api_key" placeholder="sk_live_... or sk_test_..." autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                            <p class="text-xs text-muted-foreground">Starts with sk_test_ for sandbox or sk_live_ for production.</p>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium text-foreground" for="stripePublishableKey">Publishable key (optional)</label>
-                            <input type="text" id="stripePublishableKey" name="stripe_publishable_key" placeholder="pk_live_... or pk_test_..." autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                            <p class="text-xs text-muted-foreground">Required if you plan to demonstrate client-side payment flows.</p>
-                        </div>
-                        <div class="mt-6 flex flex-wrap items-center gap-3">
-                            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary" onclick="testStripeConnection()">
-                                <span id="stripeTestSpinner" class="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground" style="display: none;">
-                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary"></div>
-                                    Testing
+                    <div class="space-y-4">
+                        <p class="text-sm text-muted-foreground">When you click Connect, a secure Stripe window will open. Approve access for the account you want to demo and the wizard will store the resulting tokens locally.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" id="stripeConnectButton" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="connectStripe()">
+                                <span id="stripeConnectSpinner" class="inline-flex items-center gap-2" style="display: none;">
+                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary/40 border-t-primary-foreground"></div>
+                                    Authorizing
                                 </span>
-                                <span id="stripeTestText">Test connection</span>
+                                <span id="stripeConnectText">Connect Stripe</span>
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
@@ -157,7 +148,7 @@
                         Step 2 of 4
                     </span>
                     <h2 class="text-2xl font-semibold text-foreground">Configure Plaid banking</h2>
-                    <p class="text-sm leading-relaxed text-muted-foreground">Supply sandbox credentials to demonstrate flows instantly, or connect production once you're ready.</p>
+                    <p class="text-sm leading-relaxed text-muted-foreground">Launch Plaid Link to connect a bank account. The FCC launcher keeps your Plaid app credentials on-device.</p>
                 </div>
 
                 <div id="plaid-messages" class="space-y-3"></div>
@@ -169,44 +160,25 @@
                                 <i data-lucide="banknote" class="h-5 w-5"></i>
                             </span>
                             <div>
-                                <h3 class="text-base font-semibold text-foreground">Plaid API credentials</h3>
-                                <p class="mt-1 text-sm text-muted-foreground">Supports sandbox, development, and production environments.</p>
+                                <h3 class="text-base font-semibold text-foreground">Plaid Link</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Generate a Link token, complete the OAuth flow, and the wizard will exchange the resulting public token automatically.</p>
                             </div>
                         </div>
                         <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="plaidStatus">Pending</span>
                     </div>
 
-                    <form id="plaidForm" onsubmit="event.preventDefault();" class="space-y-4">
-                        <div class="grid gap-4 md:grid-cols-2">
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-foreground" for="plaidClientId">Plaid client ID</label>
-                                <input type="text" id="plaidClientId" name="plaid_client_id" placeholder="client id" autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                <p class="text-xs text-muted-foreground">Available in the Plaid dashboard.</p>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-foreground" for="plaidSecret">Plaid secret</label>
-                                <input type="password" id="plaidSecret" name="plaid_secret" placeholder="secret key" autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                <p class="text-xs text-muted-foreground">Use sandbox credentials for demos.</p>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium text-foreground" for="plaidEnvironment">Environment</label>
-                            <select id="plaidEnvironment" name="plaid_environment" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                <option value="sandbox">Sandbox (testing)</option>
-                                <option value="development">Development</option>
-                                <option value="production">Production (live)</option>
-                            </select>
-                        </div>
-                        <div class="mt-6 flex flex-wrap items-center gap-3">
-                            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary" onclick="testPlaidConnection()">
-                                <span id="plaidTestSpinner" class="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground" style="display: none;">
-                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary"></div>
-                                    Testing
+                    <div class="space-y-4">
+                        <p class="text-sm text-muted-foreground">Click Connect Bank to launch Plaid Link. Select a sandbox institution for demos (user: <code>user_good</code>, pass: <code>pass_good</code>) or a live bank in production environments.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" id="plaidConnectButton" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="connectPlaid()">
+                                <span id="plaidConnectSpinner" class="inline-flex items-center gap-2" style="display: none;">
+                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary/40 border-t-primary-foreground"></div>
+                                    Launching
                                 </span>
-                                <span id="plaidTestText">Test configuration</span>
+                                <span id="plaidConnectText">Connect bank via Plaid</span>
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
@@ -232,8 +204,8 @@
                     <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                         Step 3 of 4
                     </span>
-                    <h2 class="text-2xl font-semibold text-foreground">Configure Xero OAuth</h2>
-                    <p class="text-sm leading-relaxed text-muted-foreground">Create a confidential application in the Xero developer portal, then paste the client ID and secret here.</p>
+                    <h2 class="text-2xl font-semibold text-foreground">Review Xero OAuth setup</h2>
+                    <p class="text-sm leading-relaxed text-muted-foreground">This installer already includes the Xero app credentials. Just verify the details below and continue to connect your organisation in the next step.</p>
                 </div>
 
                 <div id="xero-messages" class="space-y-3"></div>
@@ -246,33 +218,17 @@
                             </span>
                             <div>
                                 <h3 class="text-base font-semibold text-foreground">Xero OAuth credentials</h3>
-                                <p class="mt-1 text-sm text-muted-foreground">After validation, the wizard manages refresh tokens for you.</p>
+                                <p class="mt-1 text-sm text-muted-foreground">Supplied by your administrator and stored encrypted on this device.</p>
                             </div>
                         </div>
-                        <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="xeroStatus">Pending</span>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" id="xeroStatus">Ready</span>
                     </div>
 
-                    <form id="xeroForm" onsubmit="event.preventDefault();" class="space-y-4">
-                        <div class="grid gap-4 md:grid-cols-2">
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-foreground" for="xeroClientId">Xero client ID</label>
-                                <input type="text" id="xeroClientId" name="xero_client_id" placeholder="client id" autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-foreground" for="xeroClientSecret">Xero client secret</label>
-                                <input type="password" id="xeroClientSecret" name="xero_client_secret" placeholder="client secret" autocomplete="off" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                            </div>
-                        </div>
-                        <div class="mt-6 flex flex-wrap items-center gap-3">
-                            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary" onclick="testXeroConnection()">
-                                <span id="xeroTestSpinner" class="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground" style="display: none;">
-                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary"></div>
-                                    Testing
-                                </span>
-                                <span id="xeroTestText">Validate credentials</span>
-                            </button>
-                        </div>
-                    </form>
+                    <div class="space-y-4 text-sm text-muted-foreground">
+                        <p>• Redirect URI: <code>{{ url_for('callback', _external=True) }}</code> (auto-configured)</p>
+                        <p>• Scope: <code>offline_access accounting.transactions accounting.contacts accounting.reports.read openid profile email</code></p>
+                        <p>• Secrets never leave this machine; only OAuth tokens are saved after the next step.</p>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
@@ -281,8 +237,7 @@
                         Back to Plaid
                     </button>
                     <div class="flex flex-wrap items-center gap-3">
-                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground" onclick="skipXero()">Skip for now</button>
-                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="nextStep()" id="xeroNext" disabled>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="nextStep()" id="xeroNext">
                             Continue to Connect Xero
                             <i data-lucide="arrow-right" class="h-4 w-4"></i>
                         </button>
@@ -442,6 +397,7 @@
 }
 </style>
 
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 <script src="{{ url_for('static', filename='js/setup-wizard.js') }}"></script>
 
 {% endblock %}

@@ -70,6 +70,17 @@
         </section>
     </div>
 
+    <section class="card border border-border/70 p-6 space-y-3">
+        <h2 class="text-lg font-semibold text-foreground">Live sync APIs</h2>
+        <p class="text-sm text-muted-foreground">Whenever Stripe, Xero, or Plaid are connected via the setup wizard, FCC exposes read-only aggregation routes. Claude Desktop can call these directly (or through the MCP servers) to hydrate the latest financial context.</p>
+        <ul class="space-y-2 text-sm text-muted-foreground">
+            <li><code>GET /sync/stripe</code> — returns recent payments, refunds, and the Stripe balance.</li>
+            <li><code>GET /sync/xero</code> — returns invoices, contacts, and chart-of-account data for the selected tenant.</li>
+            <li><code>GET /sync/plaid</code> — returns linked bank balances and the latest 30 days of transactions.</li>
+        </ul>
+        <p class="text-xs text-muted-foreground">These endpoints respond only when the corresponding integration is marked as “Connected”. Re-run the setup wizard if Claude reports that an integration is pending.</p>
+    </section>
+
     <section class="card border border-border/70 p-6 space-y-4">
         <h2 class="text-lg font-semibold text-foreground">Setup steps</h2>
         <ol class="space-y-4 text-sm text-muted-foreground">
@@ -113,9 +124,19 @@
         const summaryBase = summaryEl ? summaryEl.dataset.baseClass || '' : '';
         let configData = null;
 
-        const formatLabel = (value) => value
-          ? value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
-          : '';
+        const friendlyIntegrations = {
+          stripe: 'Stripe payments',
+          xero: 'Xero accounting',
+          plaid: 'Plaid banking',
+        };
+
+        const formatLabel = (value) => {
+          const key = (value || '').toLowerCase();
+          if (friendlyIntegrations[key]) {
+            return friendlyIntegrations[key];
+          }
+          return key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+        };
 
         function setLoading(isLoading) {
           if (!generateBtn) return;
@@ -158,20 +179,26 @@
             }
             configData = data.config;
             const servers = (data.summary?.servers || []).map((name) => `<code>${name}</code>`).join(', ');
-            const credentials = data.summary?.credentials_used || {};
-            const credentialSummary = Object.entries(credentials)
-              .filter(([, used]) => used)
-              .map(([key]) => formatLabel(key))
-              .join(', ') || 'Demo credentials';
+            const integrations = data.summary?.integrations || {};
+            const integrationSummary = Object.entries(integrations).map(([key, details]) => {
+              const state = details.configured ? 'Connected' : (details.skipped ? 'Skipped' : 'Pending');
+              const endpoint = details.configured ? `/sync/${key}` : null;
+              return `<li>${formatLabel(key)}: <span class="font-medium">${state}</span>${endpoint ? ` &ndash; <code>${endpoint}</code>` : ''}</li>`;
+            }).join('') || '<li>No integrations configured yet.</li>';
             const pythonInfo = data.summary?.python_executable || 'python';
             const content = `
               <div class="space-y-2">
                 <p class="font-medium text-foreground">Configuration generated successfully.</p>
                 <ul class="space-y-1">
                   <li>Servers included: ${servers || 'None'}</li>
-                  <li>Credentials used: ${credentialSummary}</li>
                   <li>Python executable: <code>${pythonInfo}</code></li>
                 </ul>
+                <div class="space-y-1">
+                  <p class="font-medium text-foreground">Integration status</p>
+                  <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+                    ${integrationSummary}
+                  </ul>
+                </div>
               </div>
             `;
             showMessage(content, 'success');

@@ -2,8 +2,11 @@ let currentStep = 0; // 0 = welcome, 1 = Stripe, 2 = Plaid, 3 = Xero OAuth, 4 = 
 const totalSteps = 4;
 let stripeConfigured = false;
 let plaidConfigured = false;
-let xeroConfigured = false;
+let xeroConfigured = true;
 let xeroOauthConnected = false;
+let stripePollingInterval = null;
+let plaidPollingInterval = null;
+let plaidLinkHandler = null;
 
 function updateProgress() {
     const progress = currentStep === 0 ? 0 : (currentStep / totalSteps) * 100;
@@ -130,200 +133,215 @@ function showMessage(containerId, type, message) {
     }
 }
 
-async function testStripeConnection() {
-    const apiKey = document.getElementById('stripeApiKey').value;
-    if (!apiKey) {
-        showMessage('stripe-messages', 'error', 'Enter your Stripe secret key before testing.');
+function toggleButtonLoading(spinnerId, textId, loading) {
+    const spinner = document.getElementById(spinnerId);
+    const text = document.getElementById(textId);
+    if (spinner) {
+        spinner.style.display = loading ? 'inline-flex' : 'none';
+    }
+    if (text) {
+        text.style.display = loading ? 'none' : 'inline';
+    }
+}
+
+async function refreshStripeConnectionStatus(silent = false) {
+    const status = document.getElementById('stripeStatus');
+    try {
+        const response = await fetch(buildApiUrl('/api/setup/stripe-connection'));
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        stripeConfigured = Boolean(result.connected);
+        if (stripeConfigured) {
+            if (status) {
+                status.textContent = 'Connected';
+                status.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+            }
+            document.getElementById('stripeNext').disabled = false;
+            if (!silent) {
+                showMessage('stripe-messages', 'success', `Connected to Stripe${result.account_id ? ` (${result.account_id})` : ''}.`);
+            }
+            if (stripePollingInterval) {
+                clearInterval(stripePollingInterval);
+                stripePollingInterval = null;
+            }
+        } else {
+            if (status) {
+                status.textContent = 'Pending';
+                status.className = 'inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground';
+            }
+            document.getElementById('stripeNext').disabled = true;
+            if (!silent) {
+                showMessage('stripe-messages', 'error', 'No Stripe account connected yet.');
+            }
+        }
+    } catch (error) {
+        if (!silent) {
+            showMessage('stripe-messages', 'error', `Failed to verify Stripe connection: ${error.message}`);
+        }
+    }
+}
+
+function connectStripe() {
+    toggleButtonLoading('stripeConnectSpinner', 'stripeConnectText', true);
+    const status = document.getElementById('stripeStatus');
+    if (status) {
+        status.textContent = 'Authorizing...';
+        status.className = 'inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-100 text-sky-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+    }
+    const oauthUrl = buildApiUrl('/oauth/stripe/start?from=setup');
+    const oauthWindow = window.open(oauthUrl, '_blank', 'noopener');
+    toggleButtonLoading('stripeConnectSpinner', 'stripeConnectText', false);
+    if (!oauthWindow) {
+        if (status) {
+            status.textContent = 'Pending';
+            status.className = 'inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground';
+        }
+        showMessage('stripe-messages', 'error', 'Unable to open Stripe Connect. Allow pop-ups or open the connection URL manually.');
         return;
     }
 
-    const testSpinner = document.getElementById('stripeTestSpinner');
-    const testText = document.getElementById('stripeTestText');
-    const status = document.getElementById('stripeStatus');
-
-    status.textContent = 'Testing...';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-100 text-sky-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-
-    if (testSpinner && testText) {
-        testSpinner.style.display = 'inline-flex';
-        testText.style.display = 'none';
+    showMessage('stripe-messages', 'success', 'Stripe OAuth window opened. Complete the flow in the other tab, then return here.');
+    if (stripePollingInterval) {
+        clearInterval(stripePollingInterval);
     }
-
-    try {
-        const response = await fetch(buildApiUrl('/api/setup/test-stripe'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                stripe_api_key: apiKey,
-                stripe_publishable_key: document.getElementById('stripePublishableKey').value
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            stripeConfigured = true;
-            status.textContent = 'Connected';
-            status.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-            document.getElementById('stripeNext').disabled = false;
-            showMessage('stripe-messages', 'success', `Connected to Stripe successfully. Account: ${result.account_name || 'unknown'}.`);
-        } else {
-            throw new Error(result.error || 'Connection failed');
+    stripePollingInterval = setInterval(() => refreshStripeConnectionStatus(true), 5000);
+    setTimeout(() => {
+        if (stripePollingInterval) {
+            clearInterval(stripePollingInterval);
+            stripePollingInterval = null;
         }
-    } catch (error) {
-        status.textContent = 'Error';
-        status.className = 'inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-100 text-rose-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-        document.getElementById('stripeNext').disabled = true;
-        showMessage('stripe-messages', 'error', `Stripe connection failed: ${error.message}`);
-    } finally {
-        if (testSpinner && testText) {
-            testSpinner.style.display = 'none';
-            testText.style.display = 'inline';
-        }
-    }
+    }, 300000);
 }
 
 function skipStripe() {
     stripeConfigured = false;
     const status = document.getElementById('stripeStatus');
-    status.textContent = 'Skipped';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+    if (status) {
+        status.textContent = 'Skipped';
+        status.className = 'inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+    }
     document.getElementById('stripeNext').disabled = false;
-    showMessage('stripe-messages', 'success', 'Stripe configuration skipped. You can enable it later from the admin dashboard.');
+    showMessage('stripe-messages', 'success', 'Stripe connection skipped. You can enable it later from the admin dashboard.');
 }
 
-async function testPlaidConnection() {
-    const clientId = document.getElementById('plaidClientId').value;
-    const secret = document.getElementById('plaidSecret').value;
-    const environment = document.getElementById('plaidEnvironment').value;
-
-    if (!clientId || !secret) {
-        showMessage('plaid-messages', 'error', 'Enter your Plaid client ID and secret before testing.');
-        return;
-    }
-
-    const testSpinner = document.getElementById('plaidTestSpinner');
-    const testText = document.getElementById('plaidTestText');
+async function refreshPlaidConnectionStatus(silent = false) {
     const status = document.getElementById('plaidStatus');
-
-    status.textContent = 'Testing...';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-100 text-sky-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-
-    if (testSpinner && testText) {
-        testSpinner.style.display = 'inline-flex';
-        testText.style.display = 'none';
-    }
-
     try {
-        const response = await fetch(buildApiUrl('/api/setup/test-plaid'), {
+        const response = await fetch(buildApiUrl('/api/setup/plaid-connection'));
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        plaidConfigured = Boolean(result.connected);
+        if (plaidConfigured) {
+            if (status) {
+                status.textContent = 'Connected';
+                status.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+            }
+            document.getElementById('plaidNext').disabled = false;
+            if (!silent) {
+                const institution = result.institution_name ? ` (${result.institution_name})` : '';
+                showMessage('plaid-messages', 'success', `Plaid linked successfully${institution}.`);
+            }
+            if (plaidPollingInterval) {
+                clearInterval(plaidPollingInterval);
+                plaidPollingInterval = null;
+            }
+        } else {
+            if (status) {
+                status.textContent = 'Pending';
+                status.className = 'inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground';
+            }
+            document.getElementById('plaidNext').disabled = true;
+            if (!silent) {
+                showMessage('plaid-messages', 'error', 'No Plaid item connected yet.');
+            }
+        }
+    } catch (error) {
+        if (!silent) {
+            showMessage('plaid-messages', 'error', `Failed to verify Plaid connection: ${error.message}`);
+        }
+    }
+}
+
+function connectPlaid() {
+    toggleButtonLoading('plaidConnectSpinner', 'plaidConnectText', true);
+    fetch(buildApiUrl('/oauth/plaid/link-token'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+    })
+        .then((response) => response.json())
+        .then((result) => {
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to create link token');
+            }
+            if (!window.Plaid || typeof window.Plaid.create !== 'function') {
+                throw new Error('Plaid Link script not loaded. Refresh the page and try again.');
+            }
+            plaidLinkHandler = window.Plaid.create({
+                token: result.link_token,
+                onSuccess: (public_token, metadata) => finalizePlaidConnection(public_token, metadata?.institution),
+                onExit: (err) => {
+                    if (err) {
+                        showMessage('plaid-messages', 'error', `Plaid link exited: ${err.error_code || err.display_message || err.message}`);
+                    }
+                },
+            });
+            plaidLinkHandler.open();
+            if (plaidPollingInterval) {
+                clearInterval(plaidPollingInterval);
+            }
+            plaidPollingInterval = setInterval(() => refreshPlaidConnectionStatus(true), 5000);
+            setTimeout(() => {
+                if (plaidPollingInterval) {
+                    clearInterval(plaidPollingInterval);
+                    plaidPollingInterval = null;
+                }
+            }, 300000);
+        })
+        .catch((error) => {
+            showMessage('plaid-messages', 'error', `Unable to launch Plaid Link: ${error.message}`);
+        })
+        .finally(() => {
+            toggleButtonLoading('plaidConnectSpinner', 'plaidConnectText', false);
+        });
+}
+
+async function finalizePlaidConnection(publicToken, institution) {
+    try {
+        const response = await fetch(buildApiUrl('/oauth/plaid/exchange'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                plaid_client_id: clientId,
-                plaid_secret: secret,
-                plaid_environment: environment
-            })
+                public_token: publicToken,
+                institution,
+            }),
         });
-
         const result = await response.json();
-
-        if (result.success) {
-            plaidConfigured = true;
-            status.textContent = 'Configured';
-            status.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-            document.getElementById('plaidNext').disabled = false;
-            showMessage('plaid-messages', 'success', `Plaid credentials verified. Environment: ${result.environment || environment}.`);
-        } else {
-            throw new Error(result.error || 'Verification failed');
+        if (!result.success) {
+            throw new Error(result.error || 'Public token exchange failed');
         }
+        plaidConfigured = true;
+        showMessage('plaid-messages', 'success', 'Plaid connection established. Fetching latest status...');
+        refreshPlaidConnectionStatus(false);
     } catch (error) {
-        plaidConfigured = false;
-        status.textContent = 'Error';
-        status.className = 'inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-100 text-rose-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-        document.getElementById('plaidNext').disabled = true;
-        showMessage('plaid-messages', 'error', `Plaid verification failed: ${error.message}`);
-    } finally {
-        if (testSpinner && testText) {
-            testSpinner.style.display = 'none';
-            testText.style.display = 'inline';
-        }
+        showMessage('plaid-messages', 'error', `Failed to exchange Plaid token: ${error.message}`);
     }
 }
 
 function skipPlaid() {
     plaidConfigured = false;
     const status = document.getElementById('plaidStatus');
-    status.textContent = 'Skipped';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+    if (status) {
+        status.textContent = 'Skipped';
+        status.className = 'inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
+    }
     document.getElementById('plaidNext').disabled = false;
     showMessage('plaid-messages', 'success', 'Plaid integration skipped. Banking workflows remain available in demo mode.');
 }
-
-async function testXeroConnection() {
-    const clientId = document.getElementById('xeroClientId').value;
-    const clientSecret = document.getElementById('xeroClientSecret').value;
-
-    if (!clientId || !clientSecret) {
-        showMessage('xero-messages', 'error', 'Enter both the Xero client ID and secret.');
-        return;
-    }
-
-    const testSpinner = document.getElementById('xeroTestSpinner');
-    const testText = document.getElementById('xeroTestText');
-    const status = document.getElementById('xeroStatus');
-
-    status.textContent = 'Testing...';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-100 text-sky-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-
-    if (testSpinner && testText) {
-        testSpinner.style.display = 'inline-flex';
-        testText.style.display = 'none';
-    }
-
-    try {
-        const response = await fetch(buildApiUrl('/api/setup/test-xero'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                xero_client_id: clientId,
-                xero_client_secret: clientSecret
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            xeroConfigured = true;
-            status.textContent = 'Connected';
-            status.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-            document.getElementById('xeroNext').disabled = false;
-            showMessage('xero-messages', 'success', 'Xero credentials validated successfully.');
-        } else {
-            throw new Error(result.error || 'Validation failed');
-        }
-    } catch (error) {
-        status.textContent = 'Error';
-        status.className = 'inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-100 text-rose-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-        document.getElementById('xeroNext').disabled = true;
-        showMessage('xero-messages', 'error', `Xero validation failed: ${error.message}`);
-    } finally {
-        if (testSpinner && testText) {
-            testSpinner.style.display = 'none';
-            testText.style.display = 'inline';
-        }
-    }
-}
-
-function skipXero() {
-    xeroConfigured = false;
-    const status = document.getElementById('xeroStatus');
-    status.textContent = 'Skipped';
-    status.className = 'inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]';
-    document.getElementById('xeroNext').disabled = false;
-    showMessage('xero-messages', 'success', 'Xero integration skipped. Demo mode will stay active until credentials are added.');
-}
-
-
 
 function updateConnectXeroStatus(state) {
     const status = document.getElementById('connectXeroStatus');
@@ -463,7 +481,7 @@ function showCompletion(result) {
 }
 
 async function finishSetup() {
-    const messageContainer = (currentStep >= 4 && document.getElementById('connect-xero-messages')) ? 'connect-xero-messages' : 'xero-messages';
+    const messageContainer = document.getElementById('connect-xero-messages') ? 'connect-xero-messages' : 'completion-messages';
     try {
         // Debug: Check current state of configuration flags
         console.log('Setup completion debug:', {
@@ -473,19 +491,9 @@ async function finishSetup() {
             xeroOauthConnected: xeroOauthConnected
         });
 
-        // More robust configuration detection - check if fields have values AND status indicates success
-        const stripeApiKey = document.getElementById('stripeApiKey')?.value?.trim();
-        const plaidClientId = document.getElementById('plaidClientId')?.value?.trim();
-        const xeroClientId = document.getElementById('xeroClientId')?.value?.trim();
-
-        // Check status indicators for additional validation
-        const stripeStatus = document.getElementById('stripeStatus')?.textContent;
-        const plaidStatus = document.getElementById('plaidStatus')?.textContent;
-        const xeroStatus = document.getElementById('xeroStatus')?.textContent;
-
-        const hasStripeConfig = stripeConfigured || (stripeApiKey && stripeStatus === 'Connected');
-        const hasPlaidConfig = plaidConfigured || (plaidClientId && plaidStatus === 'Configured');
-        const hasXeroConfig = xeroConfigured || (xeroClientId && xeroStatus === 'Connected');
+        const hasStripeConfig = stripeConfigured;
+        const hasPlaidConfig = plaidConfigured;
+        const hasXeroConfig = xeroOauthConnected;
 
         console.log('Configuration detection:', {
             hasStripeConfig: hasStripeConfig,
@@ -493,23 +501,13 @@ async function finishSetup() {
             hasXeroConfig: hasXeroConfig
         });
 
-        console.log('About to save config data:', JSON.stringify(configData, null, 2));
-
         const configData = {
-            stripe: hasStripeConfig ? {
-                api_key: document.getElementById('stripeApiKey').value,
-                publishable_key: document.getElementById('stripePublishableKey').value
-            } : { skipped: true },
-            plaid: hasPlaidConfig ? {
-                client_id: document.getElementById('plaidClientId').value,
-                secret: document.getElementById('plaidSecret').value,
-                environment: document.getElementById('plaidEnvironment').value
-            } : { skipped: true },
-            xero: hasXeroConfig ? {
-                client_id: document.getElementById('xeroClientId').value,
-                client_secret: document.getElementById('xeroClientSecret').value
-            } : { skipped: true }
+            stripe: hasStripeConfig ? {} : { skipped: true },
+            plaid: hasPlaidConfig ? {} : { skipped: true },
+            xero: hasXeroConfig ? {} : { skipped: true }
         };
+
+        console.log('About to save config data:', JSON.stringify(configData, null, 2));
 
         const response = await fetch(buildApiUrl('/api/setup/save-config'), {
             method: 'POST',
@@ -536,6 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.lucide.createIcons();
     }
 
+    refreshStripeConnectionStatus(true);
+    refreshPlaidConnectionStatus(true);
+    checkXeroConnection(true);
+
     // Check if we're on step 4 from URL hash (e.g., #step4)
     const hash = window.location.hash;
     if (hash.startsWith('#step4')) {
@@ -560,9 +562,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Add window focus listener to check Xero connection when user returns from OAuth
 window.addEventListener('focus', () => {
-    // If we're on step 4 (Xero connection step) and not already connected
+    refreshStripeConnectionStatus(true);
+    refreshPlaidConnectionStatus(true);
     if (currentStep === 4 && !xeroOauthConnected) {
-        // Small delay to allow session to be established
         setTimeout(() => {
             checkXeroConnection(false);
         }, 1000);

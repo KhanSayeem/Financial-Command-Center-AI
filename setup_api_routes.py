@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 
 def create_setup_blueprint(*, setup_wizard_api, logger, post_save_callback, connection_status_provider,
+                           stripe_status_provider=None, plaid_status_provider=None,
                            blueprint_name: str = 'setup_api'):
     """Return a blueprint that exposes the setup API endpoints."""
 
@@ -66,6 +67,36 @@ def create_setup_blueprint(*, setup_wizard_api, logger, post_save_callback, conn
                 'has_token': False,
                 'error': str(exc),
             }), 500
+
+    if stripe_status_provider:
+        @bp.route('/stripe-connection', methods=['GET'])
+        def get_stripe_connection_status():
+            try:
+                payload = stripe_status_provider() or {}
+                status_code = payload.pop('status_code', 200)
+                return jsonify(payload), status_code
+            except Exception as exc:  # pragma: no cover
+                logger.error(f'Failed to read Stripe connection status: {exc}')
+                return jsonify({
+                    'connected': False,
+                    'account_id': '',
+                    'error': str(exc),
+                }), 500
+
+    if plaid_status_provider:
+        @bp.route('/plaid-connection', methods=['GET'])
+        def get_plaid_connection_status():
+            try:
+                payload = plaid_status_provider() or {}
+                status_code = payload.pop('status_code', 200)
+                return jsonify(payload), status_code
+            except Exception as exc:  # pragma: no cover
+                logger.error(f'Failed to read Plaid connection status: {exc}')
+                return jsonify({
+                    'connected': False,
+                    'item_id': '',
+                    'error': str(exc),
+                }), 500
 
     @bp.route('/debug-config', methods=['GET'])
     def debug_config():

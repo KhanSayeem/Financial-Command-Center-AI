@@ -1,1067 +1,404 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Setup Wizard - Financial Command Center</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          container: {
-            center: true,
-            padding: "1.5rem",
-            screens: { "2xl": "1280px" }
-          },
-          extend: {
-            colors: {
-              border: "hsl(var(--border))",
-              input: "hsl(var(--input))",
-              ring: "hsl(var(--ring))",
-              background: "hsl(var(--background))",
-              foreground: "hsl(var(--foreground))",
-              primary: {
-                DEFAULT: "hsl(var(--primary))",
-                foreground: "hsl(var(--primary-foreground))"
-              },
-              secondary: {
-                DEFAULT: "hsl(var(--secondary))",
-                foreground: "hsl(var(--secondary-foreground))"
-              },
-              destructive: {
-                DEFAULT: "hsl(var(--destructive))",
-                foreground: "hsl(var(--destructive-foreground))"
-              },
-              muted: {
-                DEFAULT: "hsl(var(--muted))",
-                foreground: "hsl(var(--muted-foreground))"
-              },
-              accent: {
-                DEFAULT: "hsl(var(--accent))",
-                foreground: "hsl(var(--accent-foreground))"
-              },
-              popover: {
-                DEFAULT: "hsl(var(--popover))",
-                foreground: "hsl(var(--popover-foreground))"
-              },
-              card: {
-                DEFAULT: "hsl(var(--card))",
-                foreground: "hsl(var(--card-foreground))"
-              }
-            },
-            fontFamily: {
-              sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"]
-            },
-            boxShadow: {
-              border: "0 0 0 1px hsl(var(--border))",
-              card: "0 18px 60px -30px rgba(15, 23, 42, 0.35)"
-            }
-          }
-        }
-      }
-    </script>
-    <style type="text/tailwindcss">
-      @layer base {
-        :root {
-          --background: 210 20% 97%;
-          --foreground: 222 47% 11%;
-          --card: 0 0% 100%;
-          --card-foreground: 222 47% 11%;
-          --popover: 0 0% 100%;
-          --popover-foreground: 222 47% 11%;
-          --primary: 221 83% 53%;
-          --primary-foreground: 210 40% 98%;
-          --secondary: 210 40% 96%;
-          --secondary-foreground: 222 47% 11%;
-          --muted: 214 32% 94%;
-          --muted-foreground: 215 20% 47%;
-          --accent: 221 83% 53%;
-          --accent-foreground: 210 40% 98%;
-          --destructive: 0 72% 51%;
-          --destructive-foreground: 210 40% 98%;
-          --border: 214 32% 91%;
-          --input: 214 32% 91%;
-          --ring: 221 83% 53%;
-          --radius: 1rem;
-        }
-
-        body {
-          @apply min-h-screen bg-background font-sans text-foreground antialiased;
-        }
-
-        ::selection {
-          @apply bg-primary/20;
-        }
-      }
-
-      @layer components {
-        .wizard-shell {
-          @apply overflow-hidden rounded-3xl border border-border/60 bg-card shadow-card;
-        }
-
-        .wizard-header {
-          @apply border-b border-border/60 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 px-8 py-12 text-center sm:px-12;
-        }
-
-        .wizard-badge {
-          @apply inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-primary;
-        }
-
-        .wizard-header h1 {
-          @apply mt-6 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl;
-        }
-
-        .wizard-header p {
-          @apply mt-3 text-base text-muted-foreground;
-        }
-
-        .wizard-progress {
-          @apply mt-8 space-y-3;
-        }
-
-        .progress-track {
-          @apply relative h-2 w-full rounded-full bg-muted/60;
-        }
-
-        .progress-fill {
-          @apply absolute inset-y-0 left-0 h-full rounded-full bg-primary transition-all duration-300;
-        }
-
-        .progress-label {
-          @apply text-xs font-medium uppercase tracking-[0.32em] text-muted-foreground;
-        }
-
-        .wizard-content {
-          @apply space-y-12 px-6 py-12 sm:px-10;
-        }
-
-        .step {
-          @apply hidden space-y-6;
-        }
-
-        .step.active {
-          @apply block;
-        }
-
-        .step-header {
-          @apply space-y-3;
-        }
-
-        .step-title {
-          @apply text-2xl font-semibold text-foreground;
-        }
-
-        .step-description {
-          @apply text-sm leading-relaxed text-muted-foreground;
-        }
-
-        .badge {
-          @apply inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground;
-        }
-
-        .service-card {
-          @apply rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm transition hover:border-primary/40 hover:shadow-card;
-        }
-
-        .service-card.connected {
-          @apply border-emerald-200 bg-emerald-50;
-        }
-
-        .service-card.error {
-          @apply border-rose-200 bg-rose-50;
-        }
-
-        .service-card.skipped {
-          @apply opacity-60;
-        }
-
-        .service-header {
-          @apply flex flex-wrap items-start justify-between gap-3;
-        }
-
-        .service-title {
-          @apply flex items-center gap-3 text-lg font-semibold text-foreground;
-        }
-
-        .service-icon {
-          @apply inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary;
-        }
-
-        .service-status {
-          @apply inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground;
-        }
-
-        .status-pending {
-          @apply border border-border/70 bg-muted/60 text-muted-foreground;
-        }
-
-        .status-testing {
-          @apply border border-sky-200 bg-sky-100 text-sky-700;
-        }
-
-        .status-connected,
-        .status-success {
-          @apply border border-emerald-200 bg-emerald-100 text-emerald-700;
-        }
-
-        .status-error {
-          @apply border border-rose-200 bg-rose-100 text-rose-700;
-        }
-
-        .status-skipped {
-          @apply border border-amber-200 bg-amber-100 text-amber-700;
-        }
-
-        .form-group {
-          @apply space-y-2;
-        }
-
-        .input-grid {
-          @apply grid gap-4 md:grid-cols-2;
-        }
-
-        label {
-          @apply text-sm font-medium text-foreground;
-        }
-
-        input,
-        select {
-          @apply w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
-        }
-
-        .input-help {
-          @apply text-xs text-muted-foreground;
-        }
-
-        .button-row {
-          @apply mt-6 flex flex-wrap items-center gap-3;
-        }
-
-        .btn {
-          @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition;
-        }
-
-        .btn-primary {
-          @apply bg-primary text-primary-foreground shadow-sm hover:bg-primary/90;
-        }
-
-        .btn-secondary {
-          @apply border border-border/70 bg-card text-foreground hover:border-border hover:bg-card/80;
-        }
-
-        .btn-ghost {
-          @apply border border-transparent text-muted-foreground hover:text-foreground;
-        }
-
-        .btn-test {
-          @apply border border-border/70 bg-muted/60 text-foreground hover:border-primary/40 hover:text-primary;
-        }
-
-        .wizard-actions {
-          @apply flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6;
-        }
-
-        .message-stack {
-          @apply space-y-3;
-        }
-
-        .success-message {
-          @apply rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700;
-        }
-
-        .error-message {
-          @apply rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700;
-        }
-
-        .config-summary {
-          @apply space-y-4;
-        }
-
-        .config-grid {
-          @apply grid gap-4;
-        }
-
-        .config-item {
-          @apply flex flex-col gap-2 rounded-xl border border-border/70 bg-card/80 p-4 sm:flex-row sm:items-center sm:justify-between;
-        }
-
-        .config-label {
-          @apply flex items-center gap-2 text-sm font-medium text-foreground;
-        }
-
-        .config-value {
-          @apply text-sm text-muted-foreground;
-        }
-
-        .summary-ready {
-          @apply font-semibold text-emerald-600;
-        }
-
-        .summary-skipped {
-          @apply font-semibold text-amber-600;
-        }
-
-        .summary-missing {
-          @apply font-semibold text-rose-600;
-        }
-
-        .completion-screen {
-          @apply flex flex-col items-center gap-5 rounded-3xl border border-border/70 bg-card/80 p-10 text-center;
-        }
-
-        .completion-icon {
-          @apply inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-3xl text-primary;
-        }
-
-        .completion-title {
-          @apply text-2xl font-semibold text-foreground;
-        }
-
-        .completion-message {
-          @apply max-w-xl text-sm text-muted-foreground;
-        }
-
-        .wizard-footer {
-          @apply border-t border-border/60 bg-muted/40 px-8 py-6 text-center text-xs text-muted-foreground;
-        }
-
-        .loading {
-          @apply inline-flex items-center gap-2 text-sm font-medium text-muted-foreground;
-        }
-
-        .spinner {
-          @apply h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary;
-        }
-      }
-    </style>
-</head>
-<body class="bg-background text-foreground">
-    <div class="min-h-screen bg-gradient-to-br from-background via-background to-muted/60 py-12 sm:py-16">
-        <div class="container max-w-5xl">
-            <div class="wizard-shell">
-                <header class="wizard-header">
-                    <div class="wizard-badge">Financial Command Center Setup</div>
-                    <h1>Secure integration wizard</h1>
-                    <p>Connect Stripe, Plaid, and Xero credentials with guided validation. Secrets stay encrypted on this device.</p>
-                    <div class="wizard-progress">
-                        <div class="progress-track">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="progress-label">Step <span id="currentStepLabel">1</span> of 6</div>
-                    </div>
-                </header>
-
-                <div class="wizard-content">
-                    <section class="step active" id="step1">
-                        <div class="step-header">
-                            <span class="badge"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Welcome</span>
-                            <h2 class="step-title">Welcome to Financial Command Center</h2>
-                            <p class="step-description">We'll guide you through connecting each integration, testing the credentials, and storing everything using the encrypted configuration manager.</p>
-                        </div>
-
-                        <div class="grid gap-4 md:grid-cols-3">
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <span class="service-icon"><i data-lucide="credit-card" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Stripe payments</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">Capture charges, manage customers, and monitor payouts directly from the Command Center.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <span class="service-icon"><i data-lucide="banknote" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Plaid banking</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">Stream sandbox or live banking data to demo real balance insights and transactions.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <span class="service-icon"><i data-lucide="file-text" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Xero accounting</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">Sync invoices, contacts, and organisation metadata for unified financial reporting.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <p class="text-sm text-muted-foreground">You can skip any integration and return later from the admin dashboard.</p>
-                            <button type="button" class="btn btn-primary" onclick="nextStep()">
-                                Begin setup
-                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                            </button>
-                        </div>
-                    </section>
-
-                    <section class="step" id="step2">
-                        <div class="step-header">
-                            <span class="badge">Step 2</span>
-                            <h2 class="step-title">Connect Stripe</h2>
-                            <p class="step-description">Use a restricted key wherever possible. The wizard encrypts values at rest and never transmits them externally.</p>
-                        </div>
-
-                        <div id="stripe-messages" class="message-stack"></div>
-
-                        <div class="service-card" id="stripeCard">
-                            <div class="service-header">
-                                <div class="service-title">
-                                    <span class="service-icon"><i data-lucide="credit-card" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Stripe API configuration</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">Validate connectivity before saving credentials.</p>
-                                    </div>
-                                </div>
-                                <span class="service-status status-pending" id="stripeStatus">Pending</span>
-                            </div>
-
-                            <form id="stripeForm" onsubmit="event.preventDefault();" class="space-y-4">
-                                <div class="form-group">
-                                    <label for="stripeApiKey">Stripe secret key</label>
-                                    <input type="password" id="stripeApiKey" name="stripe_api_key" placeholder="sk_live_... or sk_test_..." autocomplete="off" />
-                                    <p class="input-help">Starts with sk_test_ for sandbox or sk_live_ for production.</p>
-                                </div>
-                                <div class="form-group">
-                                    <label for="stripePublishableKey">Publishable key (optional)</label>
-                                    <input type="text" id="stripePublishableKey" name="stripe_publishable_key" placeholder="pk_live_... or pk_test_..." autocomplete="off" />
-                                    <p class="input-help">Required if you plan to demonstrate client-side payment flows.</p>
-                                </div>
-                                <div class="button-row">
-                                    <button type="button" class="btn btn-test" onclick="testStripeConnection()">
-                                        <span id="stripeTestSpinner" class="loading" style="display: none;">
-                                            <div class="spinner"></div>
-                                            Testing
-                                        </span>
-                                        <span id="stripeTestText">Test connection</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back
-                            </button>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <button type="button" class="btn btn-ghost" onclick="skipStripe()">Skip for now</button>
-                                <button type="button" class="btn btn-primary" onclick="nextStep()" id="stripeNext" disabled>
-                                    Continue
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="step" id="step3">
-                        <div class="step-header">
-                            <span class="badge">Step 3</span>
-                            <h2 class="step-title">Configure Plaid banking</h2>
-                            <p class="step-description">Supply sandbox credentials to demonstrate flows instantly, or connect production once you're ready.</p>
-                        </div>
-
-                        <div id="plaid-messages" class="message-stack"></div>
-
-                        <div class="service-card" id="plaidCard">
-                            <div class="service-header">
-                                <div class="service-title">
-                                    <span class="service-icon"><i data-lucide="banknote" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Plaid API credentials</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">Supports sandbox, development, and production environments.</p>
-                                    </div>
-                                </div>
-                                <span class="service-status status-pending" id="plaidStatus">Pending</span>
-                            </div>
-
-                            <form id="plaidForm" onsubmit="event.preventDefault();" class="space-y-4">
-                                <div class="input-grid">
-                                    <div class="form-group">
-                                        <label for="plaidClientId">Plaid client ID</label>
-                                        <input type="text" id="plaidClientId" name="plaid_client_id" placeholder="client id" autocomplete="off" />
-                                        <p class="input-help">Available in the Plaid dashboard.</p>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="plaidSecret">Plaid secret</label>
-                                        <input type="password" id="plaidSecret" name="plaid_secret" placeholder="secret key" autocomplete="off" />
-                                        <p class="input-help">Use sandbox credentials for demos.</p>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="plaidEnvironment">Environment</label>
-                                    <select id="plaidEnvironment" name="plaid_environment">
-                                        <option value="sandbox">Sandbox (testing)</option>
-                                        <option value="development">Development</option>
-                                        <option value="production">Production (live)</option>
-                                    </select>
-                                </div>
-                                <div class="button-row">
-                                    <button type="button" class="btn btn-test" onclick="testPlaidConnection()">
-                                        <span id="plaidTestSpinner" class="loading" style="display: none;">
-                                            <div class="spinner"></div>
-                                            Testing
-                                        </span>
-                                        <span id="plaidTestText">Test configuration</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back
-                            </button>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <button type="button" class="btn btn-ghost" onclick="skipPlaid()">Skip for now</button>
-                                <button type="button" class="btn btn-primary" onclick="nextStep()" id="plaidNext" disabled>
-                                    Continue
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="step" id="step4">
-                        <div class="step-header">
-                            <span class="badge">Step 4</span>
-                            <h2 class="step-title">Configure Xero OAuth</h2>
-                            <p class="step-description">Create a confidential application in the Xero developer portal, then paste the client ID and secret here.</p>
-                        </div>
-
-                        <div id="xero-messages" class="message-stack"></div>
-
-                        <div class="service-card" id="xeroCard">
-                            <div class="service-header">
-                                <div class="service-title">
-                                    <span class="service-icon"><i data-lucide="file-text" class="h-5 w-5"></i></span>
-                                    <div>
-                                        <h3 class="text-base font-semibold text-foreground">Xero OAuth credentials</h3>
-                                        <p class="mt-1 text-sm text-muted-foreground">After validation, the wizard manages refresh tokens for you.</p>
-                                    </div>
-                                </div>
-                                <span class="service-status status-pending" id="xeroStatus">Pending</span>
-                            </div>
-
-                            <form id="xeroForm" onsubmit="event.preventDefault();" class="space-y-4">
-                                <div class="input-grid">
-                                    <div class="form-group">
-                                        <label for="xeroClientId">Xero client ID</label>
-                                        <input type="text" id="xeroClientId" name="xero_client_id" placeholder="client id" autocomplete="off" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="xeroClientSecret">Xero client secret</label>
-                                        <input type="password" id="xeroClientSecret" name="xero_client_secret" placeholder="client secret" autocomplete="off" />
-                                    </div>
-                                </div>
-                                <div class="button-row">
-                                    <button type="button" class="btn btn-test" onclick="testXeroConnection()">
-                                        <span id="xeroTestSpinner" class="loading" style="display: none;">
-                                            <div class="spinner"></div>
-                                            Testing
-                                        </span>
-                                        <span id="xeroTestText">Validate credentials</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back
-                            </button>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <button type="button" class="btn btn-ghost" onclick="skipXero()">Skip for now</button>
-                                <button type="button" class="btn btn-primary" onclick="nextStep()" id="xeroNext" disabled>
-                                    Continue
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="step" id="step5">
-                        <div class="step-header">
-                            <span class="badge">Step 5</span>
-                            <h2 class="step-title">Review configuration</h2>
-                            <p class="step-description">Confirm each integration before writing the encrypted configuration file. You can revisit this wizard anytime.</p>
-                        </div>
-
-                        <div id="completion-messages" class="message-stack"></div>
-
-                        <div class="config-summary">
-                            <div class="config-grid">
-                                <div class="config-item">
-                                    <span class="config-label"><i data-lucide="credit-card" class="h-4 w-4 text-primary"></i> Stripe integration</span>
-                                    <span class="config-value summary-missing" id="stripeSummary">Not configured</span>
-                                </div>
-                                <div class="config-item">
-                                    <span class="config-label"><i data-lucide="file-text" class="h-4 w-4 text-primary"></i> Xero integration</span>
-                                    <span class="config-value summary-missing" id="xeroSummary">Not configured</span>
-                                </div>
-                                <div class="config-item">
-                                    <span class="config-label"><i data-lucide="banknote" class="h-4 w-4 text-primary"></i> Plaid banking</span>
-                                    <span class="config-value summary-missing" id="plaidSummary">Not configured</span>
-                                </div>
-                                <div class="config-item">
-                                    <span class="config-label"><i data-lucide="shield-check" class="h-4 w-4 text-primary"></i> Security</span>
-                                    <span class="config-value">AES-256 encryption</span>
-                                </div>
-                                <div class="config-item">
-                                    <span class="config-label"><i data-lucide="hard-drive" class="h-4 w-4 text-primary"></i> Storage</span>
-                                    <span class="config-value">Local encrypted files</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" class="btn btn-secondary" onclick="prevStep()">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back
-                            </button>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <button type="button" class="btn btn-primary" onclick="saveConfiguration()">
-                                    <span id="saveSpinner" class="loading" style="display: none;">
-                                        <div class="spinner"></div>
-                                        Saving
-                                    </span>
-                                    <span id="saveText">Save &amp; finish</span>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="step" id="step6">
-                        <div class="completion-screen">
-                            <div class="completion-icon"><i data-lucide="sparkles" class="h-6 w-6"></i></div>
-                            <div class="completion-title">Setup complete</div>
-                            <p class="completion-message">All integrations have been saved securely. Launch the dashboard or health check to verify everything is operating as expected.</p>
-                            <div class="flex flex-wrap items-center justify-center gap-3">
-                                <a class="btn btn-primary" href="/admin/dashboard">
-                                    Dashboard
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </a>
-                                <a class="btn btn-secondary" href="/health">
-                                    System health
-                                </a>
-                                <button type="button" class="btn btn-ghost" onclick="location.reload()">Run wizard again</button>
-                            </div>
-                        </div>
-                    </section>
+{% extends "layout.html" %}
+
+{% block title %}Setup Wizard · Financial Command Center AI{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <!-- Header Section -->
+    <div class="card border border-border/70 p-7 shadow-card">
+        <div class="space-y-6">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                    <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+                    Setup Wizard
+                </span>
+                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Secure integration wizard</h1>
+                <p class="text-base text-muted-foreground sm:text-lg">Connect Stripe, Plaid, and Xero credentials with guided validation. Secrets stay encrypted on this device.</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-3">
+                <div class="relative h-2 w-full rounded-full bg-muted/60">
+                    <div class="absolute inset-y-0 left-0 h-full rounded-full bg-primary transition-all duration-300" id="progressFill" style="width: 0%;"></div>
                 </div>
-
-                <footer class="wizard-footer">
-                    &copy; <span id="wizardYear"></span> Financial Command Center AI. Credentials never leave this device.
-                </footer>
+                <div class="text-xs font-medium uppercase tracking-[0.32em] text-muted-foreground">
+                    Step <span id="currentStepLabel">0</span> of 4
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
-    <script>
-        let currentStep = 1;
-        const totalSteps = 6;
-        let stripeConfigured = false;
-        let xeroConfigured = false;
-        let plaidConfigured = false;
-        let stripeSkipped = false;
-        let xeroSkipped = false;
-        let plaidSkipped = false;
+    <!-- Welcome Section -->
+    <div class="card border border-border/70 p-6 space-y-6">
+        <div class="space-y-3">
+            <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+                Welcome
+            </span>
+            <h2 class="text-2xl font-semibold text-foreground">Welcome to Financial Command Center</h2>
+            <p class="text-sm leading-relaxed text-muted-foreground">We'll guide you through connecting each integration, testing the credentials, and storing everything using the encrypted configuration manager.</p>
+        </div>
 
-        const summaryClasses = ['summary-ready', 'summary-skipped', 'summary-missing'];
-
-        function updateProgress() {
-            const progressPortion = Math.max(0, Math.min(totalSteps - 1, currentStep - 1));
-            const progress = totalSteps === 1 ? 100 : (progressPortion / (totalSteps - 1)) * 100;
-            const fill = document.getElementById('progressFill');
-            if (fill) {
-                fill.style.width = progress + '%';
-            }
-            const label = document.getElementById('currentStepLabel');
-            if (label) {
-                label.textContent = currentStep;
-            }
-        }
-
-        function showStep(step) {
-            document.querySelectorAll('.step').forEach((section) => section.classList.remove('active'));
-            const target = document.getElementById('step' + step);
-            if (target) {
-                target.classList.add('active');
-            }
-            updateProgress();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        }
-
-        function nextStep() {
-            if (currentStep < totalSteps) {
-                currentStep++;
-                showStep(currentStep);
-                if (currentStep === 5) {
-                    updateSummary();
-                }
-            }
-        }
-
-        function prevStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        }
-
-        function buildApiUrl(path) {
-            try {
-                const origin = window.location.origin || '';
-                if (!origin || origin.startsWith('file:')) {
-                    return 'https://127.0.0.1:8000' + path;
-                }
-                return origin + path;
-            } catch (e) {
-                return 'https://127.0.0.1:8000' + path;
-            }
-        }
-
-        function setStatus(elementId, statusClass, text) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-            el.textContent = text;
-            el.className = 'service-status ' + statusClass;
-        }
-
-        function setCardState(cardId, state) {
-            const card = document.getElementById(cardId);
-            if (!card) return null;
-            card.classList.remove('connected', 'error', 'skipped');
-            if (state) {
-                card.classList.add(state);
-            }
-            return card;
-        }
-
-        function toggleButton(id, disabled) {
-            const button = document.getElementById(id);
-            if (button) {
-                button.disabled = disabled;
-            }
-        }
-
-        function applySummary(element, variant, text) {
-            if (!element) return;
-            summaryClasses.forEach((cls) => element.classList.remove(cls));
-            element.textContent = text;
-            if (variant) {
-                element.classList.add(variant);
-            }
-        }
-
-        function showMessage(containerId, type, message) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const wrapper = document.createElement('div');
-            wrapper.className = type === 'error' ? 'error-message' : 'success-message';
-            wrapper.setAttribute('role', 'alert');
-            wrapper.innerHTML = `
+        <div class="grid gap-4 md:grid-cols-3">
+            <div class="card border border-border/70 p-6">
                 <div class="flex items-start gap-3">
-                    <i data-lucide="${type === 'error' ? 'alert-triangle' : 'check-circle'}" class="h-4 w-4 flex-shrink-0"></i>
-                    <div class="space-y-1 text-sm leading-relaxed">${message}</div>
+                    <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                        <i data-lucide="credit-card" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-foreground">Stripe payments</h3>
+                        <p class="mt-1 text-sm text-muted-foreground">Capture charges, manage customers, and monitor payouts directly from the Command Center.</p>
+                    </div>
                 </div>
-            `;
-            container.innerHTML = '';
-            container.appendChild(wrapper);
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        }
-        async function testStripeConnection() {
-            const apiKey = document.getElementById('stripeApiKey').value;
-            if (!apiKey) {
-                showMessage('stripe-messages', 'error', 'Enter your Stripe secret key before testing.');
-                return;
-            }
+            </div>
+            <div class="card border border-border/70 p-6">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                        <i data-lucide="banknote" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-foreground">Plaid banking</h3>
+                        <p class="mt-1 text-sm text-muted-foreground">Stream sandbox or live banking data to demo real balance insights and transactions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card border border-border/70 p-6">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                        <i data-lucide="file-text" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-foreground">Xero accounting</h3>
+                        <p class="mt-1 text-sm text-muted-foreground">Sync invoices, contacts, and organisation metadata for unified financial reporting.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            const testSpinner = document.getElementById('stripeTestSpinner');
-            const testText = document.getElementById('stripeTestText');
+        <div class="flex items-center justify-between gap-3 border-t border-border/60 pt-6">
+            <p class="text-sm text-muted-foreground">You can skip any integration and return later from the admin dashboard.</p>
+            <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="beginSetup()">
+                Begin setup
+                <i data-lucide="arrow-right" class="h-4 w-4"></i>
+            </button>
+        </div>
+    </div>
 
-            setCardState('stripeCard');
-            setStatus('stripeStatus', 'status-testing', 'Testing...');
+    <!-- Setup Steps -->
+    <div class="space-y-8" id="setupSteps" style="display: none;">
+        <!-- Step 1: Stripe -->
+        <section class="step active" id="step1">
+            <div class="card border border-border/70 p-6 space-y-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        Step 1 of 4
+                    </span>
+                    <h2 class="text-2xl font-semibold text-foreground">Connect Stripe</h2>
+                    <p class="text-sm leading-relaxed text-muted-foreground">Authorize a Stripe account via OAuth. The launcher already knows the platform client credentials, so you only need to approve access.</p>
+                </div>
 
-            if (testSpinner && testText) {
-                testSpinner.style.display = 'inline-flex';
-                testText.style.display = 'none';
-            }
+                <div id="stripe-messages" class="space-y-3"></div>
 
-            try {
-                const response = await fetch(buildApiUrl('/api/setup/test-stripe'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        stripe_api_key: apiKey,
-                        stripe_publishable_key: document.getElementById('stripePublishableKey').value
-                    })
-                });
+                <div class="card border border-border/70 p-6" id="stripeCard">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                <i data-lucide="credit-card" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-semibold text-foreground">Stripe Connect</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Launch OAuth to connect a live or test Stripe account. No API keys required.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="stripeStatus">Pending</span>
+                    </div>
 
-                const result = await response.json();
+                    <div class="space-y-4">
+                        <p class="text-sm text-muted-foreground">When you click Connect, a secure Stripe window will open. Approve access for the account you want to demo and the wizard will store the resulting tokens locally.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" id="stripeConnectButton" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="connectStripe()">
+                                <span id="stripeConnectSpinner" class="inline-flex items-center gap-2" style="display: none;">
+                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary/40 border-t-primary-foreground"></div>
+                                    Authorizing
+                                </span>
+                                <span id="stripeConnectText">Connect Stripe</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                if (result.success) {
-                    stripeConfigured = true;
-                    setCardState('stripeCard', 'connected');
-                    setStatus('stripeStatus', 'status-connected', 'Connected');
-                    toggleButton('stripeNext', false);
-                    showMessage('stripe-messages', 'success', `Connected to Stripe successfully. Account: ${result.account_name || 'unknown'}.`);
-                } else {
-                    throw new Error(result.error || 'Connection failed');
-                }
-            } catch (error) {
-                setCardState('stripeCard', 'error');
-                setStatus('stripeStatus', 'status-error', 'Error');
-                toggleButton('stripeNext', true);
-                showMessage('stripe-messages', 'error', `Stripe connection failed: ${error.message}`);
-            } finally {
-                if (testSpinner && testText) {
-                    testSpinner.style.display = 'none';
-                    testText.style.display = 'inline';
-                }
-            }
-        }
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
+                    <div></div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground" onclick="skipStripe()">Skip for now</button>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="nextStep()" id="stripeNext" disabled>
+                            Continue to Plaid
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-        async function testXeroConnection() {
-            const clientId = document.getElementById('xeroClientId').value;
-            const clientSecret = document.getElementById('xeroClientSecret').value;
+        <!-- Step 2: Plaid -->
+        <section class="step" id="step2" style="display: none;">
+            <div class="card border border-border/70 p-6 space-y-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        Step 2 of 4
+                    </span>
+                    <h2 class="text-2xl font-semibold text-foreground">Configure Plaid banking</h2>
+                    <p class="text-sm leading-relaxed text-muted-foreground">Launch Plaid Link to connect a bank account. The FCC launcher keeps your Plaid app credentials on-device.</p>
+                </div>
 
-            if (!clientId || !clientSecret) {
-                showMessage('xero-messages', 'error', 'Enter both the Xero client ID and secret.');
-                return;
-            }
+                <div id="plaid-messages" class="space-y-3"></div>
 
-            const testSpinner = document.getElementById('xeroTestSpinner');
-            const testText = document.getElementById('xeroTestText');
+                <div class="card border border-border/70 p-6" id="plaidCard">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                <i data-lucide="banknote" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-semibold text-foreground">Plaid Link</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Generate a Link token, complete the OAuth flow, and the wizard will exchange the resulting public token automatically.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="plaidStatus">Pending</span>
+                    </div>
 
-            setCardState('xeroCard');
-            setStatus('xeroStatus', 'status-testing', 'Testing...');
+                    <div class="space-y-4">
+                        <p class="text-sm text-muted-foreground">Click Connect Bank to launch Plaid Link. Select a sandbox institution for demos (user: <code>user_good</code>, pass: <code>pass_good</code>) or a live bank in production environments.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" id="plaidConnectButton" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="connectPlaid()">
+                                <span id="plaidConnectSpinner" class="inline-flex items-center gap-2" style="display: none;">
+                                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary/40 border-t-primary-foreground"></div>
+                                    Launching
+                                </span>
+                                <span id="plaidConnectText">Connect bank via Plaid</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-            if (testSpinner && testText) {
-                testSpinner.style.display = 'inline-flex';
-                testText.style.display = 'none';
-            }
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
+                    <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80" onclick="prevStep()">
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                        Back to Stripe
+                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground" onclick="skipPlaid()">Skip for now</button>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="nextStep()" id="plaidNext" disabled>
+                            Continue to Xero
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            try {
-                const response = await fetch(buildApiUrl('/api/setup/test-xero'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        xero_client_id: clientId,
-                        xero_client_secret: clientSecret
-                    })
-                });
+        <!-- Step 3: Xero -->
+        <section class="step" id="step3" style="display: none;">
+            <div class="card border border-border/70 p-6 space-y-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        Step 3 of 4
+                    </span>
+                    <h2 class="text-2xl font-semibold text-foreground">Review Xero OAuth setup</h2>
+                    <p class="text-sm leading-relaxed text-muted-foreground">This installer already includes the Xero app credentials. Just verify the details below and continue to connect your organisation in the next step.</p>
+                </div>
 
-                const result = await response.json();
+                <div id="xero-messages" class="space-y-3"></div>
 
-                if (result.success) {
-                    xeroConfigured = true;
-                    setCardState('xeroCard', 'connected');
-                    setStatus('xeroStatus', 'status-connected', 'Connected');
-                    toggleButton('xeroNext', false);
-                    showMessage('xero-messages', 'success', 'Xero credentials validated successfully.');
-                } else {
-                    throw new Error(result.error || 'Validation failed');
-                }
-            } catch (error) {
-                setCardState('xeroCard', 'error');
-                setStatus('xeroStatus', 'status-error', 'Error');
-                toggleButton('xeroNext', true);
-                showMessage('xero-messages', 'error', `Xero validation failed: ${error.message}`);
-            } finally {
-                if (testSpinner && testText) {
-                    testSpinner.style.display = 'none';
-                    testText.style.display = 'inline';
-                }
-            }
-        }
+                <div class="card border border-border/70 p-6" id="xeroCard">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                <i data-lucide="file-text" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-semibold text-foreground">Xero OAuth credentials</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Supplied by your administrator and stored encrypted on this device.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]" id="xeroStatus">Ready</span>
+                    </div>
 
-        async function testPlaidConnection() {
-            const clientId = document.getElementById('plaidClientId').value;
-            const secret = document.getElementById('plaidSecret').value;
-            const environment = document.getElementById('plaidEnvironment').value;
+                    <div class="space-y-4 text-sm text-muted-foreground">
+                        <p>• Redirect URI: <code>{{ url_for('callback', _external=True) }}</code> (auto-configured)</p>
+                        <p>• Scope: <code>offline_access accounting.transactions accounting.contacts accounting.reports.read openid profile email</code></p>
+                        <p>• Secrets never leave this machine; only OAuth tokens are saved after the next step.</p>
+                    </div>
+                </div>
 
-            if (!clientId || !secret) {
-                showMessage('plaid-messages', 'error', 'Enter your Plaid client ID and secret before testing.');
-                return;
-            }
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
+                    <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80" onclick="prevStep()">
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                        Back to Plaid
+                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="nextStep()" id="xeroNext">
+                            Continue to Connect Xero
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            const testSpinner = document.getElementById('plaidTestSpinner');
-            const testText = document.getElementById('plaidTestText');
+        <!-- Step 4: Connect Xero -->
+        <section class="step" id="step4" style="display: none;">
+            <div class="card border border-border/70 p-6 space-y-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        Step 4 of 4
+                    </span>
+                    <h2 class="text-2xl font-semibold text-foreground">Connect Xero organisation</h2>
+                    <p class="text-sm leading-relaxed text-muted-foreground">Authorize Financial Command Center to access your Xero organisation using OAuth. Keep this wizard open while you complete the flow in a new tab.</p>
+                </div>
 
-            setCardState('plaidCard');
-            setStatus('plaidStatus', 'status-testing', 'Testing...');
+                <div id="connect-xero-messages" class="space-y-3"></div>
 
-            if (testSpinner && testText) {
-                testSpinner.style.display = 'inline-flex';
-                testText.style.display = 'none';
-            }
+                <div class="card border border-border/70 p-6">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                <i data-lucide="link-2" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-semibold text-foreground">Xero OAuth connection</h3>
+                                <p class="mt-1 text-sm text-muted-foreground">Launch the OAuth consent flow, then confirm the tenant connection.</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground" id="connectXeroStatus">Pending</span>
+                    </div>
 
-            try {
-                const response = await fetch(buildApiUrl('/api/setup/test-plaid'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        plaid_client_id: clientId,
-                        plaid_secret: secret,
-                        plaid_environment: environment
-                    })
-                });
+                    <div class="space-y-4">
+                        <p class="text-sm leading-relaxed text-muted-foreground">When the OAuth window opens, sign in with your Xero account, approve access, and select the organisation to link. Afterwards, return here and verify the connection.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="launchXeroOAuth()">
+                                Connect Xero
+                                <i data-lucide="external-link" class="h-4 w-4"></i>
+                            </button>
+                            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary" onclick="checkXeroConnection()">
+                                Check connection
+                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                const result = await response.json();
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-6">
+                    <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80" onclick="prevStep()">
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                        Back to Xero OAuth
+                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground" onclick="skipXeroConnect()">Skip for now</button>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90" onclick="finishSetup()" id="connectXeroFinish" disabled>
+                            Finish setup
+                            <i data-lucide="check" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                if (result.success) {
-                    plaidConfigured = true;
-                    setCardState('plaidCard', 'connected');
-                    setStatus('plaidStatus', 'status-success', 'Configured');
-                    toggleButton('plaidNext', false);
-                    showMessage('plaid-messages', 'success', `Plaid credentials verified. Environment: ${result.environment || environment}.`);
-                } else {
-                    throw new Error(result.error || 'Verification failed');
-                }
-            } catch (error) {
-                plaidConfigured = false;
-                setCardState('plaidCard', 'error');
-                setStatus('plaidStatus', 'status-error', 'Error');
-                toggleButton('plaidNext', true);
-                showMessage('plaid-messages', 'error', `Plaid verification failed: ${error.message}`);
-            } finally {
-                if (testSpinner && testText) {
-                    testSpinner.style.display = 'none';
-                    testText.style.display = 'inline';
-                }
-            }
-        }
+        <!-- Completion -->
+        <section class="step" id="completion" style="display: none;">
+            <div class="card border border-border/70 p-10 text-center space-y-8">
+                <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-3xl text-primary mx-auto">
+                    <i data-lucide="sparkles" class="h-8 w-8"></i>
+                </div>
+                <div class="space-y-3">
+                    <h2 class="text-2xl font-semibold text-foreground">Setup complete</h2>
+                    <p class="max-w-xl mx-auto text-sm text-muted-foreground">All integrations have been saved securely. Complete your setup by connecting AI assistants and automation tools.</p>
+                </div>
 
-        function skipStripe() {
-            stripeSkipped = true;
-            stripeConfigured = false;
-            setCardState('stripeCard', 'skipped');
-            setStatus('stripeStatus', 'status-skipped', 'Skipped');
-            toggleButton('stripeNext', false);
-            showMessage('stripe-messages', 'success', 'Stripe configuration skipped. You can enable it later from the admin dashboard.');
-            nextStep();
-        }
+                <div id="completion-messages" class="space-y-3"></div>
 
-        function skipXero() {
-            xeroSkipped = true;
-            xeroConfigured = false;
-            setCardState('xeroCard', 'skipped');
-            setStatus('xeroStatus', 'status-skipped', 'Skipped');
-            toggleButton('xeroNext', false);
-            showMessage('xero-messages', 'success', 'Xero integration skipped. Demo mode will stay active until credentials are added.');
-        }
+                <!-- AI & Automation Connections -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-foreground">Connect AI & Automation</h3>
+                    <div class="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
+                        <div class="card border border-border/70 p-6 text-left">
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                    <i data-lucide="bot" class="h-5 w-5"></i>
+                                </span>
+                                <div class="space-y-2">
+                                    <h4 class="text-base font-semibold text-foreground">Connect to Claude</h4>
+                                    <p class="text-sm text-muted-foreground">Generate Claude Desktop config for seamless AI integration.</p>
+                                    <a href="/claude/setup" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                                        Setup Claude
+                                        <i data-lucide="external-link" class="h-4 w-4"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card border border-border/70 p-6 text-left">
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                    <i data-lucide="zap" class="h-5 w-5"></i>
+                                </span>
+                                <div class="space-y-2">
+                                    <h4 class="text-base font-semibold text-foreground">Configure Warp</h4>
+                                    <p class="text-sm text-muted-foreground">Set up automation workflows and data pipelines.</p>
+                                    <a href="/warp/setup" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                                        Setup Warp
+                                        <i data-lucide="external-link" class="h-4 w-4"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card border border-border/70 p-6 text-left">
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-primary/20 bg-primary/10 text-primary">
+                                    <i data-lucide="message-circle" class="h-5 w-5"></i>
+                                </span>
+                                <div class="space-y-2">
+                                    <h4 class="text-base font-semibold text-foreground">Connect to ChatGPT</h4>
+                                    <p class="text-sm text-muted-foreground">Configure AI assistant for financial insights and queries.</p>
+                                    <a href="/assistant" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                                        AI Assistant
+                                        <i data-lucide="external-link" class="h-4 w-4"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        function skipPlaid() {
-            plaidSkipped = true;
-            plaidConfigured = false;
-            setCardState('plaidCard', 'skipped');
-            setStatus('plaidStatus', 'status-skipped', 'Skipped');
-            toggleButton('plaidNext', false);
-            showMessage('plaid-messages', 'success', 'Plaid integration skipped. Banking workflows remain available in demo mode.');
-        }
+                <!-- Navigation Options -->
+                <div class="space-y-3">
+                    <p class="text-sm text-muted-foreground">Or proceed to the dashboard to manage your integrations</p>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <a class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80" href="/admin/dashboard">
+                            Dashboard
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </a>
+                        <a class="inline-flex items-center gap-2 rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-border hover:bg-card/80" href="/health">
+                            System health
+                        </a>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground" onclick="location.reload()">Run wizard again</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
 
-        function updateSummary() {
-            const stripeSummary = document.getElementById('stripeSummary');
-            const xeroSummary = document.getElementById('xeroSummary');
-            const plaidSummary = document.getElementById('plaidSummary');
+<style>
+.step {
+    display: none;
+}
+.step.active {
+    display: block;
+}
+</style>
 
-            if (stripeConfigured) {
-                applySummary(stripeSummary, 'summary-ready', 'Configured & tested');
-            } else if (stripeSkipped) {
-                applySummary(stripeSummary, 'summary-skipped', 'Skipped for now');
-            } else {
-                applySummary(stripeSummary, 'summary-missing', 'Not configured');
-            }
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script src="{{ url_for('static', filename='js/setup-wizard.js') }}"></script>
 
-            if (xeroConfigured) {
-                applySummary(xeroSummary, 'summary-ready', 'Configured & tested');
-            } else if (xeroSkipped) {
-                applySummary(xeroSummary, 'summary-skipped', 'Skipped for now');
-            } else {
-                applySummary(xeroSummary, 'summary-missing', 'Not configured');
-            }
+{% endblock %}
 
-            if (plaidConfigured) {
-                applySummary(plaidSummary, 'summary-ready', 'Configured & tested');
-            } else if (plaidSkipped) {
-                applySummary(plaidSummary, 'summary-skipped', 'Skipped for now');
-            } else {
-                applySummary(plaidSummary, 'summary-missing', 'Not configured');
-            }
-        }
-
-        async function saveConfiguration() {
-            const saveSpinner = document.getElementById('saveSpinner');
-            const saveText = document.getElementById('saveText');
-
-            if (saveSpinner && saveText) {
-                saveSpinner.style.display = 'inline-flex';
-                saveText.style.display = 'none';
-            }
-
-            try {
-                const configData = {
-                    stripe: stripeConfigured ? {
-                        api_key: document.getElementById('stripeApiKey').value,
-                        publishable_key: document.getElementById('stripePublishableKey').value
-                    } : { skipped: stripeSkipped },
-                    xero: xeroConfigured ? {
-                        client_id: document.getElementById('xeroClientId').value,
-                        client_secret: document.getElementById('xeroClientSecret').value
-                    } : { skipped: xeroSkipped },
-                    plaid: plaidConfigured ? {
-                        client_id: document.getElementById('plaidClientId').value,
-                        secret: document.getElementById('plaidSecret').value,
-                        environment: document.getElementById('plaidEnvironment').value
-                    } : { skipped: plaidSkipped }
-                };
-
-                const response = await fetch(buildApiUrl('/api/setup/save-config'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(configData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    nextStep();
-                } else {
-                    throw new Error(result.error || 'Configuration save failed');
-                }
-            } catch (error) {
-                showMessage('completion-messages', 'error', `Save failed: ${error.message}`);
-            } finally {
-                if (saveSpinner && saveText) {
-                    saveSpinner.style.display = 'none';
-                    saveText.style.display = 'inline';
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const yearEl = document.getElementById('wizardYear');
-            if (yearEl) {
-                yearEl.textContent = new Date().getFullYear();
-            }
-            updateProgress();
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        });
-    </script>
-</body>
-</html>

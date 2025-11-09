@@ -7,6 +7,7 @@ from typing import Dict, Tuple
 from flask import jsonify, render_template
 
 from ui.helpers import build_nav
+from setup_wizard import get_integration_status
 
 def setup_claude_routes(app, logger=None):
     """Setup Claude Desktop integration routes on the Flask app."""
@@ -31,6 +32,7 @@ def setup_claude_routes(app, logger=None):
             time.sleep(0.1)
 
             config_json, summary, server_url = _build_claude_config(app)
+            summary['integration_status'] = get_integration_status()
             return jsonify({
                 'success': True,
                 'config': config_json,
@@ -92,6 +94,8 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
                 'env': {k: v for k, v in env.items() if v},
             }
 
+    integration_status = get_integration_status()
+
     _add_server(
         'financial-command-center',
         'mcp_server.py',
@@ -102,29 +106,31 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
     )
 
     stripe_config = stored_config.get('stripe', {})
-    if stripe_config and not stripe_config.get('skipped'):
+    if stripe_config and not stripe_config.get('skipped') and integration_status.get('stripe', {}).get('configured'):
         _add_server(
             'stripe-payments',
             'stripe_mcp.py',
             {
                 'STRIPE_API_KEY': stripe_config.get('api_key'),
                 'STRIPE_PUBLISHABLE_KEY': stripe_config.get('publishable_key', ''),
+                'FCC_SYNC_ENDPOINT': '/sync/stripe',
             },
         )
 
     xero_config = stored_config.get('xero', {})
-    if xero_config and not xero_config.get('skipped'):
+    if xero_config and not xero_config.get('skipped') and integration_status.get('xero', {}).get('configured'):
         _add_server(
             'xero-accounting',
             'xero_mcp.py',
             {
                 'XERO_CLIENT_ID': xero_config.get('client_id'),
                 'XERO_CLIENT_SECRET': xero_config.get('client_secret'),
+                'FCC_SYNC_ENDPOINT': '/sync/xero',
             },
         )
 
     plaid_config = stored_config.get('plaid', {})
-    if plaid_config and not plaid_config.get('skipped'):
+    if plaid_config and not plaid_config.get('skipped') and integration_status.get('plaid', {}).get('configured'):
         _add_server(
             'plaid-banking',
             'plaid_mcp.py',
@@ -132,6 +138,7 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
                 'PLAID_CLIENT_ID': plaid_config.get('client_id'),
                 'PLAID_SECRET': plaid_config.get('secret'),
                 'PLAID_ENV': plaid_config.get('environment', 'sandbox'),
+                'FCC_SYNC_ENDPOINT': '/sync/plaid',
             },
         )
 
@@ -166,11 +173,7 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
     summary = {
         'total_servers': len(included_servers),
         'servers': included_servers,
-        'credentials_used': {
-            'stripe': bool(stripe_config and not stripe_config.get('skipped')),
-            'xero': bool(xero_config and not xero_config.get('skipped')),
-            'plaid': bool(plaid_config and not plaid_config.get('skipped')),
-        },
+        'integrations': integration_status,
         'python_executable': python_exe,
         'project_directory': str(base_dir),
         'setup_type': setup_type,

@@ -26,6 +26,14 @@ def setup_api_client():
         'tenant_id': 'tenant-123',
         'has_token': True,
     })
+    stripe_status_provider = MagicMock(return_value={
+        'connected': True,
+        'account_id': 'acct_123',
+    })
+    plaid_status_provider = MagicMock(return_value={
+        'connected': True,
+        'item_id': 'item_123',
+    })
 
     logger = logging.getLogger('setup-api-test')
 
@@ -34,11 +42,20 @@ def setup_api_client():
         logger=logger,
         post_save_callback=post_save_callback,
         connection_status_provider=connection_status_provider,
+        stripe_status_provider=stripe_status_provider,
+        plaid_status_provider=plaid_status_provider,
     )
     app.register_blueprint(blueprint, url_prefix='/api/setup')
 
     with app.test_client() as client:
-        yield client, setup_wizard_api, post_save_callback, connection_status_provider
+        yield (
+            client,
+            setup_wizard_api,
+            post_save_callback,
+            connection_status_provider,
+            stripe_status_provider,
+            plaid_status_provider,
+        )
 
 
 def test_setup_status_endpoint_returns_configuration(setup_api_client):
@@ -53,7 +70,7 @@ def test_setup_status_endpoint_returns_configuration(setup_api_client):
 
 
 def test_save_config_invokes_post_save_on_success(setup_api_client):
-    client, setup_wizard_api, post_save_callback, _ = setup_api_client
+    client, setup_wizard_api, post_save_callback, *_ = setup_api_client
 
     payload = {'stripe': {'skipped': True}}
     response = client.post('/api/setup/save-config', data=json.dumps(payload), content_type='application/json')
@@ -66,7 +83,7 @@ def test_save_config_invokes_post_save_on_success(setup_api_client):
 
 
 def test_save_config_rejects_missing_payload(setup_api_client):
-    client, setup_wizard_api, post_save_callback, _ = setup_api_client
+    client, setup_wizard_api, post_save_callback, *_ = setup_api_client
 
     response = client.post('/api/setup/save-config', data='{}', content_type='application/json')
 
@@ -76,7 +93,7 @@ def test_save_config_rejects_missing_payload(setup_api_client):
 
 
 def test_xero_connection_endpoint_uses_provider(setup_api_client):
-    client, _, __, connection_status_provider = setup_api_client
+    client, _, __, connection_status_provider, _, _ = setup_api_client
 
     response = client.get('/api/setup/xero-connection')
     data = json.loads(response.data.decode('utf-8'))
@@ -88,10 +105,34 @@ def test_xero_connection_endpoint_uses_provider(setup_api_client):
 
 
 def test_xero_connection_endpoint_handles_errors(setup_api_client):
-    client, _, __, connection_status_provider = setup_api_client
+    client, _, __, connection_status_provider, _, _ = setup_api_client
     connection_status_provider.side_effect = RuntimeError('boom')
 
     response = client.get('/api/setup/xero-connection')
+    data = json.loads(response.data.decode('utf-8'))
+
+    assert response.status_code == 500
+    assert data['connected'] is False
+    assert 'error' in data
+
+
+def test_stripe_connection_endpoint_uses_provider(setup_api_client):
+    client, _, __, ___, stripe_status_provider, _ = setup_api_client
+
+    response = client.get('/api/setup/stripe-connection')
+    data = json.loads(response.data.decode('utf-8'))
+
+    assert response.status_code == 200
+    assert data['connected'] is True
+    assert data['account_id'] == 'acct_123'
+    stripe_status_provider.assert_called_once_with()
+
+
+def test_plaid_connection_endpoint_handles_errors(setup_api_client):
+    client, _, __, ___, ____, plaid_status_provider = setup_api_client
+    plaid_status_provider.side_effect = RuntimeError('boom')
+
+    response = client.get('/api/setup/plaid-connection')
     data = json.loads(response.data.decode('utf-8'))
 
     assert response.status_code == 500
