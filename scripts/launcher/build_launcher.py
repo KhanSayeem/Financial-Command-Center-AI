@@ -38,11 +38,15 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     dotenv_values = None
 
-from setup_wizard import ConfigurationManager
-
-
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Ensure double-click launches can import project modules
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from setup_wizard import ConfigurationManager
+
 
 os.chdir(REPO_ROOT)
 

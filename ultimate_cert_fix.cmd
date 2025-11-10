@@ -78,7 +78,10 @@ if exist "%INSTALL_FLAG_FILE%" (
 set "PYTHON_CMD="
 set "PYTHON_ARGS="
 set "PYTHON_DISPLAY="
-set "VENV_PY=%SCRIPT_DIR%\.venv\Scripts\python.exe"
+set "VENV_DIR=%SCRIPT_DIR%\.venv"
+set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
+set "VENV_PIP=%VENV_DIR%\Scripts\pip.exe"
+set "VENV_SENTINEL=%VENV_DIR%\.deps_installed"
 
 echo Step 0a: Ensuring Python 3.11+ runtime availability...
 call :resolve_python
@@ -98,11 +101,80 @@ echo Step 0b: Verifying license with license.daywinlabs.com...
 call :verify_license
 if errorlevel 1 goto cleanup_fail
 
+set "SETUP_LOG=%SCRIPT_DIR%\installer_setup.log"
+rem Ensure log file exists even when script_dir is read-only by falling back to %TEMP%
+2>nul (>>"%SETUP_LOG%" echo.) || (
+    set "SETUP_LOG=%TEMP%\installer_setup.log"
+    >"%SETUP_LOG%" echo Installer log started at %DATE% %TIME%
+)
+
+echo.
+echo Step 0c: Preparing isolated Python environment...
+if exist "%VENV_PY%" (
+    echo  - Existing virtual environment detected.
+) else (
+    echo  - Creating virtual environment at %VENV_DIR% ...
+    "%PYTHON_CMD%" %PYTHON_ARGS% -m venv "%VENV_DIR%" >> "%SETUP_LOG%" 2>&1
+    if errorlevel 1 (
+        echo [ERROR] Failed to create virtual environment in %VENV_DIR%.
+        echo  - See "%SETUP_LOG%" for details.
+        goto cleanup_fail
+    )
+)
+if not exist "%VENV_PY%" (
+    echo [ERROR] Unable to locate virtual environment interpreter at %VENV_PY%.
+    goto cleanup_fail
+)
+set "PYTHON_CMD=%VENV_PY%"
+set "PYTHON_ARGS="
+set "PYTHON_DISPLAY=%PYTHON_CMD%"
+echo  - Ensuring pip is available inside the virtual environment...
+call "%VENV_PY%" -m ensurepip --upgrade >> "%SETUP_LOG%" 2>&1
+if errorlevel 1 (
+    echo [ERROR] Failed to bootstrap pip inside the virtual environment.
+    echo  - Review "%SETUP_LOG%" for more information.
+    goto cleanup_fail
+)
+if exist "%VENV_SENTINEL%" goto deps_installed
+
+echo  - Installing Python dependencies (this may take a few minutes)...
+call "%VENV_PY%" -m pip install --upgrade pip >> "%SETUP_LOG%" 2>&1
+if errorlevel 1 (
+    echo [ERROR] Failed to upgrade pip inside the virtual environment.
+    echo  - Review "%SETUP_LOG%" for more information.
+    goto cleanup_fail
+)
+for %%R in (requirements.txt requirements_setup_wizard.txt) do (
+    if exist "%SCRIPT_DIR%\%%~R" (
+        echo  - Installing %%~R ...
+        call "%VENV_PY%" -m pip install --no-color --no-warn-script-location -r "%SCRIPT_DIR%\%%~R" >> "%SETUP_LOG%" 2>&1
+        if errorlevel 1 (
+            echo [ERROR] Failed to install dependencies from %%~R.
+            echo  - Review "%SETUP_LOG%" for more information.
+            goto cleanup_fail
+        )
+    )
+)
+> "%VENV_SENTINEL%" echo Installed on %DATE% %TIME%
+
+:deps_installed
+if exist "%VENV_SENTINEL%" (
+    echo  - Python dependencies confirmed at %VENV_SENTINEL%.
+) else (
+    echo  - Warning: dependency sentinel missing; continuing anyway.
+)
+
 if not defined LOCALAPPDATA (
     set "LOCALAPPDATA=%USERPROFILE%\AppData\Local"
 )
 set "MKCERT_ROOT=%LOCALAPPDATA%\mkcert\rootCA.pem"
 set "DESKTOP_CERT=%DESKTOP_DIR%\mkcert-rootCA.crt"
+set "CERT_DIR=%SCRIPT_DIR%\certs"
+if not exist "%CERT_DIR%" (
+    mkdir "%CERT_DIR%" >nul 2>&1
+)
+set "LOCAL_CERT=%CERT_DIR%\server.crt"
+set "LOCAL_KEY=%CERT_DIR%\server.key"
 
 echo Step 1: Closing previous Financial Command Center Python processes...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -130,6 +202,17 @@ if not exist "%MKCERT_ROOT%" (
 if not exist "%MKCERT_ROOT%" (
     echo [ERROR] mkcert root certificate is still missing after generation attempt.
     goto cleanup_fail
+)
+
+if not exist "%LOCAL_CERT%" (
+    echo  - Local server certificate missing. Generating a new one with mkcert...
+    call :run_python "%SCRIPT_DIR%\cert_manager.py" --mkcert
+    if errorlevel 1 (
+        echo [ERROR] Failed to generate local server certificate.
+        goto cleanup_fail
+    )
+) else (
+    echo  - Local server certificate already present.
 )
 
 echo.
