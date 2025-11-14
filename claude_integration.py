@@ -1,13 +1,21 @@
 
 import json
 import os
+import shutil
+import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from flask import jsonify, render_template
+from flask import jsonify, render_template, request
 
 from ui.helpers import build_nav
 from setup_wizard import get_integration_status
+
+try:
+    from auth.security import SecurityManager
+except Exception:  # pragma: no cover - optional dependency
+    SecurityManager = None  # type: ignore[assignment]
 
 def setup_claude_routes(app, logger=None):
     """Setup Claude Desktop integration routes on the Flask app."""
@@ -48,6 +56,98 @@ def setup_claude_routes(app, logger=None):
                 'success': False,
                 'message': f"Configuration generation error: {exc}",
             }), 500
+
+    @app.route('/api/claude/config-path', methods=['GET'])
+    def claude_config_path_status():
+        try:
+            status = _get_claude_config_status()
+            return jsonify({'success': True, 'status': status})
+        except Exception as exc:  # pragma: no cover - defensive
+            if logger:
+                logger.error(f"Claude config path status error: {exc}")
+            return jsonify({'success': False, 'message': str(exc)}), 500
+
+    @app.route('/api/claude/connect', methods=['POST'])
+    def claude_connect_now():
+        try:
+            config_json, summary, _ = _build_claude_config(app)
+            target_path = _resolve_claude_config_path()
+            write_result = _write_claude_config_file(config_json, target_path)
+            status = _get_claude_config_status(target_path)
+            _log_claude_security_event(
+                'claude_config_updated',
+                {
+                    'path': status.get('path'),
+                    'backup_path': write_result.get('backup_path'),
+                    'bytes_written': write_result.get('bytes_written'),
+                },
+            )
+            return jsonify({
+                'success': True,
+                'message': 'Claude Desktop configuration updated successfully.',
+                'path': status.get('path'),
+                'status': status,
+                'summary': summary,
+                'config': config_json,
+                'backup_path': write_result.get('backup_path'),
+            })
+        except PermissionError as exc:
+            if logger:
+                logger.error(f"Claude config write permission error: {exc}")
+            return jsonify({
+                'success': False,
+                'message': 'Permission denied while writing to Claude configuration.'
+            }), 403
+        except Exception as exc:  # pragma: no cover - defensive
+            if logger:
+                logger.error(f"Claude connect error: {exc}")
+            return jsonify({'success': False, 'message': str(exc)}), 500
+
+    @app.route('/api/claude/restore', methods=['POST'])
+    def claude_restore_backup():
+        data = request.get_json(silent=True) or {}
+        backup_path_value = data.get('backup_path')
+        if not backup_path_value:
+            return jsonify({'success': False, 'message': 'Backup path is required.'}), 400
+
+        try:
+            target_path = _resolve_claude_config_path()
+            backup_path = Path(backup_path_value).expanduser()
+            _ensure_backup_within_target(backup_path, target_path)
+            if not backup_path.exists():
+                return jsonify({'success': False, 'message': 'Selected backup no longer exists.'}), 404
+
+            config_json = backup_path.read_text(encoding='utf-8')
+            write_result = _write_claude_config_file(config_json, target_path)
+            status = _get_claude_config_status(target_path)
+            _log_claude_security_event(
+                'claude_config_restored',
+                {
+                    'restored_from': str(backup_path),
+                    'path': status.get('path'),
+                    'backup_path': write_result.get('backup_path'),
+                },
+            )
+            return jsonify({
+                'success': True,
+                'message': 'Claude configuration restored from backup.',
+                'path': status.get('path'),
+                'status': status,
+                'backup_path': write_result.get('backup_path'),
+            })
+        except PermissionError as exc:
+            if logger:
+                logger.error(f"Claude config restore permission error: {exc}")
+            return jsonify({
+                'success': False,
+                'message': 'Permission denied while restoring Claude configuration.'
+            }), 403
+        except ValueError as exc:
+            return jsonify({'success': False, 'message': str(exc)}), 400
+        except Exception as exc:  # pragma: no cover - defensive
+            if logger:
+                logger.error(f"Claude restore error: {exc}")
+            return jsonify({'success': False, 'message': str(exc)}), 500
 
     return True
 
@@ -186,6 +286,118 @@ def _build_claude_config(app) -> Tuple[str, Dict[str, object], str]:
     }
 
     return config_json, summary, server_url
+
+
+def _resolve_claude_config_path() -> Path:
+    """Return the platform-specific Claude Desktop config path."""
+    home = Path.home()
+    if sys.platform.startswith('win'):
+        appdata = os.environ.get('APPDATA')
+        base = Path(appdata) if appdata else home / 'AppData' / 'Roaming'
+        target_dir = base / 'Claude'
+    elif sys.platform == 'darwin':
+        target_dir = home / 'Library' / 'Application Support' / 'Claude'
+    else:
+        xdg = os.environ.get('XDG_CONFIG_HOME')
+        base = Path(xdg) if xdg else home / '.config'
+        target_dir = base / 'Claude'
+
+    return target_dir / 'claude_desktop_config.json'
+
+
+def _get_claude_config_status(target_path: Optional[Path] = None) -> Dict[str, object]:
+    """Return metadata about the Claude Desktop config file."""
+    path = target_path or _resolve_claude_config_path()
+    parent = path.parent
+    exists = path.exists()
+    status: Dict[str, object] = {
+        'path': str(path),
+        'directory_exists': parent.exists(),
+        'exists': exists,
+        'platform': sys.platform,
+    }
+
+    if exists:
+        stat = path.stat()
+        status['last_modified'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
+        status['bytes'] = stat.st_size
+    else:
+        status['last_modified'] = None
+        status['bytes'] = 0
+
+    status['backups'] = _list_claude_backups(path)
+    return status
+
+
+def _list_claude_backups(target_path: Path) -> List[Dict[str, object]]:
+    """Return recent backup files for the Claude config."""
+    parent = target_path.parent
+    if not parent.exists():
+        return []
+
+    pattern = f"{target_path.stem}.backup-*.json"
+    backups: List[Dict[str, object]] = []
+    for candidate in sorted(parent.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            stat = candidate.stat()
+            backups.append({
+                'path': str(candidate),
+                'label': candidate.name,
+                'last_modified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'bytes': stat.st_size,
+            })
+        except OSError:
+            continue
+    return backups[:10]
+
+
+def _write_claude_config_file(config_json: str, destination: Path) -> Dict[str, Optional[str]]:
+    """Write the Claude config, creating a backup if a file already exists."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    backup_path: Optional[Path] = None
+
+    if destination.exists():
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        backup_name = f"{destination.stem}.backup-{timestamp}{destination.suffix or '.json'}"
+        backup_path = destination.with_name(backup_name)
+        shutil.copy2(destination, backup_path)
+
+    tmp_path = destination.with_name(f".{destination.name}.tmp")
+    tmp_path.write_text(config_json, encoding='utf-8')
+    os.replace(tmp_path, destination)
+
+    return {
+        'backup_path': str(backup_path) if backup_path else None,
+        'bytes_written': len(config_json.encode('utf-8')),
+    }
+
+
+def _ensure_backup_within_target(backup_path: Path, target_path: Path) -> None:
+    """Ensure the backup path lives inside Claude's config directory."""
+    target_dir = target_path.parent
+    resolved_backup = backup_path.resolve()
+    resolved_dir = target_dir.resolve()
+    try:
+        resolved_backup.relative_to(resolved_dir)
+    except ValueError:
+        raise ValueError("Backup path must be within the Claude configuration directory.")
+
+
+def _log_claude_security_event(event_type: str, details: Dict[str, object]) -> None:
+    """Log actions to the security manager if available."""
+    if not SecurityManager:
+        return
+    client_name = 'Claude Setup UI'
+    try:
+        info = getattr(request, 'client_info', None)
+        if isinstance(info, dict):
+            client_name = info.get('client_name', client_name)
+    except RuntimeError:
+        pass
+    try:
+        SecurityManager().log_security_event(event_type, client_name, details)
+    except Exception:
+        pass
 
 def _detect_python_executable(base_dir: Path) -> str:
     """Return the best python executable path for the current environment."""

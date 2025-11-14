@@ -26,11 +26,16 @@
             <div class="space-y-1">
                 <h2 class="text-lg font-semibold text-foreground">Generate configuration</h2>
                 <p class="text-sm text-muted-foreground">Build a Claude Desktop config tailored to your workspace and credentials.</p>
+                <p class="text-xs text-muted-foreground">Want a zero-copy experience? Use the connect button to write the config straight into Claude&rsquo;s folder—FCC makes a backup first.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <button type="button" id="claude-generate-btn" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
                     <i data-lucide="sparkles" class="h-4 w-4"></i>
                     <span>Generate config</span>
+                </button>
+                <button type="button" id="claude-connect-btn" class="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:border-border hover:bg-card/80">
+                    <i data-lucide="plug" class="h-4 w-4"></i>
+                    <span>Connect automatically</span>
                 </button>
                 <button type="button" id="claude-download-btn" class="hidden inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-background/80">
                     <i data-lucide="download" class="h-4 w-4"></i>
@@ -110,6 +115,59 @@
             </div>
         </div>
     </section>
+
+    <div id="claude-connect-modal" class="fixed inset-0 z-40 hidden overflow-y-auto bg-background/80 px-4 py-6 backdrop-blur-md">
+        <div class="flex min-h-full items-center justify-center">
+        <div class="mx-auto w-full max-w-2xl rounded-2xl border border-border/70 bg-card shadow-2xl">
+            <div class="flex items-start justify-between border-b border-border/60 px-6 py-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Auto connect</p>
+                    <h3 class="text-xl font-semibold text-foreground">Write config directly to Claude Desktop</h3>
+                    <p class="text-sm text-muted-foreground">FCC will drop the latest MCP configuration into Claude&rsquo;s folder and create a timestamped backup before replacing anything.</p>
+                </div>
+                <button type="button" class="rounded-full border border-border/70 p-1 text-muted-foreground transition hover:text-foreground" data-claude-close>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-5 px-6 py-6">
+                <div class="rounded-xl border border-border/70 bg-muted/50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Destination</p>
+                    <p id="claude-config-path" class="mt-2 break-all font-mono text-xs text-foreground">Detecting Claude folder…</p>
+                    <p id="claude-config-meta" class="text-xs text-muted-foreground">Launch Claude Desktop once if this path doesn&rsquo;t exist yet.</p>
+                </div>
+                <div class="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900">
+                    <p class="font-medium">What to expect</p>
+                    <p class="mb-2">FCC replaces <code>claude_desktop_config.json</code> in place. Before writing, it saves a backup such as <code>claude_desktop_config.backup-2025-01-09.json</code> so you can roll back inside this dialog.</p>
+                    <p><strong>Important:</strong> Quit Claude Desktop completely before clicking Connect (Windows: Task&nbsp;Manager → “End task”, macOS: Command+Q or Activity Monitor). This prevents file-lock issues.</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="claude-backup-select" class="text-sm font-medium text-foreground">Available backups</label>
+                        <button type="button" id="claude-refresh-backups" class="text-xs font-medium text-primary transition hover:text-primary/80">Refresh</button>
+                    </div>
+                    <select id="claude-backup-select" class="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-foreground">
+                        <option value="">No backups detected yet</option>
+                    </select>
+                    <button type="button" id="claude-restore-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-60">
+                        <i data-lucide="history" class="h-4 w-4"></i>
+                        <span>Restore selected backup</span>
+                    </button>
+                </div>
+                <div id="claude-connect-status" data-base-class="rounded-lg border px-4 py-3 text-sm" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
+                <div class="flex flex-col justify-end gap-3 border-t border-border/60 pt-4 sm:flex-row">
+                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-background/80" data-claude-close>
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" id="claude-connect-confirm" class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
+                        <i data-lucide="plug" class="h-4 w-4"></i>
+                        <span>Connect now</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -119,6 +177,17 @@
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const generateBtn = document.getElementById('claude-generate-btn');
+        const connectBtn = document.getElementById('claude-connect-btn');
+        const connectModal = document.getElementById('claude-connect-modal');
+        const connectConfirmBtn = document.getElementById('claude-connect-confirm');
+        const connectStatusEl = document.getElementById('claude-connect-status');
+        const connectStatusBase = connectStatusEl ? connectStatusEl.dataset.baseClass || '' : '';
+        const configPathEl = document.getElementById('claude-config-path');
+        const configMetaEl = document.getElementById('claude-config-meta');
+        const backupSelect = document.getElementById('claude-backup-select');
+        const restoreBtn = document.getElementById('claude-restore-btn');
+        const refreshBackupsBtn = document.getElementById('claude-refresh-backups');
+        const modalCloseButtons = document.querySelectorAll('[data-claude-close]');
         const downloadBtn = document.getElementById('claude-download-btn');
         const summaryEl = document.getElementById('claude-config-summary');
         const summaryBase = summaryEl ? summaryEl.dataset.baseClass || '' : '';
@@ -136,6 +205,125 @@
             return friendlyIntegrations[key];
           }
           return key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+        };
+
+        const humanizeTimestamp = (value) => {
+          if (!value) return 'Not written yet';
+          try {
+            return new Date(value).toLocaleString();
+          } catch (error) {
+            return value;
+          }
+        };
+
+        const toggleConnectModal = (show = false) => {
+          if (!connectModal) return;
+          connectModal.classList.toggle('hidden', !show);
+          document.body.classList.toggle('overflow-hidden', show);
+          if (show) {
+            refreshPathStatus();
+          } else {
+            setModalStatus('');
+          }
+        };
+
+        const setModalStatus = (html, tone = 'info') => {
+          if (!connectStatusEl) return;
+          if (!html) {
+            connectStatusEl.classList.add('hidden');
+            connectStatusEl.innerHTML = '';
+            return;
+          }
+          const toneClasses = {
+            success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            error: 'border-rose-200 bg-rose-50 text-rose-700',
+            warning: 'border-amber-200 bg-amber-50 text-amber-900',
+            info: 'border-border/60 bg-muted/60 text-muted-foreground',
+          };
+          connectStatusEl.className = `${connectStatusBase} ${toneClasses[tone] || toneClasses.info}`.trim();
+          connectStatusEl.innerHTML = html;
+          connectStatusEl.classList.remove('hidden');
+        };
+
+        const setModalLoading = (isLoading) => {
+          if (!connectConfirmBtn) return;
+          const label = connectConfirmBtn.querySelector('span');
+          connectConfirmBtn.disabled = isLoading;
+          connectConfirmBtn.classList.toggle('opacity-70', isLoading);
+          connectConfirmBtn.classList.toggle('cursor-not-allowed', isLoading);
+          if (label) {
+            if (isLoading) {
+              connectConfirmBtn.dataset.originalLabel = label.textContent.trim();
+              label.textContent = 'Connecting…';
+            } else if (connectConfirmBtn.dataset.originalLabel) {
+              label.textContent = connectConfirmBtn.dataset.originalLabel;
+              delete connectConfirmBtn.dataset.originalLabel;
+            }
+          }
+        };
+
+        const renderBackups = (backups = []) => {
+          if (!backupSelect) return;
+          backupSelect.innerHTML = '';
+          if (!backups.length) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No backups detected yet';
+            backupSelect.appendChild(option);
+            backupSelect.disabled = true;
+            if (restoreBtn) {
+              restoreBtn.disabled = true;
+            }
+            return;
+          }
+          backups.forEach((backup) => {
+            const option = document.createElement('option');
+            option.value = backup.path;
+            option.textContent = `${backup.label} · ${humanizeTimestamp(backup.last_modified)}`;
+            backupSelect.appendChild(option);
+          });
+          backupSelect.disabled = false;
+          if (restoreBtn) {
+            restoreBtn.disabled = false;
+          }
+        };
+
+        const updatePathDetails = (status) => {
+          if (configPathEl) {
+            configPathEl.textContent = status?.path || 'Not detected yet';
+          }
+          if (configMetaEl) {
+            if (status?.exists) {
+              configMetaEl.textContent = `Last updated ${humanizeTimestamp(status.last_modified)} · ${status.bytes || 0} bytes`;
+            } else if (status?.directory_exists) {
+              configMetaEl.textContent = 'Directory available—ready to write configuration.';
+            } else {
+              configMetaEl.textContent = 'Directory missing—launch Claude Desktop once, then retry.';
+            }
+          }
+          renderBackups(status?.backups || []);
+        };
+
+        const refreshPathStatus = async (providedStatus = null) => {
+          if (providedStatus) {
+            updatePathDetails(providedStatus);
+            return;
+          }
+          try {
+            const response = await fetch('/api/claude/config-path');
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Unable to read Claude Desktop folder.');
+            }
+            updatePathDetails(data.status);
+          } catch (error) {
+            setModalStatus(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not detect Claude Desktop folder.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          }
         };
 
         function setLoading(isLoading) {
@@ -233,6 +421,89 @@
           document.body.removeChild(anchor);
           URL.revokeObjectURL(url);
         });
+
+        connectBtn?.addEventListener('click', () => toggleConnectModal(true));
+        modalCloseButtons?.forEach((button) => {
+          button.addEventListener('click', () => toggleConnectModal(false));
+        });
+        connectModal?.addEventListener('click', (event) => {
+          if (event.target === connectModal) {
+            toggleConnectModal(false);
+          }
+        });
+
+        const performConnect = async () => {
+          setModalStatus('<p class="font-medium">Writing configuration to Claude Desktop…</p>', 'info');
+          setModalLoading(true);
+          try {
+            const response = await fetch('/api/claude/connect', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to connect Claude automatically.');
+            }
+            if (data.config) {
+              configData = data.config;
+              downloadBtn?.classList.remove('hidden');
+            }
+            setModalStatus(`
+              <div class="space-y-1">
+                <p class="font-medium text-foreground">Claude Desktop configuration updated.</p>
+                <p class="text-xs text-muted-foreground">Path: <span class="font-mono">${data.path}</span></p>
+                ${data.backup_path ? `<p class="text-xs text-muted-foreground">Backup: <span class="font-mono">${data.backup_path}</span></p>` : ''}
+              </div>
+            `, 'success');
+            showMessage('<p class="font-medium text-foreground">Claude Desktop connected successfully. Your MCP servers are now registered.</p>', 'success');
+            refreshPathStatus(data.status);
+          } catch (error) {
+            setModalStatus(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not write configuration.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          } finally {
+            setModalLoading(false);
+          }
+        };
+
+        connectConfirmBtn?.addEventListener('click', performConnect);
+
+        restoreBtn?.addEventListener('click', async () => {
+          if (!backupSelect || !backupSelect.value) {
+            setModalStatus('<p>Please select a backup to restore.</p>', 'warning');
+            return;
+          }
+          setModalStatus('<p class="font-medium">Restoring selected backup…</p>', 'info');
+          restoreBtn.disabled = true;
+          try {
+            const response = await fetch('/api/claude/restore', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ backup_path: backupSelect.value }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Unable to restore backup.');
+            }
+            setModalStatus('<p class="font-medium text-foreground">Backup restored successfully.</p>', 'success');
+            refreshPathStatus(data.status);
+          } catch (error) {
+            setModalStatus(`
+              <div class="space-y-1">
+                <p class="font-medium">Could not restore backup.</p>
+                <p>${error.message}</p>
+              </div>
+            `, 'error');
+          } finally {
+            restoreBtn.disabled = false;
+          }
+        });
+
+        refreshBackupsBtn?.addEventListener('click', () => refreshPathStatus());
       });
     </script>
 {% endblock %}
