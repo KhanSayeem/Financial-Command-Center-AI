@@ -1328,14 +1328,12 @@ def create_installer_package_full() -> bool:
     for helper in [
 
         "mkcert.exe",
-
         "Create-Desktop-Shortcut.cmd",
-
         "create_shortcut.ps1",
-
         "create-quick-start-shortcut.ps1",
-
         "ultimate_cert_fix.cmd",
+        "trust_fcc_cert.ps1",
+        "Trust-FCC-Certificate.cmd",
 
         "bootstrap/run_windows.cmd",
 
