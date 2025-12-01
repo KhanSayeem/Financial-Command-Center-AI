@@ -129,10 +129,8 @@ def build_license_email_content(
 
         Setup checklist:
         1. Unzip the archive on your admin machine.
-        2. Windows: double-click `bootstrap\bootstrap-install.cmd` and approve the UAC prompt.
-        3. macOS/Linux: run `bootstrap/bootstrap-install.sh` (approve sudo when asked) to install certificates and dependencies.
-        4. Windows: run `ultimate_cert_fix.cmd` (creates the desktop shortcut and launches the app).
-        macOS/Linux: launch via `bootstrap\mac-launch.command`, `bootstrap/financial-command-center.desktop`, or `bootstrap/run_unix.sh launch`, then complete the setup wizard.
+        2. Windows: run `ultimate_cert_fix.cmd` (creates the desktop shortcut, installs certs, and launches the app).
+        3. macOS/Linux: run `bootstrap/bootstrap-install.sh` (approve sudo when asked) to install certificates, dependencies, and launch.
 
         {support_line}
 
@@ -213,10 +211,8 @@ def build_license_email_content(
                             <p style="margin:0 0 15px 0; font-size:16px; color:#333333;"><strong>Setup checklist</strong></p>
                             <ol style="padding-left:20px; margin:0 0 15px 0;">
                               <li style="margin:0 0 8px 0; font-size:16px; color:#333333;">Unzip the archive on your admin machine.</li>
-                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> double-click <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\\bootstrap-install.cmd</code> and approve the UAC prompt.</li>
-                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/bootstrap-install.sh</code> (approve sudo when prompted) to install certificates and dependencies.</li>
-                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">ultimate_cert_fix.cmd</code> (creates the desktop shortcut and launches the app).</li>
-                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> launch via <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap\\mac-launch.command</code>, <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/financial-command-center.desktop</code>, or <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/run_unix.sh launch</code>, then complete the setup wizard.</li>
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>Windows:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">ultimate_cert_fix.cmd</code> (creates the desktop shortcut, installs certificates, and launches the app).</li>
+                              <li style="margin:0 0 8px 0; font-size:16px; color:#333333;"><strong>macOS/Linux:</strong> run <code style="background-color:#f9f9f9; padding:2px 4px; border-radius:3px; border:1px solid #ddd;">bootstrap/bootstrap-install.sh</code> (approve sudo when prompted) to install certificates, dependencies, and launch.</li>
                             </ol>
                             <p style="margin:0 0 15px 0; font-size:16px; color:#333333;">{support_line}</p>
                             {thank_you_line}
