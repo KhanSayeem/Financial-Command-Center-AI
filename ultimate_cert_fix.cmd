@@ -82,6 +82,8 @@ set "VENV_DIR=%SCRIPT_DIR%\.venv"
 set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
 set "VENV_PIP=%VENV_DIR%\Scripts\pip.exe"
 set "VENV_SENTINEL=%VENV_DIR%\.deps_installed"
+set "TRUST_HELPER=%SCRIPT_DIR%\trust_fcc_cert.ps1"
+set "TRUST_WRAPPER=%SCRIPT_DIR%\Trust-FCC-Certificate.cmd"
 
 echo Step 0a: Ensuring Python 3.11+ runtime availability...
 call :resolve_python
@@ -226,6 +228,21 @@ if exist "%MKCERT_ROOT%" (
     copy /Y "%MKCERT_ROOT%" "%DESKTOP_CERT%" >nul 2>&1
     if exist "%DESKTOP_CERT%" (
         echo  - A copy of the root certificate is available at: %DESKTOP_CERT%
+    )
+)
+
+echo.
+echo Step 3b: Trusting root certificate (requires allowing Windows prompt)...
+if exist "%TRUST_WRAPPER%" (
+    echo  - Running trust helper ^(will request elevation if needed^)...
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%TRUST_HELPER%" -CertPath "%MKCERT_ROOT%" -Silent
+    echo  - If prompted by Windows, click Yes/Allow to install the certificate.
+) else (
+    if exist "%TRUST_HELPER%" (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%TRUST_HELPER%" -CertPath "%MKCERT_ROOT%" -Silent
+        echo  - If prompted by Windows, click Yes/Allow to install the certificate.
+    ) else (
+        echo  - Trust helper not found. Certificate trust may need manual install.
     )
 )
 

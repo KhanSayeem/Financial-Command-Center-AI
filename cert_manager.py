@@ -732,17 +732,22 @@ echo "3. Try accessing https://127.0.0.1:8000 again"
             "platform": platform.system()
         }
         
-        # Test SSL connection
+        # Test SSL connection (if the app is already running)
+        status["ssl_connection"] = "skipped: server not running"
+        status["server_port_open"] = False
         try:
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            
-            with socket.create_connection(("localhost", 8000), timeout=5) as sock:
+
+            with socket.create_connection(("localhost", 8000), timeout=3) as sock:
+                status["server_port_open"] = True
                 with context.wrap_socket(sock, server_hostname="localhost") as ssock:
                     status["ssl_connection"] = "success"
                     status["ssl_version"] = ssock.version()
                     status["cipher"] = ssock.cipher()
+        except ConnectionRefusedError:
+            status["ssl_connection"] = "skipped: server not running"
         except Exception as e:
             status["ssl_connection"] = f"failed: {str(e)}"
         
@@ -797,7 +802,15 @@ def main():
         print("SSL Certificate Health Check:")
         print("=" * 40)
         for key, value in status.items():
-            icon = "[OK]" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key == "ssl_connection" and value == "success") or (key in ["mkcert_available", "trust_installed"] and value) else "[FAIL]" if key.endswith("_exists") or key in ["certificate_valid", "ssl_connection"] else "[INFO]"
+            if key == "ssl_connection":
+                if value == "success":
+                    icon = "[OK]"
+                elif isinstance(value, str) and value.lower().startswith("skipped"):
+                    icon = "[INFO]"
+                else:
+                    icon = "[FAIL]"
+            else:
+                icon = "[OK]" if (key.endswith("_exists") and value) or (key == "certificate_valid" and value) or (key in ["mkcert_available", "trust_installed"] and value) else "[FAIL]" if key.endswith("_exists") or key in ["certificate_valid"] else "[INFO]"
             print(f"{icon} {key.replace('_', ' ').title()}: {value}")
     else:
         # Default: ensure certificates exist
