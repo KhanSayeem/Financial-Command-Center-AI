@@ -109,8 +109,7 @@ def build_license_email_content(
     """Return subject, text, and HTML bodies for the onboarding email."""
 
     fallback_download = download_url or "Download link will be shared separately."
-    default_support = "support@daywinlabs.com"
-    support_line = f"For assistance please reach out to {support_email or default_support}."
+    support_line = "For assistance please reach out to support@daywinlabs.com."
 
     text_body = dedent(
         f"""
